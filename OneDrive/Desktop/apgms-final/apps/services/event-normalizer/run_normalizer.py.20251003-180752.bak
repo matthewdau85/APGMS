@@ -1,0 +1,9 @@
+﻿import os, uvicorn
+
+module  = os.getenv("APP_MODULE", "app.main:app")
+host    = os.getenv("UVICORN_HOST", "0.0.0.0")
+port    = int(os.getenv("UVICORN_PORT", "8001"))
+workers = int(os.getenv("UVICORN_WORKERS", "1"))
+
+if __name__ == "__main__":
+    uvicorn.run(module, host=host, port=port, workers=workers)

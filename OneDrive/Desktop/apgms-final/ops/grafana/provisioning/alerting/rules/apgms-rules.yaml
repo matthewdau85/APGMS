@@ -1,0 +1,78 @@
+﻿apiVersion: 1
+groups:
+  - orgId: 1
+    name: apgms-basic
+    folder: APGMS
+    interval: 30s
+    rules:
+      - uid: normalizer_down
+        title: Normalizer down
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: Prometheus
+            model:
+              expr: up{job="normalizer"} == 0
+              instant: true
+              interval: ""
+              legendFormat: ""
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          summary: "Normalizer target is DOWN"
+        labels:
+          severity: critical
+
+      - uid: tax_engine_down
+        title: Tax Engine down
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: Prometheus
+            model:
+              expr: up{job="tax_engine"} == 0
+              instant: true
+              interval: ""
+              legendFormat: ""
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          summary: "Tax Engine target is DOWN"
+        labels:
+          severity: critical
+
+      - uid: nats_exporter_down
+        title: NATS exporter down
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: Prometheus
+            model:
+              expr: up{job="nats_exporter"} == 0
+              instant: true
+              interval: ""
+              legendFormat: ""
+              refId: A
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          summary: "NATS exporter is DOWN"
+        labels:
+          severity: warning

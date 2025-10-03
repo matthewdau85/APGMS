@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "apgms-event-normalizer"
+version = "0.1.0"
+description = "APGMS Event Normalizer (P10)"
+authors = ["you"]
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+fastapi = "^0.115.2"
+uvicorn = {extras=["standard"], version="^0.30.6"}
+pydantic = "^2.9.2"
+jsonschema = "^4.23.0"
+orjson = "^3.10.7"
+prometheus-client = "^0.21.0"
+nats-py = "^2.7.2"
+python-json-logger = "^2.0.7"
+httpx = "^0.28.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"

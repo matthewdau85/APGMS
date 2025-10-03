@@ -1,0 +1,1 @@
+﻿Choose: Terraform+Terragrunt or AWS CDK (TS). For speed, start with CDK (TS) targeting ECS Fargate. (P60)

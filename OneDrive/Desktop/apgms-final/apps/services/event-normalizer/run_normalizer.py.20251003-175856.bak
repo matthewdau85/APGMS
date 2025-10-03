@@ -1,0 +1,11 @@
+﻿import os
+import uvicorn
+
+APP_MODULE = os.getenv("APP_MODULE", "app.main:app")
+HOST = os.getenv("UVICORN_HOST", "0.0.0.0")
+PORT = int(os.getenv("UVICORN_PORT", "8001"))
+RELOAD = os.getenv("UVICORN_RELOAD", "false").lower() == "true"
+LOG_LEVEL = os.getenv("UVICORN_LOG_LEVEL", "info")
+
+if __name__ == "__main__":
+    uvicorn.run(APP_MODULE, host=HOST, port=PORT, reload=RELOAD, log_level=LOG_LEVEL)

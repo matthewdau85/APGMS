@@ -1,0 +1,15 @@
+﻿FROM python:3.11-slim
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic
+
+COPY app ./app
+COPY ../../libs/json ./libs/schemas/json
+COPY run_normalizer.py /app/run_normalizer.py
+
+ENV APP_MODULE=app.main:app UVICORN_PORT=8001
+EXPOSE 8001
+CMD ["python", "/app/run_normalizer.py"]
