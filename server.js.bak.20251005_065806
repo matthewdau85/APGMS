@@ -1,0 +1,291 @@
+﻿// server.js
+require('dotenv').config({ path: '.env.local' });
+
+const express = require('express');
+const { Pool } = require('pg');
+const nacl = require('tweetnacl');
+const crypto = require('crypto');
+
+// ---------- env / config ----------
+const {
+  PORT = 8080,
+  PGHOST = '127.0.0.1',
+  PGUSER = 'apgms',
+  PGPASSWORD = 'apgms_pw',
+  PGDATABASE = 'apgms',
+  PGPORT = '5432',
+  RPT_ED25519_SECRET_BASE64,
+  RPT_PUBLIC_BASE64,
+  ATO_PRN
+} = process.env;
+
+if (!ATO_PRN) {
+  console.warn('[warn] ATO_PRN is not set. /rpt/issue will still work but payload.reference will be empty.');
+}
+
+const db = new Pool({
+  host: PGHOST,
+  user: PGUSER,
+  password: PGPASSWORD,
+  database: PGDATABASE,
+  port: Number(PGPORT)
+});
+
+// ---------- helpers ----------
+const app = express();
+app.use(express.json());
+
+// basic request log
+app.use((req, res, next) => {
+  const t0 = Date.now();
+  res.on('finish', () => {
+    console.log(`${req.method} ${req.originalUrl} -> ${res.statusCode} ${Date.now() - t0}ms`);
+  });
+  next();
+});
+
+// wrap async handlers
+const ah = fn => (req, res) => fn(req, res).catch(err => {
+  console.error(err);
+  res.status(500).json({ error: 'INTERNAL', message: err.message });
+});
+
+function b64ToU8(b64) { return new Uint8Array(Buffer.from(b64, 'base64')); }
+function sha256Hex(s) { return crypto.createHash('sha256').update(s).digest('hex'); }
+
+// ---------- health ----------
+app.get('/health', ah(async (_req, res) => {
+  const r = await db.query('select 1 as ok');
+  res.json({ ok: true, db: r.rows[0]?.ok === 1 });
+}));
+
+// ---------- period status (summary) ----------
+app.get('/period/status', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.query;
+  if (!abn || !taxType || !periodId) return res.status(400).json({ error: 'MISSING_PARAMS' });
+
+  const [p, l, r] = await Promise.all([
+    db.query(
+      `select abn,tax_type,period_id,state,accrued_cents,credited_to_owa_cents,final_liability_cents,
+              merkle_root,running_balance_hash,anomaly_vector,thresholds
+       from periods where abn=$1 and tax_type=$2 and period_id=$3`, [abn, taxType, periodId]),
+    db.query(
+      `select id,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after,created_at
+       from owa_ledger where abn=$1 and tax_type=$2 and period_id=$3 order by id`, [abn, taxType, periodId]),
+    db.query(
+      `select payload, signature, created_at
+       from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1`, [abn, taxType, periodId]),
+  ]);
+
+  res.json({ period: p.rows[0] || null, ledger: l.rows, rpt: r.rows[0] || null });
+}));
+
+// ---------- issue RPT ----------
+app.post('/rpt/issue', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.body || {};
+  if (!abn || !taxType || !periodId) return res.status(400).json({ error: 'MISSING_PARAMS' });
+
+  if (!RPT_ED25519_SECRET_BASE64) {
+    return res.status(500).json({ error: 'CONFIG', message: 'RPT_ED25519_SECRET_BASE64 missing' });
+  }
+
+  const p = await db.query(
+    'select * from periods where abn=$1 and tax_type=$2 and period_id=$3',
+    [abn, taxType, periodId]
+  );
+  if (p.rowCount === 0) return res.status(404).json({ error: 'PERIOD_NOT_FOUND' });
+
+  const row = p.rows[0];
+  if (row.state !== 'CLOSING') {
+    return res.status(409).json({ error: 'BAD_STATE', state: row.state });
+  }
+
+  // deterministic thresholds (can be overridden later if you wish)
+  const thresholds = {
+    epsilon_cents: 0,
+    variance_ratio: 0.25,
+    dup_rate: 0.01,
+    gap_minutes: 60,
+    delta_vs_baseline: 0.2,
+  };
+  const v = row.anomaly_vector || {};
+
+  const exceeds =
+    (v.variance_ratio || 0) > thresholds.variance_ratio ||
+    (v.dup_rate || 0) > thresholds.dup_rate ||
+    (v.gap_minutes || 0) > thresholds.gap_minutes ||
+    Math.abs(v.delta_vs_baseline || 0) > thresholds.delta_vs_baseline;
+
+  if (exceeds) {
+    await db.query("update periods set state='BLOCKED_ANOMALY' where id=$1", [row.id]);
+    return res.status(422).json({ error: 'BLOCKED_ANOMALY' });
+  }
+
+  const epsilon = Math.abs(Number(row.final_liability_cents) - Number(row.credited_to_owa_cents));
+  if (epsilon > thresholds.epsilon_cents) {
+    await db.query("update periods set state='BLOCKED_DISCREPANCY' where id=$1", [row.id]);
+    return res.status(422).json({ error: 'BLOCKED_DISCREPANCY', epsilon });
+  }
+
+  const payload = {
+    entity_id: row.abn,
+    period_id: row.period_id,
+    tax_type: row.tax_type,
+    amount_cents: Number(row.final_liability_cents),
+    merkle_root: row.merkle_root || null,
+    running_balance_hash: row.running_balance_hash || null,
+    anomaly_vector: v,
+    thresholds,
+    rail_id: "EFT",
+    reference: ATO_PRN || "",
+    expiry_ts: new Date(Date.now() + 15 * 60 * 1000).toISOString(), // 15 minutes
+    nonce: crypto.randomUUID(),
+  };
+
+  const msg = new TextEncoder().encode(payloadStr);
+  const sig = nacl.sign.detached(msg, b64ToU8(RPT_ED25519_SECRET_BASE64));
+  const signature = Buffer.from(sig).toString('base64');
+
+  await db.query(
+    "insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values ($1,$2,$3,$4,$5)",
+    [abn, taxType, periodId, payload, signature, payloadStr, payloadSha256]
+  );
+  await db.query("update periods set state='READY_RPT' where id=$1", [row.id]);
+
+  res.json({ payload, signature });
+}));
+
+// ---------- verify RPT (optional convenience) ----------
+app.get('/rpt/verify', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.query;
+  if (!abn || !taxType || !periodId) return res.status(400).json({ error: 'MISSING_PARAMS' });
+  if (!RPT_PUBLIC_BASE64) return res.status(500).json({ error: 'CONFIG', message: 'RPT_PUBLIC_BASE64 missing' });
+
+  const r = await db.query(
+    `select payload, signature from rpt_tokens
+     where abn=$1 and tax_type=$2 and period_id=$3
+     order by id desc limit 1`, [abn, taxType, periodId]
+  );
+  if (r.rowCount === 0) return res.status(404).json({ error: 'NO_RPT' });
+
+  const { payload, signature } = r.rows[0];
+  const msg = new TextEncoder().encode(payloadStr);
+  const ok = nacl.sign.detached.verify(msg, Buffer.from(signature, 'base64'), b64ToU8(RPT_PUBLIC_BASE64));
+
+  res.json({ verify: ok, amount_cents: payload?.amount_cents, ref: payload?.reference });
+}));
+
+// ---------- release (idempotent) ----------
+app.post('/release', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.body || {};
+  if (!abn || !taxType || !periodId) return res.status(400).json({ error: 'MISSING_PARAMS' });
+
+  const idemKey = req.header('Idempotency-Key') || crypto.randomUUID();
+
+  // check/claim idempotency key
+  const idem = await db.query('select key,last_status,response_hash from idempotency_keys where key=$1', [idemKey]);
+  if (idem.rowCount > 0 && idem.rows[0].last_status === 'DONE') {
+    return res.json({ idempotent: true, replay: true });
+  }
+  // try insert (no conflict means we own it)
+  await db.query('insert into idempotency_keys(key,last_status) values($1,$2) on conflict do nothing',
+    [idemKey, 'INIT']);
+  // double-check ownership
+  const confirm = await db.query('select key,last_status from idempotency_keys where key=$1', [idemKey]);
+  if (confirm.rowCount === 0) return res.status(409).json({ error: 'IDEMPOTENCY_RACE' });
+
+  // must have an RPT ready
+  const pr = await db.query(
+    'select payload, signature from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1',
+    [abn, taxType, periodId]
+  );
+  if (pr.rowCount === 0) return res.status(400).json({ error: 'NO_RPT' });
+
+  // check period state
+  const p = await db.query('select id,state from periods where abn=$1 and tax_type=$2 and period_id=$3',
+    [abn, taxType, periodId]);
+  if (p.rowCount === 0) return res.status(404).json({ error: 'PERIOD_NOT_FOUND' });
+  if (!['READY_RPT', 'RELEASED'].includes(p.rows[0].state)) {
+    return res.status(409).json({ error: 'BAD_STATE', state: p.rows[0].state });
+  }
+
+  // balance check
+  const payload = pr.rows[0].payload;
+  const ld = await db.query(
+    "select balance_after_cents, hash_after from owa_ledger where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1",
+    [abn, taxType, periodId]
+  );
+  const prevBal = ld.rows[0]?.balance_after_cents ?? 0;
+  if (prevBal < payload.amount_cents) {
+    return res.status(422).json({ error: 'INSUFFICIENT_OWA', prevBal: String(prevBal), needed: payload.amount_cents });
+  }
+
+  const transfer_uuid = crypto.randomUUID();
+  const bank_receipt_hash = 'rcpt:' + transfer_uuid.slice(0, 12);
+  const newBal = prevBal - payload.amount_cents;
+  const prevHash = ld.rows[0]?.hash_after || '';
+  const hashAfter = sha256Hex(prevHash + bank_receipt_hash + String(newBal));
+
+  await db.query(
+    `insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [abn, taxType, periodId, transfer_uuid, -payload.amount_cents, newBal, bank_receipt_hash, prevHash, hashAfter]
+  );
+  await db.query("update periods set state='RELEASED' where abn=$1 and tax_type=$2 and period_id=$3", [abn, taxType, periodId]);
+  await db.query('update idempotency_keys set last_status=$2, response_hash=$3 where key=$1',
+    [idemKey, 'DONE', sha256Hex(JSON.stringify({ transfer_uuid, bank_receipt_hash }))]);
+
+  res.json({ transfer_uuid, bank_receipt_hash, new_balance: newBal, idempotency_key: idemKey });
+}));
+
+// ---------- evidence bundle ----------
+app.get('/evidence', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.query;
+  if (!abn || !taxType || !periodId) return res.status(400).json({ error: 'MISSING_PARAMS' });
+
+  const periodQ = db.query(
+    "select * from periods where abn=$1 and tax_type=$2 and period_id=$3",
+    [abn, taxType, periodId]
+  );
+  const rptQ = db.query(
+    "select payload, signature, created_at from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1",
+    [abn, taxType, periodId]
+  );
+  const ledgerQ = db.query(
+    "select id, amount_cents, balance_after_cents, bank_receipt_hash, prev_hash, hash_after, created_at from owa_ledger where abn=$1 and tax_type=$2 and period_id=$3 order by id",
+    [abn, taxType, periodId]
+  );
+
+  const [periodR, rptR, ledgerR] = await Promise.all([periodQ, rptQ, ledgerQ]);
+  const period = periodR.rows[0];
+  const rpt = rptR.rows[0] || null;
+  const ledger = ledgerR.rows;
+
+  const basLabels = { W1: null, W2: null, "1A": null, "1B": null }; // placeholder until wired to your BAS engine
+
+  const bundle = {
+    meta: { generated_at: new Date().toISOString(), abn, taxType, periodId },
+    period: period ? {
+      state: period.state,
+      accrued_cents: Number(period.accrued_cents),
+      credited_to_owa_cents: Number(period.credited_to_owa_cents),
+      final_liability_cents: Number(period.final_liability_cents),
+      merkle_root: period.merkle_root,
+      running_balance_hash: period.running_balance_hash,
+      anomaly_vector: period.anomaly_vector,
+      thresholds: period.thresholds
+    } : null,
+    rpt,
+    owa_ledger: ledger,
+    bas_labels: basLabels,
+    discrepancy_log: [] // fill with recon diffs if you add them
+  };
+
+  res.json(bundle);
+}));
+
+// ---------- start ----------
+app.listen(Number(PORT), () => {
+  console.log(`APGMS demo API listening on :${PORT}`);
+});
+

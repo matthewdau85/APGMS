@@ -1,0 +1,139 @@
+(()=> {
+  const cfg  = window.GUI_CONFIG || {};
+  const base = (cfg.baseUrl || "/api").replace(/\/+$/,'');
+  const app  = document.getElementById("app");
+
+  // ---------- views ----------
+  const views = {
+    home() {
+      return `
+        <h1 style="margin:0 0 6px 0">${cfg.brand || 'APGMS Normalizer'}</h1>
+        <p>${cfg.title || 'Customer Portal'}</p>
+        ${nav('home')}
+        <div style="margin:16px 0">
+          <button id="ready">Check /readyz</button>
+          <button id="metrics">Show /metrics</button>
+        </div>
+        <pre id="out" style="background:#f6f7f9;padding:8px;border-radius:6px;max-height:260px;overflow:auto"></pre>
+      `;
+    },
+
+    normalize() {
+      return `
+        <h1 style="margin:0 0 6px 0">${cfg.brand || 'APGMS Normalizer'}</h1>
+        <p>${cfg.title || 'Customer Portal'}</p>
+        ${nav('normalize')}
+        <h2 style="margin-top:16px">Normalize</h2>
+        <p>Upload a CSV or JSON file to send to the normalizer service.</p>
+        <input id="file" type="file" accept=".csv,.json" />
+        <div style="margin-top:8px">
+          <button id="btnUpload">Upload & Normalize</button>
+        </div>
+        <pre id="out" style="margin-top:12px;background:#f6f7f9;padding:8px;border-radius:6px;max-height:300px;overflow:auto"></pre>
+      `;
+    },
+
+    history() {
+      return `
+        <h1 style="margin:0 0 6px 0">${cfg.brand || 'APGMS Normalizer'}</h1>
+        <p>${cfg.title || 'Customer Portal'}</p>
+        ${nav('history')}
+        <h2 style="margin-top:16px">History</h2>
+        <p>Recent jobs (placeholder).</p>
+        <ul id="jobs"><li>No history endpoint wired yet.</li></ul>
+      `;
+    },
+
+    help() {
+      const spec = cfg.swaggerPath || '/api/openapi.json';
+      return `
+        <h1 style="margin:0 0 6px 0">${cfg.brand || 'APGMS Normalizer'}</h1>
+        <p>${cfg.title || 'Customer Portal'}</p>
+        ${nav('help')}
+        <h2 style="margin-top:16px">Help</h2>
+        <ol>
+          <li>Go to <b>Normalize</b> to upload a CSV/JSON export from your bank/accounting app.</li>
+          <li>We validate and normalize it for ATO-compatible records.</li>
+          <li>Use <b>History</b> to review past runs.</li>
+          <li>API docs: <a href="${spec}" target="_blank" rel="noopener">OpenAPI</a></li>
+        </ol>
+      `;
+    }
+  };
+
+  // ---------- nav ----------
+  function nav(active){
+    const item = (href, label, key) =>
+      `<a href="#/${href}" ${active===key ? 'style="font-weight:600;text-decoration:underline"' : ''}>${label}</a>`;
+    return `
+      <nav style="margin:10px 0; gap:12px; display:flex; flex-wrap:wrap">
+        ${item('home','Home','home')}
+        ${item('normalize','Normalize','normalize')}
+        ${item('history','History','history')}
+        ${item('help','Help','help')}
+      </nav>
+    `;
+  }
+
+  // ---------- router ----------
+  function currentRoute(){
+    const r = (location.hash || '#/home').replace(/^#\/?/, '');
+    // allow "#/home?foo" -> "home"
+    return r.split('?')[0] || 'home';
+  }
+
+  function render(){
+    const route = currentRoute();
+    const tpl = views[route] ? views[route]() : `<h2>Not found</h2>${nav()}`;
+    app.innerHTML = tpl;
+
+    // wire up per-view behavior
+    if(route==='home'){
+      const out = document.getElementById('out');
+      document.getElementById('ready').onclick = async () => {
+        out.textContent = 'Checking…';
+        try { const r = await fetch(base + '/readyz'); out.textContent = 'HTTP ' + r.status; }
+        catch { out.textContent = 'Unreachable'; }
+      };
+      document.getElementById('metrics').onclick = async () => {
+        out.textContent = 'Loading…';
+        try { const r = await fetch(base + '/metrics'); out.textContent = await r.text(); }
+        catch { out.textContent = 'Failed'; }
+      };
+    }
+
+    if(route==='normalize'){
+      const out  = document.getElementById('out');
+      const fileEl = document.getElementById('file');
+      document.getElementById('btnUpload').onclick = async () => {
+        const file = fileEl.files[0];
+        if(!file){ alert('Choose a file first.'); return; }
+        const text = await file.text();
+        let payload;
+        try {
+          payload = text.trim().startsWith('{') || text.trim().startsWith('[')
+            ? JSON.parse(text)
+            : { csv: text };
+        } catch(e){
+          alert('Could not parse JSON; sending as CSV payload instead.');
+          payload = { csv: text };
+        }
+        out.textContent = 'Uploading…';
+        try {
+          const r = await fetch(base + '/normalize', {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const body = await r.text();
+          out.textContent = `HTTP ${r.status}\n` + (body || '');
+        } catch(e){
+          out.textContent = 'Failed: ' + e;
+        }
+      };
+    }
+  }
+
+  window.addEventListener('hashchange', render);
+  render();
+})();

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" class="theme-ato">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Customer Portal</title>
+  <link rel="stylesheet" href="/styles/base.css">
+  <link rel="stylesheet" href="/styles/theme-ato.css" id="theme-ato">
+  <link rel="stylesheet" href="/styles/theme-light.css" disabled id="theme-light">
+  <link rel="stylesheet" href="/styles/theme-dark.css" disabled id="theme-dark">
+  <link rel="stylesheet" href="/styles/theme-contrast.css" disabled id="theme-contrast">
+  <script defer src="/config.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand">
+        <img src="/logo.svg" alt="" class="logo" />
+        <div class="brand-text">
+          <div class="brand-name">APGMS Normalizer</div>
+          <div class="brand-sub">Government-style customer portal</div>
+        </div>
+      </div>
+      <nav class="top-nav">
+        <a href="#/home" data-link>Home</a>
+        <a href="#/accounts" data-link>Connections</a>
+        <a href="#/transactions" data-link>Transactions</a>
+        <a href="#/tax" data-link>Tax & BAS</a>
+        <a href="#/help" data-link>Help</a>
+        <a href="#/settings" data-link>Settings</a>
+      </nav>
+      <div class="top-actions">
+        <label class="theme-label">
+          Theme
+          <select id="themePicker" aria-label="Theme">
+            <option value="ato">ATO</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+            <option value="contrast">High contrast</option>
+          </select>
+        </label>
+        <span id="svcHealth" class="badge">Checkingâ€¦</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="app" class="wrap" aria-live="polite"><noscript>Please enable JavaScript.</noscript></main>
+
+  <footer class="site-footer">
+    <div class="wrap small">
+      <div>Â© 2025 APGMS Normalizer</div>
+      <div class="footer-links">
+        <a href="#/help/privacy" data-link>Privacy</a>
+        <a href="#/help/security" data-link>Security</a>
+        <a href="#/help/accessibility" data-link>Accessibility</a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

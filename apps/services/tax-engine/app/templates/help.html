@@ -1,0 +1,13 @@
+﻿{% extends "layout.html" %}
+{% block content %}
+<h2>PAYG-Withholding methods</h2>
+<ul>
+  <li><b>ATO Table</b>: Apply current-year schedules/formulas. Update rules each 1 July.</li>
+  <li><b>Formula (progressive)</b>: Uses bracketed rates in JSON; mirrors ATO tables.</li>
+  <li><b>Percent simple</b>: percentage of gross (voluntary agreements).</li>
+  <li><b>Flat + percent</b>: add an extra fixed amount to the base percent.</li>
+  <li><b>Bonus (marginal)</b>: withhold bonus at marginal rate on top of regular.</li>
+  <li><b>Net â†’ Gross</b>: solve gross to hit a target net using selected formula.</li>
+</ul>
+<p><i>Disclaimer:</i> demo UI; not legal or tax advice. Validate against ATO examples before production.</p>
+{% endblock %}

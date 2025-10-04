@@ -1,0 +1,42 @@
+APGMS Phase 1 - Readiness Report
+Generated: 2025-10-03 07:43:50
+Repo Root: C:\Users\matth\OneDrive\Desktop\apgms-final
+Shell: 5.1.26100.6584
+
+Git HEAD: 75bdb29
+Git Branch: main
+
+Required files:
+  OK   apps/services/tax-engine/app/__init__.py
+  OK   apps/services/tax-engine/app/main.py
+  OK   apps/services/tax-engine/app/tax_rules.py
+  OK   apps/services/event-normalizer/app/__init__.py
+  OK   apps/services/event-normalizer/app/main.py
+  OK   libs/json/payroll_event.v1.json
+  OK   pytest.ini
+  OK   docker-compose.yml
+
+tax_rules.py:
+  gst_line_tax(): FOUND
+  paygw_weekly(): FOUND
+
+Schema: libs/json/payroll_event.v1.json
+  'employee_tax_file_number' required: YES
+  Required keys: event_type, employee_id, employee_tax_file_number, gross_cents, period_start, period_end, lines
+
+Pytest:
+  Exit Code: 0
+  Last lines:
+    ....                                                                     [100%]
+    4 passed in 0.31s
+
+Docker:
+  docker present: YES
+  docker compose present: YES
+  compose ps:
+    NAME                     IMAGE                    COMMAND                  SERVICE    CREATED             STATUS                       PORTS
+    apgms-final-grafana-1    grafana/grafana:11.1.3   "/run.sh"                grafana    About an hour ago   Up About an hour             0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+    apgms-final-nats-1       nats:2.10-alpine         "docker-entrypoint.s???"   nats       14 seconds ago      Up 10 seconds (healthy)      0.0.0.0:4222->4222/tcp, [::]:4222->4222/tcp, 0.0.0.0:8222->8222/tcp, [::]:8222->8222/tcp
+    apgms-final-postgres-1   postgres:16              "docker-entrypoint.s???"   postgres   About an hour ago   Up About an hour (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+
+READINESS: PASS

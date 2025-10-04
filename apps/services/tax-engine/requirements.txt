@@ -1,0 +1,9 @@
+﻿fastapi
+uvicorn[standard]
+pydantic
+jinja2
+prometheus-client
+httpx
+orjson
+
+nats-py

@@ -1,0 +1,29 @@
+﻿# apps/services/tax-engine/Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# System deps you might need at runtime/build time (tweak as needed)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy project descriptors first for better layer caching
+COPY pyproject.toml poetry.lock* ./
+
+# Install Poetry and install deps into the container (no venv)
+RUN pip install --no-cache-dir poetry \
+ && poetry config virtualenvs.create false \
+ && poetry lock \
+ && poetry install --no-interaction --no-ansi
+
+# Copy the actual source code (adjust if your package path differs)
+COPY app ./app
+
+# Expose whatever your tax engine listens on (compose maps it)
+EXPOSE 8002
+
+# Let your existing entrypoint/cmd (from compose) run the app,
+# or uncomment the following if you want Dockerfile-driven startup:
+# CMD ["python", "-m", "app"]
+

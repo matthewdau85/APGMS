@@ -1,0 +1,13 @@
+﻿:root { --brand:#0b5fff; --bg:#0f1115; --card:#1b1e27; --text:#e8ecf1; --muted:#9aa4b2; }
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,Segoe UI,Roboto,Arial}
+.container{max-width:980px;margin:32px auto;padding:0 16px}
+.card{background:var(--card);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.25);padding:20px;margin-bottom:16px}
+h1{font-size:20px;margin:0 0 12px} h2{font-size:16px;margin:0 0 12px;color:var(--muted)}
+label{display:block;margin:8px 0 4px;color:var(--muted)}
+input,select,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2a2f3a;background:#12151d;color:var(--text)}
+button{background:var(--brand);border:none;font-weight:600;cursor:pointer}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.result{white-space:pre-wrap;background:#12151d;border-radius:10px;padding:12px}
+.nav{display:flex;gap:10px;margin-bottom:16px}
+.nav a{color:#cfe0ff;text-decoration:none}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#19223a;color:#cfe0ff;margin-left:8px;font-size:12px}

@@ -1,0 +1,115 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "APGMS_ImplSpec",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "scope",
+    "components",
+    "interfaces",
+    "flows",
+    "security_controls",
+    "compliance_mapping",
+    "acceptance_tests"
+  ],
+  "properties": {
+    "spec_version": { "type": "string", "pattern": "^v\\d+\\.\\d+\\.\\d+$" },
+    "scope": {
+      "type": "array",
+      "items": {
+        "enum": ["PAYGW","GST","BAS","Security","Dashboard","Banking-API","POS-API","STP-ATO","All"]
+      },
+      "minItems": 1
+    },
+    "assumptions": { "type": "array", "items": { "type": "string", "maxLength": 280 } },
+    "components": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id","name","type","owner","tier","description"],
+        "properties": {
+          "id": { "type": "string", "pattern": "cmp_[a-z0-9_\\-]{3,50}" },
+          "name": { "type": "string" },
+          "type": { "enum": ["service","api","job","state_machine","worker","ui","datastore","queue","kms","monitoring"] },
+          "owner": { "type": "string" },
+          "tier": { "enum": ["crit","high","med","low"] },
+          "description": { "type": "string", "maxLength": 800 },
+          "datastores": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "interfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","name","direction","protocol","auth","endpoint","request_schema","response_schema"],
+        "properties": {
+          "id": { "type": "string", "pattern": "if_[a-z0-9_\\-]{3,50}" },
+          "name": { "type": "string" },
+          "direction": { "enum": ["ingress","egress","internal"] },
+          "protocol": { "enum": ["HTTPS","mTLS","Webhook","SQS","Kafka","gRPC"] },
+          "auth": { "enum": ["MFA+RBAC","mTLS","OIDC","HMAC"] },
+          "endpoint": { "type": "string" },
+          "request_schema": { "type": "object" },
+          "response_schema": { "type": "object" },
+          "sla_ms": { "type": "integer", "minimum": 10, "maximum": 60000 }
+        }
+      }
+    },
+    "flows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","name","preconditions","steps","postconditions","failure_modes"],
+        "properties": {
+          "id": { "type": "string", "pattern": "flow_[a-z0-9_\\-]{3,50}" },
+          "name": { "type": "string" },
+          "preconditions": { "type": "array", "items": { "type": "string" } },
+          "steps": { "type": "array", "items": { "type": "string" }, "minItems": 3 },
+          "postconditions": { "type": "array", "items": { "type": "string" } },
+          "failure_modes": { "type": "array", "items": { "type": "string" } },
+          "controls": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "security_controls": {
+      "type": "object",
+      "required": ["encryption_at_transit","mfa","fraud_detection","audit_log"],
+      "properties": {
+        "encryption_at_transit": { "enum": ["AES-256/TLS1.3","TLS1.3-only"] },
+        "mfa": { "enum": ["required-for-admins","required-everyone"] },
+        "fraud_detection": { "type": "string" },
+        "audit_log": { "type": "string" },
+        "separation_of_duties": { "type": "string" }
+      }
+    },
+    "compliance_mapping": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["obligation","source","control"],
+        "properties": {
+          "obligation": { "type": "string" },
+          "source": { "enum": ["Patent-APGMS","ITAA1997","GSTAct1999","BAS-Process"] },
+          "control": { "type": "string" }
+        }
+      }
+    },
+    "acceptance_tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id","given","when","then"],
+        "properties": {
+          "id": { "type": "string" },
+          "given": { "type": "string" },
+          "when": { "type": "string" },
+          "then": { "type": "string" }
+        }
+      }
+    },
+    "citations": { "type": "array", "items": { "type": "string" } },
+    "run_id": { "type": "string" }
+  }
+}
