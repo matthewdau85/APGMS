@@ -22,12 +22,42 @@ export async function deposit(req: Request, res: Response) {
       const prevBal = last[0]?.balance_after_cents ?? 0;
       const newBal = prevBal + amt;
 
+      const transfer_uuid = randomUUID();
       const { rows: ins } = await client.query(
         `INSERT INTO owa_ledger
            (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
          VALUES ($1,$2,$3,$4,$5,$6,now())
          RETURNING id,transfer_uuid,balance_after_cents`,
-        [abn, taxType, periodId, randomUUID(), amt, newBal]
+        [abn, taxType, periodId, transfer_uuid, amt, newBal]
+      );
+
+      const { rows: periodRows } = await client.query(
+        `SELECT id FROM periods WHERE abn=$1 AND tax_type=$2 AND period_id=$3 LIMIT 1`,
+        [abn, taxType, periodId]
+      );
+      const periodRow = periodRows[0] || null;
+      const ledgerMeta = {
+        period_key: periodId,
+        period_ref: periodRow?.id ?? null,
+        transfer_uuid,
+        owa_ledger_id: ins[0]?.id ?? null
+      };
+
+      await client.query(
+        `INSERT INTO ledger
+           (abn, tax_type, period_id, direction, amount_cents, source, meta, rpt_verified, bank_receipt_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [
+          abn,
+          taxType,
+          periodRow?.id ?? null,
+          'credit',
+          amt,
+          'deposit',
+          JSON.stringify(ledgerMeta),
+          false,
+          null
+        ]
       );
 
       await client.query("COMMIT");

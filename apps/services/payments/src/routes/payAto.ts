@@ -38,6 +38,24 @@ export async function payAtoRelease(req: Request, res: Response) {
   try {
     await client.query('BEGIN');
 
+    const { rows: periodRows } = await client.query<{ id: number }>(
+      `SELECT id FROM periods WHERE abn=$1 AND tax_type=$2 AND period_id=$3 LIMIT 1`,
+      [abn, taxType, periodId]
+    );
+    const periodRow = periodRows[0] || null;
+
+    const releaseAlready = await client.query(
+      `SELECT 1 FROM ledger
+        WHERE abn=$1 AND tax_type=$2
+          AND COALESCE(period_id::text, meta->>'period_key') = $3
+          AND source='release' AND rpt_verified
+        LIMIT 1`,
+      [abn, taxType, periodRow ? String(periodRow.id) : periodId]
+    );
+    if (releaseAlready.rowCount) {
+      throw new Error('RELEASE_EXISTS');
+    }
+
     // compute running balance AFTER this entry:
     // fetch last balance in this period (by id order), default 0
     const { rows: lastRows } = await client.query<{
@@ -73,6 +91,42 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
     ]);
 
+    const ledgerMeta = {
+      period_key: periodId,
+      period_ref: periodRow?.id ?? null,
+      transfer_uuid,
+      release_uuid,
+      rpt: { id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      owa_ledger_id: ins[0]?.id ?? null
+    };
+
+    const { rows: ledgerRows } = await client.query(
+      `INSERT INTO ledger
+         (abn, tax_type, period_id, direction, amount_cents, source, meta, rpt_verified, bank_receipt_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       RETURNING id, hash_head`,
+      [
+        abn,
+        taxType,
+        periodRow?.id ?? null,
+        'debit',
+        Math.abs(amt),
+        'release',
+        JSON.stringify(ledgerMeta),
+        true,
+        null
+      ]
+    );
+
+    const { rows: ledgerBalanceRows } = await client.query(
+      `SELECT COALESCE(SUM(CASE WHEN direction='credit' THEN amount_cents ELSE -amount_cents END),0) AS balance_cents
+         FROM ledger
+        WHERE abn=$1 AND tax_type=$2
+          AND COALESCE(period_id::text, meta->>'period_key') = $3`,
+      [abn, taxType, periodRow ? String(periodRow.id) : periodId]
+    );
+    const ledgerBalance = Number(ledgerBalanceRows[0]?.balance_cents ?? 0);
+
     await client.query('COMMIT');
 
     return res.json({
@@ -81,6 +135,9 @@ export async function payAtoRelease(req: Request, res: Response) {
       transfer_uuid,
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
+      ledger_balance_cents: ledgerBalance,
+      ledger_entry_id: ledgerRows[0]?.id ?? null,
+      ledger_hash_head: ledgerRows[0]?.hash_head ?? null,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
