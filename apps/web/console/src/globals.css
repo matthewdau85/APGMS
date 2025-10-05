@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, "BlinkMacSystemFont", "Helvetica Neue", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  --color-bg: #05070f;
+  --color-fg: #f8fafc;
+  --color-muted: rgba(248, 250, 252, 0.08);
+  --color-muted-fg: rgba(248, 250, 252, 0.64);
+  --color-muted-border: rgba(248, 250, 252, 0.08);
+  --color-border: rgba(248, 250, 252, 0.12);
+  --color-border-strong: rgba(248, 250, 252, 0.24);
+  --color-accent: #597bff;
+  --color-accent-fg: #0b1020;
+  --color-accent-soft: rgba(89, 123, 255, 0.18);
+  --color-success: #34d399;
+  --color-warning: #facc15;
+  --color-danger: #f87171;
+  --color-info: #38bdf8;
+  --color-overlay: rgba(5, 7, 15, 0.6);
+
+  --radius: 0.75rem;
+  --shadow-sm: 0 1px 2px rgba(5, 7, 15, 0.38);
+  --shadow-md: 0 12px 32px rgba(5, 7, 15, 0.38);
+  --shadow-lg: 0 24px 48px rgba(5, 7, 15, 0.42);
+  --shadow-xl: 0 36px 72px rgba(5, 7, 15, 0.46);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Apply the `light` class to `<html>` to opt into the light palette. */
+:root.light {
+  color-scheme: light;
+  --color-bg: #f1f5f9;
+  --color-fg: #0f172a;
+  --color-muted: rgba(15, 23, 42, 0.06);
+  --color-muted-fg: rgba(15, 23, 42, 0.66);
+  --color-muted-border: rgba(15, 23, 42, 0.08);
+  --color-border: rgba(15, 23, 42, 0.16);
+  --color-border-strong: rgba(15, 23, 42, 0.28);
+  --color-accent: #2563eb;
+  --color-accent-fg: #eff6ff;
+  --color-accent-soft: rgba(37, 99, 235, 0.16);
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --color-info: #0284c7;
+  --color-overlay: rgba(15, 23, 42, 0.5);
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.12);
+  --shadow-md: 0 10px 28px rgba(15, 23, 42, 0.15);
+  --shadow-lg: 0 24px 52px rgba(15, 23, 42, 0.2);
+  --shadow-xl: 0 40px 70px rgba(15, 23, 42, 0.22);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    text-rendering: optimizeLegibility;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-accent-fg);
+  }
+}
