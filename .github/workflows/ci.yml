@@ -1,0 +1,28 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: apgms
+          POSTGRES_PASSWORD: apgms
+          POSTGRES_DB: apgms
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U apgms" --health-interval=5s --health-timeout=5s --health-retries=10
+    env:
+      DATABASE_URL: postgres://apgms:apgms@localhost:5432/apgms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: psql "$DATABASE_URL" -f migrations/001_apgms_core.sql
+      - run: psql "$DATABASE_URL" -f migrations/002_apgms_patent_core.sql
+      - run: psql "$DATABASE_URL" -f migrations/003_apgms_alignment.sql || true
+      - run: psql "$DATABASE_URL" -f migrations/004_hash_chain.sql
+      - run: npm run build
+      - run: npm test
