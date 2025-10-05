@@ -30,7 +30,10 @@ def remit(req: EgressReq):
         raise HTTPException(409, "gate not in RPT-Issued")
     # Here you would call the real bank API via mTLS. For now, we just log.
     payload = json.dumps({"period_id": req.period_id, "action": "remit"})
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('egress',%s,NULL,NULL)", (payload,))
+    cur.execute(
+        "INSERT INTO audit_log(category,message,prev_hash,terminal_hash) VALUES ('egress',%s,NULL,NULL)",
+        (payload,)
+    )
     cur.execute("UPDATE bas_gate_states SET state='Remitted', updated_at=NOW() WHERE period_id=%s", (req.period_id,))
     conn.commit(); cur.close(); conn.close()
     return {"ok": True}

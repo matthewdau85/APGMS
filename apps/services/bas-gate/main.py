@@ -31,12 +31,18 @@ def transition(req: TransitionReq):
     import libs.audit_chain.chain as ch
     h = ch.link(prev, payload)
     if row:
-        cur.execute("UPDATE bas_gate_states SET state=%s, reason_code=%s, updated_at=NOW(), hash_prev=%s, hash_this=%s WHERE period_id=%s",
-                    (req.target_state, req.reason_code, prev, h, req.period_id))
+        cur.execute(
+            "UPDATE bas_gate_states SET state=%s, reason_code=%s, updated_at=NOW(), hash_prev=%s, hash_this=%s WHERE period_id=%s",
+            (req.target_state, req.reason_code, prev, h, req.period_id)
+        )
     else:
-        cur.execute("INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
-                    (req.period_id, req.target_state, req.reason_code, prev, h))
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('bas_gate',%s,%s,%s)",
-                (payload, prev, h))
+        cur.execute(
+            "INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
+            (req.period_id, req.target_state, req.reason_code, prev, h)
+        )
+    cur.execute(
+        "INSERT INTO audit_log(category,message,prev_hash,terminal_hash) VALUES ('bas_gate',%s,%s,%s)",
+        (payload, prev, h)
+    )
     conn.commit(); cur.close(); conn.close()
     return {"ok": True, "hash": h}

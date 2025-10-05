@@ -64,17 +64,20 @@ create table if not exists periods (
 );
 
 create table if not exists owa_ledger (
-  id bigserial primary key,
-  abn text not null,
-  tax_type text not null,
-  period_id text not null,
+  id            bigserial primary key,
+  abn           text not null,
+  tax_type      text not null,
+  period_id     text not null,
   transfer_uuid uuid not null,
-  amount_cents bigint not null,
+  amount_cents  bigint not null,
+  credit_amount numeric(18,2) generated always as ((amount_cents::numeric) / 100.0) stored,
   balance_after_cents bigint not null,
-  bank_receipt_hash text,
-  prev_hash text,
-  hash_after text,
-  created_at timestamptz default now(),
+  bank_receipt_hash  text,
+  source_ref         text,
+  prev_hash          text,
+  hash_after         text,
+  audit_hash         text,
+  created_at         timestamptz default now(),
   unique (transfer_uuid)
 );
 
@@ -92,12 +95,14 @@ create table if not exists rpt_tokens (
 );
 
 create table if not exists audit_log (
-  seq bigserial primary key,
-  ts timestamptz default now(),
-  actor text not null,
-  action text not null,
-  payload_hash text not null,
-  prev_hash text,
+  seq           bigserial primary key,
+  created_at    timestamptz default now(),
+  actor         text,
+  action        text,
+  payload_hash  text,
+  category      text,
+  message       text,
+  prev_hash     text,
   terminal_hash text
 );
 
