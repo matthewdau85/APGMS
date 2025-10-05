@@ -1,7 +1,6 @@
-﻿// apps/services/payments/src/routes/payAto.ts
+// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
 
 function genUUID() {
@@ -33,6 +32,7 @@ export async function payAtoRelease(req: Request, res: Response) {
   if (!rpt) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
+  const rptKid = rpt.kid || process.env.APGMS_RPT_ACTIVE_KID || process.env.RPT_ACTIVE_KID;
 
   const client = await pool.connect();
   try {
@@ -81,7 +81,7 @@ export async function payAtoRelease(req: Request, res: Response) {
       transfer_uuid,
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      rpt_ref: { rpt_id: rpt.rpt_id, kid: rptKid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
