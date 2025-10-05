@@ -9,9 +9,9 @@
    docker compose -f docker-compose.patent.yml up -d
 
 3) Happy path (manual):
-   # 3.1 move gate to RPT-Issued (after your recon pass)
+   # 3.1 move gate to RPT_ISSUED (after your recon pass)
    curl -X POST http://localhost:8101/gate/transition -H "content-type: application/json" ^
-     -d "{""period_id"":""2024Q4"",""target_state"":""RPT-Issued""}"
+     -d "{""period_id"":""2024Q4"",""target_state"":""RPT_ISSUED"",""actor"":""ops-user"",""trace_id"":""demo-trace""}"
 
    # 3.2 generate an RPT in Python REPL (or via your engine):
    # from libs.rpt.rpt import build
@@ -19,7 +19,7 @@
 
    # 3.3 remit (bank-egress)
    curl -X POST http://localhost:8103/egress/remit -H "content-type: application/json" ^
-     -d "{""period_id"":""2024Q4"",""rpt"":{""period_id"":""2024Q4"",""paygw_total"":100.0,""gst_total"":200.0,""source_digests"":{""payroll"":""abc"",""pos"":""def""},""anomaly_score"":0.1,""expires_at"":9999999999,""nonce"":""deadbeef"",""signature"":""REPLACE_WITH_REAL_SIGNATURE""}}"
+     -d "{""period_id"":""2024Q4"",""trace_id"":""demo-remit"",""rpt"":{""period_id"":""2024Q4"",""paygw_total"":100.0,""gst_total"":200.0,""source_digests"":{""payroll"":""abc"",""pos"":""def""},""anomaly_score"":0.1,""expires_at"":9999999999,""nonce"":""deadbeef"",""signature"":""REPLACE_WITH_REAL_SIGNATURE""}}"
 
 4) Acceptance tests:
    # assuming your venv:
