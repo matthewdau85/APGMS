@@ -2,8 +2,7 @@
 import express from "express";
 import dotenv from "dotenv";
 
-import { idempotency } from "./middleware/idempotency";
-import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { router as reconcileRouter } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
@@ -18,12 +17,8 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-// Existing explicit endpoints
-app.post("/api/pay", idempotency(), payAto);
-app.post("/api/close-issue", closeAndIssue);
-app.post("/api/payto/sweep", paytoSweep);
-app.post("/api/settlement/webhook", settlementWebhook);
-app.get("/api/evidence", evidence);
+// Reconciliation endpoints
+app.use("/api/reconcile", reconcileRouter);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
