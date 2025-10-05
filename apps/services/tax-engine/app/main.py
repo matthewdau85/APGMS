@@ -28,7 +28,7 @@ import asyncio
 import os
 from typing import Optional
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, HTTPException
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
@@ -149,6 +149,10 @@ from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
 import os, json
 
+_RULES_PATH = os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json")
+with open(_RULES_PATH, "r", encoding="utf-8") as _rules_file:
+    PAYGW_RULES = json.load(_rules_file)
+
 TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
@@ -171,13 +175,23 @@ async def ui_calc(request: Request):
         "stsl": form.get("stsl") == "true",
         "target_net": float(form.get("target_net")) if form.get("target_net") else None
     }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
-        rules = json.load(f)
-    res = payg_w_mod.compute({"payg_w": pw}, rules)
+    res = payg_w_mod.compute({"payg_w": pw}, PAYGW_RULES)
     return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})
 
 @app.get("/ui/help")
 def ui_help(request: Request):
     return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge":"demo"})
+
+
+@app.post("/api/paygw")
+async def api_paygw(payload: dict):
+    try:
+        event = payload if "payg_w" in payload else {"payg_w": payload}
+        result = payg_w_mod.compute(event, PAYGW_RULES)
+    except ValueError as exc:  # surfaced by domain validation such as unsupported period
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # pragma: no cover - defensive guard
+        raise HTTPException(status_code=500, detail="Failed to evaluate PAYG withholding") from exc
+    return {**result, "rules_version": PAYGW_RULES.get("version")}
 # --- END MINI_UI ---
 

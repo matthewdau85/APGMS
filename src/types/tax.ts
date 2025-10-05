@@ -4,6 +4,9 @@ export type PaygwInput = {
   taxWithheld: number;
   period: "weekly" | "fortnightly" | "monthly" | "quarterly";
   deductions?: number;
+  taxFreeThreshold?: boolean;
+  stsl?: boolean;
+  medicareVariation?: "standard" | "half" | "senior" | "exempt";
 };
 
 export type GstInput = {

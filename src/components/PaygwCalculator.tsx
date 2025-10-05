@@ -9,7 +9,25 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     taxWithheld: 0,
     period: "monthly",
     deductions: 0,
+    taxFreeThreshold: true,
+    stsl: false,
+    medicareVariation: "standard",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCalculate = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const liability = await calculatePaygw(form);
+      onResult(liability);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to calculate PAYGW liability");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="card">
@@ -71,9 +89,40 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
           <option value="quarterly">Quarterly</option>
         </select>
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculatePaygw(form))}>
-        Calculate PAYGW
+      <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <input
+          type="checkbox"
+          checked={form.taxFreeThreshold ?? true}
+          onChange={e => setForm({ ...form, taxFreeThreshold: e.target.checked })}
+        />
+        Claim tax-free threshold
+      </label>
+      <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <input
+          type="checkbox"
+          checked={form.stsl ?? false}
+          onChange={e => setForm({ ...form, stsl: e.target.checked })}
+        />
+        Apply STSL/HELP repayment
+      </label>
+      <label>
+        Medicare variation:
+        <select
+          value={form.medicareVariation}
+          onChange={e => setForm({ ...form, medicareVariation: e.target.value as PaygwInput["medicareVariation"] })}
+        >
+          <option value="standard">Standard levy</option>
+          <option value="half">Half levy</option>
+          <option value="senior">Senior &amp; pensioner</option>
+          <option value="exempt">Exempt</option>
+        </select>
+      </label>
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate} disabled={loading}>
+        {loading ? "Calculating..." : "Calculate PAYGW"}
       </button>
+      {error ? (
+        <p style={{ color: "#b91c1c", marginTop: "0.5rem" }}>{error}</p>
+      ) : null}
     </div>
   );
 }
