@@ -1,14 +1,8 @@
 require('dotenv').config({ path: '.env.local' });
-const { Pool } = require('pg');
+const { getPool } = require('./server/db/pool');
 const fs = require('fs');
 
-const pool = new Pool({
-  host: process.env.PGHOST||'127.0.0.1',
-  user: process.env.PGUSER||'apgms',
-  password: process.env.PGPASSWORD||'apgms_pw',
-  database: process.env.PGDATABASE||'apgms',
-  port: +(process.env.PGPORT||'5432')
-});
+const pool = getPool();
 
 // CSV columns: abn,taxType,periodId,amount_cents,bank_receipt_hash
 (async ()=>{

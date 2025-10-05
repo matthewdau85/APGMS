@@ -1,10 +1,9 @@
-﻿import { issueRPT } from "../rpt/issuer";
+import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
-import { Pool } from "pg";
-const pool = new Pool();
+import { pool } from "../db/pool";
 
 export async function closeAndIssue(req:any, res:any) {
   const { abn, taxType, periodId, thresholds } = req.body;

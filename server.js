@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Pool } = require('pg');
+const { pool, getPoolMetrics } = require('./server/db/pool');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
 
@@ -9,13 +9,8 @@ const app = express();
 app.use(bodyParser.json());
 
 const {
-  PGHOST='127.0.0.1', PGUSER='apgms', PGPASSWORD='apgms_pw', PGDATABASE='apgms', PGPORT='5432',
   RPT_ED25519_SECRET_BASE64, RPT_PUBLIC_BASE64, ATO_PRN='1234567890'
 } = process.env;
-
-const pool = new Pool({
-  host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
-});
 
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
@@ -27,7 +22,8 @@ const ah = fn => (req,res)=>fn(req,res).catch(e=>{
 // ---------- HEALTH ----------
 app.get('/health', ah(async (req,res)=>{
   await pool.query('select now()');
-  res.json(['ok','db', true, 'up']);
+  const metrics = getPoolMetrics();
+  res.json(['ok','db', true, 'up', { pool: metrics }]);
 }));
 
 // ---------- PERIOD STATUS ----------
