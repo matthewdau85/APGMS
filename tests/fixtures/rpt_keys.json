@@ -1,0 +1,12 @@
+{
+  "active_kid": "rpt-test-1",
+  "keys": [
+    {
+      "kid": "rpt-test-1",
+      "privateKey": "A3bnF4zVBLp8JfURiSSX5Sx3JLvmKJF_vZiW7D-JFojpF7F93ZD7TmqsXKW74zT9ThT7khWjQ7kkUZvQRv2Z7w",
+      "publicKey": "6Rexfd2Q-05qrFylu-M0_U4U-5IVo0O5JFGb0Eb9me8",
+      "status": "active",
+      "createdAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}
