@@ -1,5 +1,6 @@
-﻿import { Pool } from "pg";
-const pool = new Pool();
+import { getPool } from "../db/pool";
+
+const pool = getPool();
 
 export async function buildEvidenceBundle(abn: string, taxType: string, periodId: string) {
   const p = (await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId])).rows[0];
