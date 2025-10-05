@@ -8,6 +8,7 @@ type Params = {
   amount_cents: number;
   destination: { bpay_biller?: string; crn?: string; bsb?: string; acct?: string };
   idempotencyKey: string;
+  traceId?: string;
 };
 
 const agent = new https.Agent({
@@ -31,7 +32,8 @@ export async function sendEftOrBpay(p: Params): Promise<{transfer_uuid: string; 
     destination: p.destination
   };
 
-  const headers = { "Idempotency-Key": p.idempotencyKey };
+  const headers: Record<string, string> = { "Idempotency-Key": p.idempotencyKey };
+  if (p.traceId) headers["X-Trace-Id"] = p.traceId;
   const maxAttempts = 3;
   let attempt = 0, lastErr: any;
 

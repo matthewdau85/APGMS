@@ -22,7 +22,9 @@ export async function verifyMandate(mandate_id: string) {
   return r.data;
 }
 export async function debitMandate(mandate_id: string, amount_cents: number, meta: any) {
-  const r = await client.post(`/payto/mandates/${mandate_id}/debit`, { amount_cents, meta });
+  const headers: Record<string, string> = {};
+  if (meta?.traceId) headers["X-Trace-Id"] = meta.traceId;
+  const r = await client.post(`/payto/mandates/${mandate_id}/debit`, { amount_cents, meta }, { headers });
   return r.data;
 }
 export async function cancelMandate(mandate_id: string) {
