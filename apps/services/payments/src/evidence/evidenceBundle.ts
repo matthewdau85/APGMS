@@ -18,9 +18,17 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   if (!rpt.rows.length) throw new Error("Missing RPT for bundle");
   const r = rpt.rows[0];
 
-  const thresholds = { variance_pct: 0.02, dup_rate: 0.01, gap_allowed: 3 };
-  const anomalies = { variance: 0.0, dups: 0, gaps: 0 };
-  const normalization = { payroll_hash: "NA", pos_hash: "NA" };
+  const payload = JSON.parse(r.payload_c14n);
+
+  const payload_sha256 = sha256Hex(r.payload_c14n);
+  if (r.payload_sha256 && r.payload_sha256 !== payload_sha256) {
+    throw new Error("RPT payload hash mismatch");
+  }
+
+  const thresholds = payload.thresholds ?? { variance_pct: 0.02, dup_rate: 0.01, gap_allowed: 3 };
+  const anomalyVector = payload.anomaly_vector ?? {};
+  const anomalies = { ...anomalyVector, anomaly_score: payload.anomaly_score ?? 0 };
+  const normalization = payload.source_digests ?? { payroll_hash: "NA", pos_hash: "NA" };
 
   const beforeQ = await client.query(
     "SELECT COALESCE(SUM(amount_cents),0) bal FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND entry_id < (SELECT max(entry_id) FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3)",
@@ -32,8 +40,6 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   );
   const balBefore = Number(beforeQ.rows[0]?.bal || 0);
   const balAfter = Number(afterQ.rows[0]?.bal || 0);
-
-  const payload_sha256 = sha256Hex(r.payload_c14n);
 
   const ins = `
     INSERT INTO evidence_bundles (

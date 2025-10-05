@@ -1,7 +1,6 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
 
 function genUUID() {
@@ -15,17 +14,9 @@ function genUUID() {
  * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
  */
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
+  const { abn, taxType, periodId } = req.body || {};
   if (!abn || !taxType || !periodId) {
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
-  }
-
-  // default a tiny test debit if not provided
-  const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
-
-  // must be negative for a release
-  if (amt >= 0) {
-    return res.status(400).json({ error: 'amountCents must be negative for a release' });
   }
 
   // rptGate attaches req.rpt when verification succeeds
@@ -33,6 +24,24 @@ export async function payAtoRelease(req: Request, res: Response) {
   if (!rpt) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
+
+  const payload = rpt.payload || {};
+  const expectedAmount = Number(payload.amount_cents);
+  if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+    return res.status(400).json({ error: 'RPT payload missing amount_cents' });
+  }
+
+  if (payload.entity_id && payload.entity_id !== abn) {
+    return res.status(409).json({ error: 'Entity does not match RPT payload' });
+  }
+  if (payload.tax_type && payload.tax_type !== taxType) {
+    return res.status(409).json({ error: 'Tax type does not match RPT payload' });
+  }
+  if (payload.period_id && payload.period_id !== periodId) {
+    return res.status(409).json({ error: 'Period does not match RPT payload' });
+  }
+
+  const amt = -expectedAmount;
 
   const client = await pool.connect();
   try {
@@ -81,7 +90,12 @@ export async function payAtoRelease(req: Request, res: Response) {
       transfer_uuid,
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      rpt_ref: {
+        rpt_id: rpt.rpt_id,
+        kid: rpt.kid,
+        payload_sha256: rpt.payload_sha256,
+        amount_cents: expectedAmount,
+      },
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
