@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { pool } from "../db/pool";
 import { randomUUID } from "node:crypto";
 
 export async function deposit(req: Request, res: Response) {
@@ -23,7 +23,8 @@ export async function deposit(req: Request, res: Response) {
          ORDER BY id DESC LIMIT 1`,
         [abn, taxType, periodId]
       );
-      const prevBal = last[0]?.balance_after_cents ?? 0;
+      const lastRow = (last[0] as { balance_after_cents?: number }) ?? {};
+      const prevBal = Number(lastRow.balance_after_cents ?? 0);
       const newBal = prevBal + amt;
 
       const { rows: ins } = await client.query(

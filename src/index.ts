@@ -1,6 +1,8 @@
 ﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
@@ -30,6 +32,26 @@ app.use("/api", paymentsApi);
 
 // Existing API router(s) after
 app.use("/api", api);
+
+const clientDir = path.resolve(__dirname, "../client");
+if (fs.existsSync(clientDir)) {
+    app.use(express.static(clientDir));
+    app.use((req, res, next) => {
+        if (req.method && !["GET", "HEAD"].includes(req.method.toUpperCase())) {
+            return next();
+        }
+        if (req.path.startsWith("/api")) {
+            return next();
+        }
+
+        const indexFile = path.join(clientDir, "index.html");
+        if (fs.existsSync(indexFile)) {
+            return res.sendFile(indexFile);
+        }
+
+        return next();
+    });
+}
 
 // 404 fallback (must be last)
 app.use((_req, res) => res.status(404).send("Not found"));

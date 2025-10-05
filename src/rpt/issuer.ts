@@ -8,7 +8,18 @@ const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base
 export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
   const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
   if (p.rowCount === 0) throw new Error("PERIOD_NOT_FOUND");
-  const row = p.rows[0];
+  const row = p.rows[0] as {
+    id: number;
+    abn: string;
+    period_id: string;
+    tax_type: "PAYGW" | "GST";
+    merkle_root: string;
+    running_balance_hash: string;
+    state: string;
+    final_liability_cents: number;
+    credited_to_owa_cents: number;
+    anomaly_vector: Record<string, number>;
+  };
   if (row.state !== "CLOSING") throw new Error("BAD_STATE");
 
   const v = row.anomaly_vector || {};
@@ -26,7 +37,10 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     entity_id: row.abn, period_id: row.period_id, tax_type: row.tax_type,
     amount_cents: Number(row.final_liability_cents),
     merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
-    anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
+    anomaly_vector: v,
+    thresholds,
+    rail_id: "EFT",
+    reference: process.env.ATO_PRN || "",
     expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
   };
   const signature = signRpt(payload, new Uint8Array(secretKey));
