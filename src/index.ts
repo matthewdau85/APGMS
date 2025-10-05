@@ -3,7 +3,7 @@ import express from "express";
 import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
-import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { closeAndIssue, closeAndIssueValidator, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
@@ -20,7 +20,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
-app.post("/api/close-issue", closeAndIssue);
+app.post("/api/close-issue", closeAndIssueValidator, closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);

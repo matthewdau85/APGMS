@@ -5,7 +5,7 @@ import { Router } from "express";
 // We import the handlers directly so your main app can proxy them at /api/*
 import { balance } from "../../../apps/services/payments/src/routes/balance.js";
 import { ledger } from "../../../apps/services/payments/src/routes/ledger.js";
-import { deposit } from "../../../apps/services/payments/src/routes/deposit.js";
+import { deposit, depositValidator } from "../../../apps/services/payments/src/routes/deposit.js";
 import { rptGate } from "../../../apps/services/payments/src/middleware/rptGate.js";
 import { payAtoRelease } from "../../../apps/services/payments/src/routes/payAto.js";
 
@@ -16,5 +16,5 @@ paymentsApi.get("/balance", balance);
 paymentsApi.get("/ledger", ledger);
 
 // write
-paymentsApi.post("/deposit", deposit);
+paymentsApi.post("/deposit", depositValidator, deposit);
 paymentsApi.post("/release", rptGate, payAtoRelease);

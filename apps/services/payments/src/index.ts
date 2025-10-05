@@ -7,7 +7,7 @@ import pg from 'pg'; const { Pool } = pg;
 
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
-import { deposit } from './routes/deposit';
+import { deposit, depositValidator } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
 
@@ -30,7 +30,7 @@ app.use(express.json());
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // Endpoints
-app.post('/deposit', deposit);
+app.post('/deposit', depositValidator, deposit);
 app.post('/payAto', rptGate, payAtoRelease);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
