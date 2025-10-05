@@ -1,0 +1,75 @@
+{
+  "abn": "53004085616",
+  "period_id": "2025-09",
+  "events": [
+    {
+      "event_type": "payroll",
+      "period_id": "2025-09",
+      "dedupe_key": "pay-100",
+      "monotonic_seq": 1,
+      "gross_cents": 300000,
+      "withholding_cents": 45000,
+      "signed_at": "2025-09-05T02:00:00Z"
+    },
+    {
+      "event_type": "payroll",
+      "period_id": "2025-09",
+      "dedupe_key": "pay-100",
+      "amends": "pay-100",
+      "monotonic_seq": 2,
+      "gross_cents": 305000,
+      "withholding_cents": 47000,
+      "signed_at": "2025-09-06T04:15:00Z"
+    },
+    {
+      "event_type": "payroll",
+      "period_id": "2025-08",
+      "reported_period": "2025-09",
+      "dedupe_key": "pay-099",
+      "monotonic_seq": 3,
+      "gross_cents": 180000,
+      "withholding_cents": 12000,
+      "signed_at": "2025-09-10T01:00:00Z"
+    },
+    {
+      "event_type": "pos",
+      "period_id": "2025-09",
+      "txn_id": "sale-500",
+      "monotonic_seq": 10,
+      "signed_at": "2025-09-02T00:30:00Z",
+      "lines": [
+        { "sku": "BUNDLE-01", "qty": 6, "unit_price_cents": 7500, "tax_code": "GST" }
+      ]
+    },
+    {
+      "event_type": "pos",
+      "period_id": "2025-09",
+      "txn_id": "sale-500",
+      "amends": "sale-500",
+      "monotonic_seq": 11,
+      "signed_at": "2025-09-03T00:30:00Z",
+      "lines": [
+        { "sku": "BUNDLE-01", "qty": 5, "unit_price_cents": 7500, "tax_code": "GST" }
+      ]
+    },
+    {
+      "event_type": "pos",
+      "period_id": "2025-09",
+      "txn_id": "return-501",
+      "monotonic_seq": 12,
+      "signed_at": "2025-09-20T06:45:00Z",
+      "lines": [
+        { "sku": "RET-01", "qty": -1, "unit_price_cents": 9000, "tax_code": "GST" }
+      ]
+    },
+    {
+      "event_type": "bank",
+      "period_id": "2025-09",
+      "monotonic_seq": 40,
+      "direction": "DEBIT",
+      "signed_at": "2025-09-27T09:30:00Z",
+      "amount_cents": 13200,
+      "gst_credit_cents": 1200
+    }
+  ]
+}
