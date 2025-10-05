@@ -1,12 +1,15 @@
-﻿import React from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import App from "./App";
 
-function App() {
-  return (
-    <div style={{padding:16,fontFamily:"system-ui"}}>
-      <h1>APGMS Console</h1>
-      <p>Status tiles and RPT widgets will appear here. (P40, P41, P42)</p>
-    </div>
-  );
+const container = document.getElementById("root");
+
+if (!container) {
+  throw new Error("Failed to find root element");
 }
-createRoot(document.getElementById("root")!).render(<App />);
+
+createRoot(container).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
