@@ -147,14 +147,28 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
-import os, json
+from .rules.loader import load_payg_rules_index
+import os
 
 TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
+def _ui_context(**extra):
+    rules_index = load_payg_rules_index()
+    years = sorted(rules_index.keys())
+    latest = years[-1] if years else None
+    payload = {"financial_years": years, "selected_year": latest}
+    if extra.get("selected_year") is None and "selected_year" in extra:
+        extra = {k: v for k, v in extra.items() if k != "selected_year"}
+    payload.update(extra)
+    return payload
+
+
 @app.get("/ui")
 def ui_index(request: Request):
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge":"demo"})
+    context = {"request": request, "title": "PAYG-W Calculator", "badge": "demo"}
+    context.update(_ui_context())
+    return TEMPLATES.TemplateResponse("index.html", context)
 
 @app.post("/ui/calc")
 async def ui_calc(request: Request):
@@ -169,12 +183,15 @@ async def ui_calc(request: Request):
         "bonus": float(form.get("bonus") or 0),
         "tax_free_threshold": form.get("tft") == "true",
         "stsl": form.get("stsl") == "true",
+        "resident": form.get("resident", "true") == "true",
+        "financial_year": form.get("financial_year") or None,
         "target_net": float(form.get("target_net")) if form.get("target_net") else None
     }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
-        rules = json.load(f)
-    res = payg_w_mod.compute({"payg_w": pw}, rules)
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})
+    rules_index = load_payg_rules_index()
+    res = payg_w_mod.compute({"payg_w": pw}, rules_index)
+    context = {"request": request, "title": "PAYG-W Calculator", "result": res, "badge": "demo"}
+    context.update(_ui_context(result=res, selected_year=pw["financial_year"]))
+    return TEMPLATES.TemplateResponse("index.html", context)
 
 @app.get("/ui/help")
 def ui_help(request: Request):

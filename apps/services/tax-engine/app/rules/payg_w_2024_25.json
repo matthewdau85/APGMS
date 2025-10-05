@@ -1,18 +1,89 @@
-﻿{
-  "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
-    ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
-  }
+{
+  "financial_year": "2024-25",
+  "effective_from": "2024-07-01",
+  "methods_enabled": [
+    "table_ato",
+    "formula_progressive",
+    "percent_simple",
+    "flat_plus_percent",
+    "bonus_marginal",
+    "net_to_gross"
+  ],
+  "period_multipliers": {
+    "weekly": 52,
+    "fortnightly": 26,
+    "monthly": 12,
+    "quarterly": 4,
+    "annual": 1
+  },
+  "bases": {
+    "resident_tft": {
+      "label": "Resident claiming tax-free threshold",
+      "apply_lito": true,
+      "apply_medicare": true,
+      "brackets": [
+        { "threshold": 0.0, "base": 0.0, "rate": 0.0 },
+        { "threshold": 18200.0, "base": 0.0, "rate": 0.16 },
+        { "threshold": 45000.0, "base": 4288.0, "rate": 0.30 },
+        { "threshold": 135000.0, "base": 31288.0, "rate": 0.37 },
+        { "threshold": 190000.0, "base": 51638.0, "rate": 0.45 }
+      ]
+    },
+    "resident_no_tft": {
+      "label": "Resident not claiming tax-free threshold",
+      "apply_lito": false,
+      "apply_medicare": true,
+      "brackets": [
+        { "threshold": 0.0, "base": 0.0, "rate": 0.16 },
+        { "threshold": 45000.0, "base": 7200.0, "rate": 0.30 },
+        { "threshold": 135000.0, "base": 34200.0, "rate": 0.37 },
+        { "threshold": 190000.0, "base": 54550.0, "rate": 0.45 }
+      ]
+    },
+    "foreign_resident": {
+      "label": "Foreign resident",
+      "apply_lito": false,
+      "apply_medicare": false,
+      "brackets": [
+        { "threshold": 0.0, "base": 0.0, "rate": 0.30 },
+        { "threshold": 135000.0, "base": 40500.0, "rate": 0.37 },
+        { "threshold": 190000.0, "base": 60850.0, "rate": 0.45 }
+      ]
+    }
+  },
+  "lito": {
+    "full_amount": 700.0,
+    "full_threshold": 37500.0,
+    "phase1_end": 45000.0,
+    "phase1_taper": 0.05,
+    "phase2_end": 66667.0,
+    "phase2_taper": 0.015
+  },
+  "medicare_levy": {
+    "rate": 0.02,
+    "low_threshold": 26000.0,
+    "phase_in_end": 32200.0,
+    "phase_in_rate": 0.10
+  },
+  "stsl": [
+    { "threshold": 0.0, "rate": 0.0 },
+    { "threshold": 54435.0, "rate": 0.01 },
+    { "threshold": 60579.0, "rate": 0.02 },
+    { "threshold": 64999.0, "rate": 0.025 },
+    { "threshold": 69378.0, "rate": 0.03 },
+    { "threshold": 74336.0, "rate": 0.035 },
+    { "threshold": 78989.0, "rate": 0.04 },
+    { "threshold": 83752.0, "rate": 0.045 },
+    { "threshold": 88363.0, "rate": 0.05 },
+    { "threshold": 93208.0, "rate": 0.055 },
+    { "threshold": 98103.0, "rate": 0.06 },
+    { "threshold": 103153.0, "rate": 0.065 },
+    { "threshold": 108370.0, "rate": 0.07 },
+    { "threshold": 113760.0, "rate": 0.075 },
+    { "threshold": 119332.0, "rate": 0.08 },
+    { "threshold": 125094.0, "rate": 0.085 },
+    { "threshold": 131056.0, "rate": 0.09 },
+    { "threshold": 137228.0, "rate": 0.095 },
+    { "threshold": 143620.0, "rate": 0.10 }
+  ]
 }

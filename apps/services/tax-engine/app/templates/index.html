@@ -5,7 +5,7 @@
     <div>
       <label>Method</label>
       <select name="method">
-        <option value="table_ato">ATO Table (placeholder)</option>
+        <option value="table_ato">ATO withholding table</option>
         <option value="formula_progressive">Formula (progressive)</option>
         <option value="percent_simple">Percent simple</option>
         <option value="flat_plus_percent">Flat + percent</option>
@@ -17,6 +17,14 @@
       <label>Period</label>
       <select name="period">
         <option>weekly</option><option>fortnightly</option><option>monthly</option>
+      </select>
+    </div>
+    <div>
+      <label>Financial year</label>
+      <select name="financial_year">
+        {% for year in financial_years %}
+        <option value="{{ year }}"{% if year == selected_year %} selected{% endif %}>{{ year }}</option>
+        {% endfor %}
       </select>
     </div>
     <div>
@@ -32,6 +40,7 @@
   <div class="row">
     <div><label>Tax-free threshold</label><select name="tft"><option value="true">true</option><option value="false">false</option></select></div>
     <div><label>STSL/HELP</label><select name="stsl"><option value="false">false</option><option value="true">true</option></select></div>
+    <div><label>Resident</label><select name="resident"><option value="true">true</option><option value="false">false</option></select></div>
     <div><label>Target Net (for netâ†’gross)</label><input type="number" step="0.01" name="target_net" value=""></div>
   </div>
   <div style="margin-top:12px"><button type="submit">Calculate</button></div>

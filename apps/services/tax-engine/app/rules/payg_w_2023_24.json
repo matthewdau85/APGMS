@@ -1,0 +1,89 @@
+{
+  "financial_year": "2023-24",
+  "effective_from": "2023-07-01",
+  "methods_enabled": [
+    "table_ato",
+    "formula_progressive",
+    "percent_simple",
+    "flat_plus_percent",
+    "bonus_marginal",
+    "net_to_gross"
+  ],
+  "period_multipliers": {
+    "weekly": 52,
+    "fortnightly": 26,
+    "monthly": 12,
+    "quarterly": 4,
+    "annual": 1
+  },
+  "bases": {
+    "resident_tft": {
+      "label": "Resident claiming tax-free threshold",
+      "apply_lito": true,
+      "apply_medicare": true,
+      "brackets": [
+        { "threshold": 0.0, "base": 0.0, "rate": 0.0 },
+        { "threshold": 18200.0, "base": 0.0, "rate": 0.19 },
+        { "threshold": 45000.0, "base": 5092.0, "rate": 0.325 },
+        { "threshold": 120000.0, "base": 29467.0, "rate": 0.37 },
+        { "threshold": 180000.0, "base": 51667.0, "rate": 0.45 }
+      ]
+    },
+    "resident_no_tft": {
+      "label": "Resident not claiming tax-free threshold",
+      "apply_lito": false,
+      "apply_medicare": true,
+      "brackets": [
+        { "threshold": 0.0, "base": 0.0, "rate": 0.19 },
+        { "threshold": 45000.0, "base": 8550.0, "rate": 0.325 },
+        { "threshold": 120000.0, "base": 36500.0, "rate": 0.37 },
+        { "threshold": 180000.0, "base": 58700.0, "rate": 0.45 }
+      ]
+    },
+    "foreign_resident": {
+      "label": "Foreign resident",
+      "apply_lito": false,
+      "apply_medicare": false,
+      "brackets": [
+        { "threshold": 0.0, "base": 0.0, "rate": 0.325 },
+        { "threshold": 120000.0, "base": 39000.0, "rate": 0.37 },
+        { "threshold": 180000.0, "base": 61200.0, "rate": 0.45 }
+      ]
+    }
+  },
+  "lito": {
+    "full_amount": 700.0,
+    "full_threshold": 37500.0,
+    "phase1_end": 45000.0,
+    "phase1_taper": 0.05,
+    "phase2_end": 66667.0,
+    "phase2_taper": 0.015
+  },
+  "medicare_levy": {
+    "rate": 0.02,
+    "low_threshold": 24276.0,
+    "phase_in_end": 30345.0,
+    "phase_in_rate": 0.10
+  },
+  "stsl": [
+    { "threshold": 0.0, "rate": 0.0 },
+    { "threshold": 51550.0, "rate": 0.01 },
+    { "threshold": 59618.0, "rate": 0.02 },
+    { "threshold": 63869.0, "rate": 0.025 },
+    { "threshold": 68034.0, "rate": 0.03 },
+    { "threshold": 72397.0, "rate": 0.035 },
+    { "threshold": 76801.0, "rate": 0.04 },
+    { "threshold": 81354.0, "rate": 0.045 },
+    { "threshold": 86068.0, "rate": 0.05 },
+    { "threshold": 90856.0, "rate": 0.055 },
+    { "threshold": 95831.0, "rate": 0.06 },
+    { "threshold": 100900.0, "rate": 0.065 },
+    { "threshold": 106177.0, "rate": 0.07 },
+    { "threshold": 111667.0, "rate": 0.075 },
+    { "threshold": 117395.0, "rate": 0.08 },
+    { "threshold": 123377.0, "rate": 0.085 },
+    { "threshold": 129629.0, "rate": 0.09 },
+    { "threshold": 136170.0, "rate": 0.095 },
+    { "threshold": 142918.0, "rate": 0.10 }
+  ]
+}
