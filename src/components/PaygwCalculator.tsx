@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { PaygwInput } from "../types/tax";
-import { calculatePaygw } from "../utils/paygw";
+import { calculatePaygw, PaygwBreakdown } from "../utils/paygw";
 
-export default function PaygwCalculator({ onResult }: { onResult: (liability: number) => void }) {
+export default function PaygwCalculator({ onResult }: { onResult?: (result: PaygwBreakdown) => void }) {
   const [form, setForm] = useState<PaygwInput>({
     employeeName: "",
     grossIncome: 0,
@@ -10,6 +10,13 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     period: "monthly",
     deductions: 0,
   });
+  const [result, setResult] = useState<PaygwBreakdown | null>(null);
+
+  function handleCalculate() {
+    const breakdown = calculatePaygw(form);
+    setResult(breakdown);
+    onResult?.(breakdown);
+  }
 
   return (
     <div className="card">
@@ -71,9 +78,20 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
           <option value="quarterly">Quarterly</option>
         </select>
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculatePaygw(form))}>
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate}>
         Calculate PAYGW
       </button>
+      {result && (
+        <div className="result" style={{ marginTop: "1em", fontSize: "0.95em", color: "#133a2c" }}>
+          <div><strong>Required withholding:</strong> ${result.requiredWithholding.toFixed(2)}</div>
+          <div><strong>Already withheld:</strong> ${result.amountAlreadyWithheld.toFixed(2)}</div>
+          <div><strong>Deductions applied:</strong> ${result.deductionsApplied.toFixed(2)}</div>
+          <div><strong>PAYGW shortfall:</strong> ${result.shortfall.toFixed(2)}</div>
+          <div style={{ color: "#4b5563", marginTop: "0.4em" }}>
+            Annualised income reference: ${result.annualisedIncome.toFixed(2)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

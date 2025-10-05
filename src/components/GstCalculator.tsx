@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { GstInput } from "../types/tax";
-import { calculateGst } from "../utils/gst";
+import { calculateGst, GstBreakdown } from "../utils/gst";
 
-export default function GstCalculator({ onResult }: { onResult: (liability: number) => void }) {
+export default function GstCalculator({ onResult }: { onResult?: (result: GstBreakdown) => void }) {
   const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false });
+  const [result, setResult] = useState<GstBreakdown | null>(null);
+
+  function handleCalculate() {
+    const breakdown = calculateGst(form);
+    setResult(breakdown);
+    onResult?.(breakdown);
+  }
 
   return (
     <div className="card">
@@ -32,9 +39,21 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
         />
         GST Exempt
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculateGst(form))}>
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate}>
         Calculate GST
       </button>
+      {result && (
+        <div className="result" style={{ marginTop: "1em", fontSize: "0.95em", color: "#1f2a44" }}>
+          {result.isExempt ? (
+            <div><strong>No GST payable</strong> — the supply is marked as exempt.</div>
+          ) : (
+            <>
+              <div><strong>GST payable (1A):</strong> ${result.gstPayable.toFixed(2)}</div>
+              <div><strong>Net of GST (G1 less 1A):</strong> ${result.taxableAmount.toFixed(2)}</div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
