@@ -12,6 +12,7 @@ export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gs
     try {
       const fundsOk = await verifyFunds(paygwDue, gstDue);
       if (!fundsOk) {
+        const penaltyBreakdown = calculatePenalties(7, paygwDue + gstDue);
         setBasHistory([
           {
             period: new Date(),
@@ -19,7 +20,7 @@ export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gs
             gstPaid: 0,
             status: "Late",
             daysLate: 7,
-            penalties: calculatePenalties(7, paygwDue + gstDue)
+            penalties: penaltyBreakdown.totalPenalty
           },
           ...basHistory
         ]);
