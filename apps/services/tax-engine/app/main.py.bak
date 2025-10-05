@@ -1,0 +1,41 @@
+﻿from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
+import os, orjson
+from prometheus_client import Counter, generate_latest
+from nats.aio.client import Client as NATS
+from app.tax_rules import gst_line_tax
+
+app = FastAPI(title="APGMS Tax Engine", version="0.1.0")
+NATS_URL = os.environ.get("NATS_URL","")
+SERVICE_PORT = int(os.environ.get("SERVICE_PORT","8002"))
+
+events_cons = Counter("apgms_tax_engine_events_consumed_total","events consumed",["type"])
+
+_nc:NATS|None = None
+async def nats_connect():
+    global _nc
+    if NATS_URL and _nc is None:
+        _nc = NATS()
+        await _nc.connect(servers=[NATS_URL])
+    return _nc
+
+@app.get("/healthz", response_class=PlainTextResponse)
+async def healthz(): return "ok"
+
+@app.get("/metrics")
+async def metrics(): return PlainTextResponse(generate_latest().decode("utf-8"))
+
+async def _handle_pos(msg):
+    data = orjson.loads(msg.data)
+    total_tax = 0
+    for line in data.get("lines",[]):
+        amt = int(line.get("unit_price_cents",0)) * int(line.get("qty",1))
+        total_tax += gst_line_tax(amt, line.get("tax_code","GST_FREE"))
+    events_cons.labels(type="pos").inc()
+
+@app.on_event("startup")
+async def startup():
+    n = await nats_connect()
+    if not n: return
+    async def cb(msg): await _handle_pos(msg)
+    await n.subscribe("apgms.pos.canonical.v1", cb=cb)

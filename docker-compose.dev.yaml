@@ -1,0 +1,6 @@
+﻿services:
+  normalizer:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8001", "--reload"]
+    volumes:
+      - ./apps/services/event-normalizer/app:/app/app
+      - ./libs/json:/app/libs/schemas/json

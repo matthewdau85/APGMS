@@ -1,0 +1,127 @@
+﻿require("dotenv").config({ path: ".env.local" });
+const express = require("express");
+const { Pool } = require("pg");
+const nacl = require("tweetnacl");
+
+const app = express();
+app.use(express.json()); // parse JSON bodies
+
+const pool = new Pool({
+  host: process.env.PGHOST || "127.0.0.1",
+  user: process.env.PGUSER || "apgms",
+  password: process.env.PGPASSWORD || "apgms_pw",
+  database: process.env.PGDATABASE || "apgms",
+  port: +(process.env.PGPORT || 5432),
+});
+
+// Health
+app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// Issue RPT
+app.post("/rpt/issue", async (req, res, next) => {
+  try {
+    const { abn, taxType, periodId } = req.body || {};
+    if (!abn || !taxType || !periodId) return res.status(400).json({ error: "MISSING_FIELDS" });
+
+    const p = await pool.query("select * from periods where abn=$1 and tax_type=$2 and period_id=$3", [abn, taxType, periodId]);
+    if (p.rowCount === 0) return res.status(404).json({ error: "PERIOD_NOT_FOUND" });
+    const row = p.rows[0];
+    if (row.state !== "CLOSING") return res.status(409).json({ error: `BAD_STATE_${row.state}` });
+
+    const thresholds = { epsilon_cents: 0, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
+    const v = row.anomaly_vector || {};
+    const exceeds = (v.variance_ratio||0) > thresholds.variance_ratio
+      || (v.dup_rate||0) > thresholds.dup_rate
+      || (v.gap_minutes||0) > thresholds.gap_minutes
+      || Math.abs(v.delta_vs_baseline||0) > thresholds.delta_vs_baseline;
+
+    if (exceeds) {
+      await pool.query("update periods set state='BLOCKED_ANOMALY' where id=$1", [row.id]);
+      return res.status(412).json({ error: "BLOCKED_ANOMALY" });
+    }
+    const epsilon = Math.abs(Number(row.final_liability_cents) - Number(row.credited_to_owa_cents));
+    if (epsilon > thresholds.epsilon_cents) {
+      await pool.query("update periods set state='BLOCKED_DISCREPANCY' where id=$1", [row.id]);
+      return res.status(412).json({ error: "BLOCKED_DISCREPANCY", epsilon });
+    }
+
+    const crypto = require("crypto");
+    const payload = {
+      entity_id: row.abn,
+      period_id: row.period_id,
+      tax_type: row.tax_type,
+      amount_cents: Number(row.final_liability_cents),
+      merkle_root: row.merkle_root || null,
+      running_balance_hash: row.running_balance_hash || null,
+      anomaly_vector: v,
+      thresholds,
+      rail_id: "EFT",
+      reference: process.env.ATO_PRN || "",
+      expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(),
+      nonce: crypto.randomUUID()
+    };
+
+    const sk = process.env.RPT_ED25519_SECRET_BASE64;
+    if (!sk) return res.status(500).json({ error: "NO_RPT_SECRET" });
+    const sig = nacl.sign.detached(new TextEncoder().encode(JSON.stringify(payload)), new Uint8Array(Buffer.from(sk, "base64")));
+    const signature = Buffer.from(sig).toString("base64");
+
+    await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values ($1,$2,$3,$4,$5)",
+      [abn, taxType, periodId, payload, signature]);
+    await pool.query("update periods set state='READY_RPT' where id=$1", [row.id]);
+
+    res.json({ payload, signature });
+  } catch (e) { next(e); }
+});
+
+// Release (simulated)
+app.post("/release", async (req, res, next) => {
+  try {
+    const { abn, taxType, periodId } = req.body || {};
+    if (!abn || !taxType || !periodId) return res.status(400).json({ error: "MISSING_FIELDS" });
+
+    const r = await pool.query("select payload from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1", [abn, taxType, periodId]);
+    if (r.rowCount === 0) return res.status(400).json({ error: "NO_RPT" });
+    const payload = r.rows[0].payload;
+
+    const ld = await pool.query("select balance_after_cents, hash_after from owa_ledger where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1", [abn, taxType, periodId]);
+    const prevBal = ld.rows[0]?.balance_after_cents ?? 0;
+    if (prevBal < payload.amount_cents) return res.status(409).json({ error: "INSUFFICIENT_OWA", prevBal, amount: payload.amount_cents });
+
+    // IMPORTANT: dynamic import to avoid ERR_REQUIRE_ESM in CommonJS
+    const { v4: uuidv4 } = await import("uuid");
+    const transfer_uuid = uuidv4();
+    const bank_receipt_hash = "rcpt:" + transfer_uuid.slice(0,12);
+    const newBal = prevBal - payload.amount_cents;
+    const prevHash = ld.rows[0]?.hash_after || "";
+    const hashAfter = require("crypto").createHash("sha256").update(prevHash + bank_receipt_hash + String(newBal)).digest("hex");
+
+    await pool.query(
+      "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [abn, taxType, periodId, transfer_uuid, -payload.amount_cents, newBal, bank_receipt_hash, prevHash, hashAfter]
+    );
+    await pool.query("update periods set state='RELEASED' where abn=$1 and tax_type=$2 and period_id=$3", [abn, taxType, periodId]);
+    res.json({ transfer_uuid, bank_receipt_hash, new_balance: newBal });
+  } catch (e) { next(e); }
+});
+
+// Evidence
+app.get("/evidence", async (req, res, next) => {
+  try {
+    const { abn, taxType, periodId } = req.query;
+    const p = await pool.query("select * from periods where abn=$1 and tax_type=$2 and period_id=$3", [abn, taxType, periodId]);
+    if (p.rowCount === 0) return res.status(404).json({ error: "PERIOD_NOT_FOUND" });
+    const rpt = (await pool.query("select payload,signature,created_at from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1", [abn, taxType, periodId])).rows[0];
+    const ledger = (await pool.query("select id, amount_cents, balance_after_cents, bank_receipt_hash, prev_hash, hash_after, created_at from owa_ledger where abn=$1 and tax_type=$2 and period_id=$3 order by id", [abn, taxType, periodId])).rows;
+    res.json({ period: p.rows[0], rpt, ledger });
+  } catch (e) { next(e); }
+});
+
+// Error handler
+app.use((err, _req, res, _next) => {
+  console.error("ERROR:", err);
+  res.status(500).json({ error: "INTERNAL", detail: String(err?.message || err) });
+});
+
+const port = process.env.PORT || 8080;
+app.listen(port, () => console.log(`APGMS demo API listening on :${port}`));

@@ -1,0 +1,1 @@
+﻿Runbooks (P90): period closure failures, cutoff misses, key rotation, evidence regen.

@@ -1,0 +1,199 @@
+/* General App Container */
+body {
+  background: #f5f7fa;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  margin: 0;
+  color: #222;
+}
+
+.app-header {
+  background: #00205b;
+  color: #fff;
+  padding: 28px 0 18px 0;
+  text-align: center;
+  border-radius: 0 0 8px 8px;
+  margin-bottom: 30px;
+}
+
+.app-header img {
+  max-height: 60px;
+  margin-bottom: 10px;
+}
+
+.app-header h1 {
+  margin: 0 0 7px 0;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.app-header p {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 400;
+}
+
+.app-footer {
+  color: #888;
+  text-align: center;
+  margin: 44px 0 10px 0;
+  font-size: 14px;
+}
+
+/* Card & Container Styles */
+.settings-card, .main-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 2px 14px #00205b0b;
+  padding: 32px;
+  max-width: 900px;
+  margin: 40px auto 0 auto;
+}
+
+/* Tabs Row with Always-Visible Scrollbar */
+.tabs-row {
+  display: flex;
+  gap: 32px;
+  border-bottom: 1.5px solid #e6e6e6;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: transparent;
+  padding-bottom: 3px;
+  min-height: 48px;
+  scrollbar-color: #00716b #e6e6e6;
+  scrollbar-width: thin;
+}
+
+.tabs-row::-webkit-scrollbar {
+  height: 8px;
+  background: #e6e6e6;
+}
+
+.tabs-row::-webkit-scrollbar-thumb {
+  background: #00716b;
+  border-radius: 8px;
+}
+
+/* Make scrollbar always visible (not auto-hide) */
+.tabs-row {
+  overflow-x: scroll !important;
+}
+
+/* Tab Items */
+.tab-item {
+  padding: 10px 0 13px 0;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  transition: border 0.2s, color 0.2s;
+  font-size: 17px;
+  outline: none;
+}
+
+.tab-item.active {
+  color: #00716b;
+  border-bottom: 3px solid #00716b;
+  font-weight: 700;
+}
+
+/* Settings Form Styles */
+.settings-input {
+  border: 1.5px solid #00716b;
+  border-radius: 7px;
+  padding: 8px 13px;
+  font-size: 16px;
+  outline: none;
+  transition: border 0.15s;
+  background: #fff;
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.settings-input:focus {
+  border: 1.5px solid #00205b;
+}
+
+/* Labels */
+label {
+  display: block;
+  font-weight: 600;
+  color: #26324a;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+/* Utility classes for spacing, use as needed */
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mt-3 { margin-top: 24px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.mb-3 { margin-bottom: 24px; }
+
+/* Button Styles */
+.button {
+  background: #00716b;
+  color: #fff;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 18px;
+  transition: background 0.15s;
+}
+
+.button:hover {
+  background: #005d54;
+}
+
+/* Responsive Design */
+@media (max-width: 700px) {
+  .settings-card, .main-card {
+    padding: 14px;
+    max-width: 98vw;
+  }
+  .tabs-row {
+    gap: 18px;
+    font-size: 15px;
+  }
+}
+
+/* Dashboard Cards Example */
+.summary-card {
+  background: #f6f6f6;
+  border-radius: 12px;
+  padding: 28px;
+  min-width: 220px;
+  box-shadow: 0 1px 7px #00205b08;
+  margin-bottom: 18px;
+}
+
+.summary-card .value {
+  font-size: 26px;
+  color: #00716b;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+/* Table Styles */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 18px;
+}
+
+th, td {
+  border: 1px solid #e2e2e2;
+  padding: 12px 8px;
+  text-align: left;
+}
+
+th {
+  background: #f1f6fa;
+  font-weight: 600;
+  color: #00205b;
+}

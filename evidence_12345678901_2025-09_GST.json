@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "generated_at": "2025-10-04T20:20:15.647Z",
+    "abn": "12345678901",
+    "taxType": "GST",
+    "periodId": "2025-09"
+  },
+  "period": {
+    "state": "RELEASED",
+    "accrued_cents": 0,
+    "credited_to_owa_cents": 123456,
+    "final_liability_cents": 123456,
+    "merkle_root": "merkle_demo_root",
+    "running_balance_hash": "rbh_demo",
+    "anomaly_vector": {
+      "dup_rate": 0,
+      "gap_minutes": 10,
+      "variance_ratio": 0.1,
+      "delta_vs_baseline": 0.05
+    },
+    "thresholds": {
+      "dup_rate": 0.01,
+      "gap_minutes": 60,
+      "epsilon_cents": 50,
+      "variance_ratio": 0.25,
+      "delta_vs_baseline": 0.2
+    }
+  },
+  "rpt": {
+    "payload": {
+      "nonce": "51f52375-138d-4198-8e8f-f393cdcbb1ac",
+      "rail_id": "EFT",
+      "tax_type": "GST",
+      "entity_id": "12345678901",
+      "expiry_ts": "2025-10-04T20:32:18.735Z",
+      "period_id": "2025-09",
+      "reference": "1234567890",
+      "thresholds": {
+        "dup_rate": 0.01,
+        "gap_minutes": 60,
+        "epsilon_cents": 0,
+        "variance_ratio": 0.25,
+        "delta_vs_baseline": 0.2
+      },
+      "merkle_root": "merkle_demo_root",
+      "amount_cents": 123456,
+      "anomaly_vector": {
+        "dup_rate": 0,
+        "gap_minutes": 10,
+        "variance_ratio": 0.1,
+        "delta_vs_baseline": 0.05
+      },
+      "running_balance_hash": "rbh_demo"
+    },
+    "signature": "c85MaHUInfjHpjwfwFi8dIM8hMOsfeEPbJ4FspvjOMVcM4c8eNxuPoS2K4clW1fvmKMdALF6sny5jbtpQtpKDw==",
+    "created_at": "2025-10-04T20:17:18.772Z"
+  },
+  "owa_ledger": [
+    {
+      "id": "1",
+      "amount_cents": "50000",
+      "balance_after_cents": "50000",
+      "bank_receipt_hash": "rcpt:50a26f86-27a0-4201-8cc1-afb99e296296",
+      "prev_hash": null,
+      "hash_after": null,
+      "created_at": "2025-10-04T20:07:34.508Z"
+    },
+    {
+      "id": "2",
+      "amount_cents": "40000",
+      "balance_after_cents": "90000",
+      "bank_receipt_hash": "rcpt:de0dc3d9-28ee-405e-9ab1-622a724a5b18",
+      "prev_hash": null,
+      "hash_after": null,
+      "created_at": "2025-10-04T20:07:34.508Z"
+    },
+    {
+      "id": "3",
+      "amount_cents": "33456",
+      "balance_after_cents": "123456",
+      "bank_receipt_hash": "rcpt:6295e338-1b2d-4bc4-ab1e-62245763dd5c",
+      "prev_hash": null,
+      "hash_after": null,
+      "created_at": "2025-10-04T20:07:34.508Z"
+    },
+    {
+      "id": "4",
+      "amount_cents": "-123456",
+      "balance_after_cents": "0",
+      "bank_receipt_hash": "rcpt:4f61dd90-a76",
+      "prev_hash": "",
+      "hash_after": "6bd22221481cccb2e4b9a3a70c4e74822f2751b6e6e542641c46c25724732a5d",
+      "created_at": "2025-10-04T20:17:18.796Z"
+    }
+  ],
+  "bas_labels": {
+    "W1": null,
+    "W2": null,
+    "1A": null,
+    "1B": null
+  },
+  "discrepancy_log": []
+}

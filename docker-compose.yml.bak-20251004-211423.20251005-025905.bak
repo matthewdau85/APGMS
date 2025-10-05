@@ -1,0 +1,77 @@
+﻿services:
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-m", "8222"] # JetStream + monitoring
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/varz"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+
+  normalizer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      NATS_URL: nats://nats:4222
+    depends_on:
+      nats:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8001/readyz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 512M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+  nats-exporter:
+    image: natsio/prometheus-nats-exporter:latest
+    command: ["-varz", "http://nats:8222", "-connz", "http://nats:8222", "-routez", "http://nats:8222", "-subz", "http://nats:8222"]
+    depends_on:
+      nats:
+        condition: service_healthy
+    ports:
+      - "7777:7777"
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      normalizer:
+        condition: service_started
+      nats-exporter:
+        condition: service_started
+  
+  gui:
+    image: nginx:alpine
+    depends_on:
+      normalizer:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./ops/nginx.gui.conf:/etc/nginx/nginx.conf:ro
+      - ./apps/gui:/usr/share/nginx/html
+    environment:
+      GUI_BRAND: "APGMS Normalizer"
+      GUI_TITLE: "Normalizer Console"
+      GUI_BASE_URL: "/api"
+      GUI_DEFAULT_ENDPOINT: "/readyz"
+      GUI_SWAGGER_PATH: "/api/docs"
+    command: ["/bin/sh","/usr/share/nginx/html/start.sh"]
+

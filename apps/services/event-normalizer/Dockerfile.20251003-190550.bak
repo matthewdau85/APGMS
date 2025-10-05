@@ -1,0 +1,24 @@
+﻿FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl wget ca-certificates build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY apps/services/event-normalizer/app ./app
+COPY libs/json ./libs/schemas/json
+COPY apps/services/event-normalizer/run_normalizer.py /app/run_normalizer.py
+
+RUN pip install --no-cache-dir \
+      fastapi \
+      "uvicorn[standard]" \
+      pydantic
+
+EXPOSE 8001
+ENV PYTHONUNBUFFERED=1
+CMD ["python", "/app/run_normalizer.py"]
+RUN pip install --no-cache-dir orjson
+RUN pip install --no-cache-dir nats-py
+RUN pip install --no-cache-dir prometheus-client httpx
+

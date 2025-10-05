@@ -1,0 +1,57 @@
+﻿# apps/services/event-normalizer/run_normalizer.py
+import importlib
+import os
+import sys
+from typing import Any
+
+def _resolve_app() -> Any:
+    """
+    Resolve a FastAPI app to run.
+    Priority:
+      1) APP_MODULE env var like 'app.main:app'
+      2) Fallback to 'app.main:app'
+    """
+    target = os.getenv("APP_MODULE", "app.main:app")
+    module_name, _, attr = target.partition(":")
+    if not module_name or not attr:
+        raise RuntimeError(f"Invalid APP_MODULE '{target}'. Use format 'pkg.module:attr'.")
+
+    try:
+        mod = importlib.import_module(module_name)
+    except Exception as e:
+        raise RuntimeError(f"Could not import module '{module_name}' for APP_MODULE '{target}': {e}") from e
+
+    try:
+        app = getattr(mod, attr)
+    except AttributeError:
+        raise RuntimeError(f"Module '{module_name}' has no attribute '{attr}' (APP_MODULE='{target}').")
+
+    return app
+
+def main():
+    app = _resolve_app()
+
+    # Lazy import uvicorn to get nice errors first
+    try:
+        import uvicorn
+    except Exception as e:
+        print(f"[FATAL] uvicorn import failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    host = os.getenv("UVICORN_HOST", "0.0.0.0")
+    port = int(os.getenv("UVICORN_PORT", "8001"))
+    workers = int(os.getenv("UVICORN_WORKERS", "1"))
+
+    # If workers>1, uvicorn requires the app import string, so reuse APP_MODULE
+    app_ref = os.getenv("APP_MODULE", "app.main:app") if workers > 1 else app
+
+    uvicorn.run(
+        app_ref,
+        host=host,
+        port=port,
+        workers=workers,
+        reload=False
+    )
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,44 @@
+# Node & TS
+node_modules/
+dist/
+build/
+out/
+coverage/
+.nyc_output/
+*.log
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+.turbo/
+.next/
+.next-cache/
+.cache/
+
+# TypeScript build
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Project-specific secrets you mentioned
+.env.local
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# DB dumps / large blobs
+*.sql
+*.dump
+*.bak
+evidence_blobs/
+postgres-data/
