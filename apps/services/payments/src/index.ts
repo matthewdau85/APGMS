@@ -11,8 +11,8 @@ import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
 
-// Port (defaults to 3000)
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+// Port (defaults to 3001)
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 // Prefer DATABASE_URL; else compose from PG* vars
 const connectionString =
