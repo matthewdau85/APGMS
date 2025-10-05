@@ -1,0 +1,14 @@
+providers:
+  bank: https://bank.example.internal
+  kms: https://kms.example.internal
+  rates: https://rates.example.internal
+  idp: https://idp.example.internal
+  statements: https://statements.example.internal
+PROTO_KILL_SWITCH: false
+SHADOW_MODE: false
+TZ: UTC
+MOCK_BANK: false
+MOCK_KMS: false
+MOCK_RATES: false
+MOCK_IDP: false
+MOCK_STATEMENTS: false
