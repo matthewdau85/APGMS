@@ -23,3 +23,6 @@ ps:
 
 fmt:
 	@echo "No formatter configured; add ruff/black if desired."
+
+provider-contracts:
+	@pnpm provider:contracts
