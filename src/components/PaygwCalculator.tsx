@@ -1,6 +1,17 @@
 import React, { useState } from "react";
 import { PaygwInput } from "../types/tax";
-import { calculatePaygw } from "../utils/paygw";
+import { fetchJson } from "../utils/api";
+
+type PaygwResult = {
+  method: string;
+  gross: number;
+  withholding: number;
+  net: number;
+  liability: number;
+  rates_version?: string;
+  explain?: string[];
+  generated_at?: string;
+};
 
 export default function PaygwCalculator({ onResult }: { onResult: (liability: number) => void }) {
   const [form, setForm] = useState<PaygwInput>({
@@ -10,6 +21,34 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     period: "monthly",
     deductions: 0,
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<PaygwResult | null>(null);
+
+  async function handleCalculate() {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchJson<PaygwResult>("/tax/paygw", {
+        method: "POST",
+        body: {
+          employee_name: form.employeeName,
+          period: form.period,
+          gross_income: form.grossIncome,
+          tax_withheld: form.taxWithheld,
+          deductions: form.deductions,
+        },
+      });
+      setResult(data);
+      onResult(data.liability ?? 0);
+    } catch (err: any) {
+      setError(err?.message || "Failed to calculate PAYGW");
+      setResult(null);
+      onResult(0);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="card">
@@ -71,9 +110,28 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
           <option value="quarterly">Quarterly</option>
         </select>
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculatePaygw(form))}>
-        Calculate PAYGW
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate} disabled={loading}>
+        {loading ? "Calculating…" : "Calculate PAYGW"}
       </button>
+      {error ? <p style={{ color: "#b91c1c", marginTop: 10 }}>{error}</p> : null}
+      {result ? (
+        <div style={{ marginTop: 12, fontSize: 14, background: "#f8fafc", padding: "10px 12px", borderRadius: 8 }}>
+          <div><strong>Withholding:</strong> ${result.withholding.toFixed(2)}</div>
+          <div><strong>Liability owed:</strong> ${result.liability.toFixed(2)}</div>
+          <div><strong>Net pay:</strong> ${result.net.toFixed(2)}</div>
+          <div><strong>Rates version:</strong> {result.rates_version ?? "n/a"}</div>
+          {result.explain && result.explain.length ? (
+            <div style={{ marginTop: 8 }}>
+              <strong>Engine explain:</strong>
+              <ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>
+                {result.explain.map((line, idx) => (
+                  <li key={idx}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

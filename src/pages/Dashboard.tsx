@@ -1,6 +1,7 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { QueuesPanel } from '../components/QueuesPanel';
 
 export default function Dashboard() {
   const complianceStatus = {
@@ -95,6 +96,8 @@ export default function Dashboard() {
       <div className="mt-4 text-xs text-gray-500 italic">
         Staying compliant helps avoid audits, reduce penalties, and increase access to ATO support programs.
       </div>
+
+      <QueuesPanel />
     </div>
   );
 }

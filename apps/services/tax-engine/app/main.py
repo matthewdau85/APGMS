@@ -147,7 +147,8 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
-import os, json
+from . import tax_rules
+import os, json, datetime
 
 TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
@@ -180,4 +181,95 @@ async def ui_calc(request: Request):
 def ui_help(request: Request):
     return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge":"demo"})
 # --- END MINI_UI ---
+
+# --- BEGIN API_CALCULATORS ---
+PAYGW_RULES_PATH = os.getenv(
+    "PAYGW_RULES_PATH",
+    os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"),
+)
+
+try:
+    with open(PAYGW_RULES_PATH, "r", encoding="utf-8") as _rules_fp:
+        PAYGW_RULES = json.load(_rules_fp)
+except FileNotFoundError:
+    PAYGW_RULES = {"version": "unknown", "formula_progressive": {}}
+
+PAYGW_RATES_VERSION = PAYGW_RULES.get("version") or os.getenv("PAYGW_RATES_VERSION", "unknown")
+GST_RATES_VERSION = os.getenv("GST_RATES_VERSION", "GST-2024-07")
+
+
+def _now_iso() -> str:
+    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+
+
+@app.post("/api/gst")
+async def api_calc_gst(payload: dict):
+    sale_amount = float(payload.get("sale_amount") or payload.get("amount") or 0.0)
+    exempt = bool(payload.get("exempt", False))
+    tax_code = "GST" if not exempt else "GST_FREE"
+    amount_cents = round(sale_amount * 100)
+    tax_cents = tax_rules.gst_line_tax(amount_cents, tax_code)
+    liability = round(tax_cents / 100, 2)
+    return {
+        "inputs": {
+            "sale_amount": sale_amount,
+            "exempt": exempt,
+            "tax_code": tax_code,
+        },
+        "liability": liability,
+        "liability_cents": tax_cents,
+        "rates_version": GST_RATES_VERSION,
+        "generated_at": _now_iso(),
+    }
+
+
+@app.post("/api/paygw")
+async def api_calc_paygw(payload: dict):
+    method = payload.get("method") or "table_ato"
+    period = payload.get("period") or "weekly"
+    gross = float(payload.get("gross_income") or payload.get("gross") or 0.0)
+    already_withheld = float(payload.get("tax_withheld") or 0.0)
+    deductions = float(payload.get("deductions") or 0.0)
+    percent = float(payload.get("percent") or 0.0)
+    extra = float(payload.get("extra") or 0.0)
+    regular_gross = float(payload.get("regular_gross") or gross)
+    bonus = float(payload.get("bonus") or 0.0)
+    tax_free_threshold = bool(payload.get("tax_free_threshold", True))
+    stsl = bool(payload.get("stsl", False))
+    target_net = payload.get("target_net")
+
+    event = {
+        "method": method,
+        "period": period,
+        "gross": gross,
+        "percent": percent,
+        "extra": extra,
+        "regular_gross": regular_gross,
+        "bonus": bonus,
+        "tax_free_threshold": tax_free_threshold,
+        "stsl": stsl,
+        "target_net": target_net,
+    }
+
+    result = payg_w_mod.compute({"payg_w": event}, PAYGW_RULES)
+    withholding = float(result.get("withholding", 0.0))
+    net = float(result.get("net", gross - withholding))
+    liability = max(0.0, withholding - already_withheld - deductions)
+
+    return {
+        "method": result.get("method", method),
+        "gross": float(result.get("gross", gross)),
+        "withholding": withholding,
+        "net": net,
+        "liability": round(liability, 2),
+        "rates_version": PAYGW_RATES_VERSION,
+        "explain": result.get("explain", []),
+        "inputs": {
+            **event,
+            "tax_withheld": already_withheld,
+            "deductions": deductions,
+        },
+        "generated_at": _now_iso(),
+    }
+# --- END API_CALCULATORS ---
 
