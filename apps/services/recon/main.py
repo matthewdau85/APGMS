@@ -1,25 +1,63 @@
 ﻿# apps/services/recon/main.py
 from fastapi import FastAPI
 from pydantic import BaseModel
-import os, psycopg2, json, math
+import math
+from typing import Dict, Union
 
 app = FastAPI(title="recon")
 
-class ReconReq(BaseModel):
-    period_id: str
+class TaxSummary(BaseModel):
     paygw_total: float
     gst_total: float
-    owa_paygw: float
-    owa_gst: float
     anomaly_score: float
+    metrics: Dict[str, float] | None = None
+
+
+class OwaSnapshot(BaseModel):
+    paygw: float
+    gst: float
+
+
+class ReconReq(BaseModel):
+    period_id: str
+    tax: TaxSummary
+    owa: OwaSnapshot
     tolerance: float = 0.01
+
+
+def evaluate_recon(req: Union[ReconReq, Dict]) -> Dict:
+    model = req if isinstance(req, ReconReq) else ReconReq(**req)
+
+    pay_delta = model.tax.paygw_total - model.owa.paygw
+    gst_delta = model.tax.gst_total - model.owa.gst
+
+    pay_ok = math.isclose(model.tax.paygw_total, model.owa.paygw, abs_tol=model.tolerance)
+    gst_ok = math.isclose(model.tax.gst_total, model.owa.gst, abs_tol=model.tolerance)
+    anomaly_ok = model.tax.anomaly_score < 0.8
+
+    reasons = []
+    if not pay_ok:
+        reasons.append("PAYGW_SHORTFALL" if pay_delta < 0 else "PAYGW_EXCESS")
+    if not gst_ok:
+        reasons.append("GST_SHORTFALL" if gst_delta < 0 else "GST_EXCESS")
+    if not anomaly_ok:
+        reasons.append("ANOMALY_BREACH")
+
+    passed = len(reasons) == 0
+
+    return {
+        "pass": passed,
+        "reason_code": None if passed else ",".join(reasons),
+        "controls": ["BAS-GATE", "RPT"] if passed else ["BLOCK"],
+        "next_state": "RPT-Issued" if passed else "Blocked",
+        "deltas": {
+            "paygw": round(pay_delta, 4),
+            "gst": round(gst_delta, 4),
+        },
+        "metrics": model.tax.metrics or {},
+    }
+
 
 @app.post("/recon/run")
 def run(req: ReconReq):
-    pay_ok = math.isclose(req.paygw_total, req.owa_paygw, abs_tol=req.tolerance)
-    gst_ok = math.isclose(req.gst_total, req.owa_gst, abs_tol=req.tolerance)
-    anomaly_ok = req.anomaly_score < 0.8
-    if pay_ok and gst_ok and anomaly_ok:
-        return {"pass": True, "reason_code": None, "controls": ["BAS-GATE","RPT"], "next_state": "RPT-Issued"}
-    reason = "shortfall" if (not pay_ok or not gst_ok) else "anomaly_breach"
-    return {"pass": False, "reason_code": reason, "controls": ["BLOCK"], "next_state": "Blocked"}
+    return evaluate_recon(req)

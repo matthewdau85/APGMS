@@ -22,6 +22,7 @@ def build(period_id: str,
           gst_total: float,
           source_digests: Dict[str,str],
           anomaly_score: float,
+          anomaly_metrics: Dict[str, float] | None = None,
           ttl_seconds: int = 3600) -> Dict[str, Any]:
     rpt = {
         "period_id": period_id,
@@ -29,6 +30,7 @@ def build(period_id: str,
         "gst_total": round(gst_total,2),
         "source_digests": source_digests,
         "anomaly_score": anomaly_score,
+        "anomaly_metrics": anomaly_metrics or {},
         "expires_at": int(time.time()) + ttl_seconds,
         "nonce": os.urandom(8).hex()
     }
