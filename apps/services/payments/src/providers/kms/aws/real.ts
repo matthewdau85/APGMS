@@ -1,5 +1,4 @@
-﻿import pg from "pg";
-import { KmsProvider } from "./kmsProvider";
+import type { KmsProvider } from "@core/ports/kms";
 import { KMSClient, GetPublicKeyCommand, SignCommand } from "@aws-sdk/client-kms";
 import * as ed from "@noble/ed25519";
 

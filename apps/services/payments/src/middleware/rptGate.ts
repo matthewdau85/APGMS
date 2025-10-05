@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import pg from "pg"; const { Pool } = pg;
 import { sha256Hex } from "../utils/crypto";
-import { selectKms } from "../kms/kmsProvider";
+import { selectKms } from "@registry/kms";
 
 const kms = selectKms();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });

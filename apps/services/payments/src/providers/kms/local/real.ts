@@ -1,6 +1,6 @@
-﻿import '../loadEnv.js';
-import { createPublicKey, KeyObject, verify as cryptoVerify } from 'node:crypto';
-import type { IKms } from './IKms';
+import "../../../loadEnv";
+import { createPublicKey, KeyObject, verify as cryptoVerify } from "node:crypto";
+import type { KmsVerifier } from "@core/ports/kms";
 
 /** Build a PEM SPKI from a raw 32-byte Ed25519 public key (OID 1.3.101.112). */
 function spkiFromRawEd25519(raw: Buffer): Buffer {
@@ -14,7 +14,7 @@ function spkiFromRawEd25519(raw: Buffer): Buffer {
 }
 
 function pemFromSpki(spki: Buffer): string {
-  const b64 = spki.toString('base64').match(/.{1,64}/g)!.join('\n');
+  const b64 = spki.toString("base64").match(/.{1,64}/g)!.join("\n");
   return `-----BEGIN PUBLIC KEY-----\n${b64}\n-----END PUBLIC KEY-----\n`;
 }
 
@@ -25,16 +25,16 @@ function loadPublicKey(): KeyObject {
   if (pem) return createPublicKey(pem);
 
   if (raw64) {
-    const raw = Buffer.from(raw64, 'base64');
+    const raw = Buffer.from(raw64, "base64");
     if (raw.length !== 32) throw new Error(`RPT_PUBLIC_BASE64 must be 32 bytes (got ${raw.length})`);
     const spki = spkiFromRawEd25519(raw);
     return createPublicKey(pemFromSpki(spki));
   }
 
-  throw new Error('No public key found. Set ED25519_PUBLIC_KEY_PEM or RPT_PUBLIC_BASE64 in .env.local');
+  throw new Error("No public key found. Set ED25519_PUBLIC_KEY_PEM or RPT_PUBLIC_BASE64 in .env.local");
 }
 
-export class LocalKeyProvider implements IKms {
+export class LocalKeyProvider implements KmsVerifier {
   private key: KeyObject;
   constructor() { this.key = loadPublicKey(); }
 
@@ -43,4 +43,3 @@ export class LocalKeyProvider implements IKms {
     return cryptoVerify(null, payload, this.key, signature);
   }
 }
-
