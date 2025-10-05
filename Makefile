@@ -23,3 +23,12 @@ ps:
 
 fmt:
 	@echo "No formatter configured; add ruff/black if desired."
+
+switch-mock:
+	@./node_modules/.bin/tsx tools/switch-mode.ts mock
+
+switch-shadow:
+	@./node_modules/.bin/tsx tools/switch-mode.ts shadow
+
+switch-real:
+	@./node_modules/.bin/tsx tools/switch-mode.ts real
