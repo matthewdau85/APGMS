@@ -1,6 +1,9 @@
 ﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import cors from "cors";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
@@ -11,6 +14,21 @@ dotenv.config();
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
+
+const corsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: corsOrigins.length ? corsOrigins : undefined,
+    credentials: true,
+  })
+);
+
+app.use(helmet({ crossOriginResourcePolicy: { policy: "same-site" } }));
+app.use(rateLimit({ windowMs: 60_000, max: 120 }));
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
