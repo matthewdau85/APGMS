@@ -1,6 +1,8 @@
-﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { Request, Response } from "express";
+import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
+
+const pool = new Pool();
 
 export async function deposit(req: Request, res: Response) {
   try {
@@ -42,13 +44,13 @@ export async function deposit(req: Request, res: Response) {
         balance_after_cents: ins[0].balance_after_cents
       });
 
-    } catch (e:any) {
+    } catch (e: any) {
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
     } finally {
       client.release();
     }
-  } catch (e:any) {
+  } catch (e: any) {
     return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
   }
 }
