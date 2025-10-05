@@ -1,8 +1,10 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { selectBankProvider } from '@providers/bank/index.js';
+import { sha256Hex } from '../utils/crypto.js';
+import { buildEvidenceBundle } from '../evidence/evidenceBundle.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -34,6 +36,33 @@ export async function payAtoRelease(req: Request, res: Response) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
 
+  const provider = selectBankProvider();
+  const bankRail = (req.body?.rail as 'EFT' | 'BPAY' | 'PAYTO') ?? 'EFT';
+  const reference = (req.body?.reference as string) ?? `${abn}-${taxType}-${periodId}`;
+  const release_uuid = genUUID();
+  const idempotencyKey = sha256Hex(`payato:${abn}:${taxType}:${periodId}`);
+  const payout = await provider.egress.submitPayout({
+    abn,
+    taxType,
+    periodId,
+    amountCents: Math.abs(amt),
+    currency: 'AUD',
+    rail: bankRail,
+    reference,
+    idempotencyKey,
+    metadata: {
+      release_uuid,
+      destination: req.body?.destination,
+    },
+  });
+
+  if (payout.status === 'REJECTED') {
+    return res.status(409).json({
+      error: 'Bank rejected payout',
+      provider_code: payout.provider_code,
+    });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -53,16 +82,15 @@ export async function payAtoRelease(req: Request, res: Response) {
     const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
     const newBal = lastBal + amt;
 
-    const release_uuid = genUUID();
-
     const insert = `
       INSERT INTO owa_ledger
         (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
+         rpt_verified, release_uuid, bank_receipt_id, created_at)
+      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, $8, now())
       RETURNING id, transfer_uuid, balance_after_cents
     `;
     const transfer_uuid = genUUID();
+    const bankReceiptId = payout.bank_txn_id ?? payout.reference;
     const { rows: ins } = await client.query(insert, [
       abn,
       taxType,
@@ -71,7 +99,18 @@ export async function payAtoRelease(req: Request, res: Response) {
       amt,
       newBal,
       release_uuid,
+      bankReceiptId,
     ]);
+
+    await buildEvidenceBundle(client, {
+      abn,
+      taxType,
+      periodId,
+      bankReceipts: [{ provider: payout.provider_code, receipt_id: bankReceiptId }],
+      atoReceipts: [],
+      operatorOverrides: [],
+      owaAfterHash: String(ins[0].balance_after_cents),
+    });
 
     await client.query('COMMIT');
 
@@ -80,6 +119,7 @@ export async function payAtoRelease(req: Request, res: Response) {
       ledger_id: ins[0].id,
       transfer_uuid,
       release_uuid,
+      bank_result: payout,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });

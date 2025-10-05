@@ -8,7 +8,11 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "outDir": "dist",
-    "sourceMap": true
+    "sourceMap": true,
+    "baseUrl": "src",
+    "paths": {
+      "@providers/*": ["providers/*"]
+    }
   },
   "include": ["src/**/*.ts"]
 }
