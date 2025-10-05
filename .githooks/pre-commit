@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+printf '\n>> Running unit tests (pytest)\n'
+make test-unit
+
+printf '\n>> Running golden tests\n'
+make test-golden
+
+printf '\n>> Checking for float literals\n'
+python tools/hooks/forbid_floats.py

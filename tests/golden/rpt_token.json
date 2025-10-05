@@ -1,0 +1,13 @@
+{
+  "anomaly_score": 0,
+  "expires_at": 1700000900,
+  "gst_total": 67890,
+  "nonce": "0102030405060708",
+  "paygw_total": 12345,
+  "period_id": "2025Q1",
+  "signature": "2f5331236d90b629e62baf11e14478a30507c30b61811460b156d771b4adf419",
+  "source_digests": {
+    "payroll": "abc123",
+    "pos": "xyz789"
+  }
+}
