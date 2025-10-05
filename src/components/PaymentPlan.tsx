@@ -1,9 +1,9 @@
-import React, { useState, useContext } from 'react';
-import { AppContext } from '../context/AppContext';
+import React, { useState } from 'react';
 import { PaymentPlanType } from '../types/tax';
+import { useAppContext } from '../context/AppContext';
 
 export default function PaymentPlanComponent() {
-  const { auditLog, setAuditLog } = useContext(AppContext);
+  const { summary } = useAppContext();
   const [plan, setPlan] = useState<PaymentPlanType>({
     totalAmount: 0,
     installments: 1,
@@ -14,13 +14,19 @@ export default function PaymentPlanComponent() {
 
   const handleSubmit = () => {
     const submittedPlan = { ...plan, atoApproved: Math.random() > 0.2 };
-    setAuditLog([...auditLog, { timestamp: Date.now(), action: `Payment Plan submitted: $${plan.totalAmount}`, user: "Admin" }]);
-    alert(submittedPlan.atoApproved ? "Payment plan approved by ATO!" : "Payment plan rejected. Please contact ATO.");
+    alert(
+      submittedPlan.atoApproved
+        ? "Payment plan approved by ATO!"
+        : "Payment plan rejected. Please contact ATO."
+    );
   };
 
   return (
     <div className="card">
       <h2>ATO Payment Plan Negotiation</h2>
+      <p style={{ fontSize: 14, color: '#555' }}>
+        Current compliance score: {summary.overallCompliance}% — customise a plan if you need extra time to resolve outstanding balances.
+      </p>
       <label>
         Total Amount Owing:
         <input type="number" value={plan.totalAmount} onChange={e => setPlan({ ...plan, totalAmount: Number(e.target.value) })} />

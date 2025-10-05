@@ -1,22 +1,26 @@
-import React, { useContext } from "react";
-import { AppContext } from "../context/AppContext";
+import React from "react";
+import { useAppContext } from "../context/AppContext";
+import { formatCurrencyFromCents } from "../hooks/usePeriodData";
 
 export default function AuditLog() {
-  const { auditLog } = useContext(AppContext);
+  const { ledger } = useAppContext();
 
   return (
     <div className="card">
       <h2>Audit Log</h2>
       <table>
         <thead>
-          <tr><th>Timestamp</th><th>Action</th><th>User</th></tr>
+          <tr><th>Timestamp</th><th>Event</th><th>Amount</th></tr>
         </thead>
         <tbody>
-          {auditLog.map((log: any, idx: number) => (
-            <tr key={idx}>
-              <td>{new Date(log.timestamp).toLocaleString()}</td>
-              <td>{log.action}</td>
-              <td>{log.user}</td>
+          {ledger.length === 0 && (
+            <tr><td colSpan={3} style={{ textAlign: "center", color: "#666" }}>No ledger activity for this period.</td></tr>
+          )}
+          {ledger.map((entry) => (
+            <tr key={entry.id}>
+              <td>{entry.created_at ? new Date(entry.created_at).toLocaleString() : "—"}</td>
+              <td>{entry.amount_cents >= 0 ? "Deposit to vault" : "Release to ATO"}</td>
+              <td>{formatCurrencyFromCents(Math.abs(entry.amount_cents))}</td>
             </tr>
           ))}
         </tbody>

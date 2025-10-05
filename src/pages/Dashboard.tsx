@@ -1,17 +1,32 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
+import { formatCurrencyFromCents } from '../hooks/usePeriodData';
 
 export default function Dashboard() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65,
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { summary, totals, vaultBalanceCents, isLoading, error } = useAppContext();
+
+  if (isLoading) {
+    return (
+      <div className="main-card">
+        <p>Loading compliance snapshot…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="main-card">
+        <div role="alert" className="text-red-600 font-medium">Failed to load compliance data: {error}</div>
+      </div>
+    );
+  }
+
+  const complianceStatus = summary;
+  const vaultBalance = formatCurrencyFromCents(vaultBalanceCents);
+  const totalDeposits = formatCurrencyFromCents(totals.totalDepositsCents);
+  const totalReleases = formatCurrencyFromCents(totals.totalReleasesCents);
 
   return (
     <div className="main-card">
@@ -33,6 +48,9 @@ export default function Dashboard() {
           <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
             {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
           </p>
+          {complianceStatus.outstandingLodgments.length > 0 && (
+            <p className="text-xs text-red-600">Outstanding: {complianceStatus.outstandingLodgments.join(', ')}</p>
+          )}
           <Link to="/bas" className="text-blue-600 text-sm underline">View BAS</Link>
         </div>
 
@@ -41,6 +59,8 @@ export default function Dashboard() {
           <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
             {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
           </p>
+          <p className="text-sm text-gray-600">Vault balance: <strong>{vaultBalance}</strong></p>
+          <p className="text-xs text-gray-500">Deposited this period: {totalDeposits} · Released: {totalReleases}</p>
           <Link to="/audit" className="text-blue-600 text-sm underline">View Audit</Link>
         </div>
 
@@ -81,16 +101,24 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6 text-sm text-gray-700">
-        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
-        <p>Next BAS due by <strong>{complianceStatus.nextDue}</strong>.</p>
-        {complianceStatus.outstandingLodgments.length > 0 && (
-          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
-        )}
+      <div className="mt-6 text-sm text-gray-700 space-y-1">
+        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS ?? '—'}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
+        <p>Next BAS due by <strong>{complianceStatus.nextDue ?? 'TBC'}</strong>.</p>
         {complianceStatus.outstandingAmounts.length > 0 && (
           <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
         )}
       </div>
+
+      {complianceStatus.alerts.length > 0 && (
+        <div className="mt-6 bg-red-50 border border-red-200 text-red-700 rounded-lg p-4" role="status">
+          <h3 className="font-semibold mb-2">Alerts</h3>
+          <ul className="list-disc text-sm pl-5 space-y-1">
+            {complianceStatus.alerts.map((alert, idx) => (
+              <li key={idx}>{alert}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-4 text-xs text-gray-500 italic">
         Staying compliant helps avoid audits, reduce penalties, and increase access to ATO support programs.
