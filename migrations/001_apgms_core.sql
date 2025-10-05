@@ -1,4 +1,6 @@
 -- 001_apgms_core.sql
+
+create extension if not exists "pgcrypto";
 create table if not exists periods (
   id serial primary key,
   abn text not null,
@@ -21,13 +23,13 @@ create table if not exists owa_ledger (
   abn text not null,
   tax_type text not null,
   period_id text not null,
-  transfer_uuid uuid not null,
+  transfer_uuid uuid not null default gen_random_uuid(),
   amount_cents bigint not null,
   balance_after_cents bigint not null,
   bank_receipt_hash text,
   prev_hash text,
   hash_after text,
-  created_at timestamptz default now(),
+  created_at timestamptz not null default now(),
   unique (transfer_uuid)
 );
 
@@ -46,10 +48,12 @@ create table if not exists rpt_tokens (
 
 create table if not exists audit_log (
   seq bigserial primary key,
-  ts timestamptz default now(),
-  actor text not null,
-  action text not null,
-  payload_hash text not null,
+  ts timestamptz not null default now(),
+  actor text,
+  action text,
+  category text,
+  message text,
+  payload_hash text,
   prev_hash text,
   terminal_hash text
 );

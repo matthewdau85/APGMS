@@ -18,7 +18,8 @@ def bundle(period_id: str):
     conn = db(); cur = conn.cursor()
     cur.execute("SELECT rpt_json, rpt_sig, issued_at FROM rpt_store WHERE period_id=%s ORDER BY issued_at DESC LIMIT 1", (period_id,))
     rpt = cur.fetchone()
-    cur.execute("SELECT event_time, category, message FROM audit_log WHERE message LIKE %s ORDER BY event_time", (f'%\"period_id\":\"{period_id}\"%',))
-    logs = [{"event_time": str(r[0]), "category": r[1], "message": r[2]}] if cur.rowcount else []
+    cur.execute("SELECT ts, COALESCE(category, action), COALESCE(message, '') FROM audit_log WHERE message LIKE %s ORDER BY ts",
+                (f'%\"period_id\":\"{period_id}\"%',))
+    logs = [{"event_time": str(r[0]), "category": r[1], "message": r[2]} for r in cur.fetchall()]
     cur.close(); conn.close()
     return {"period_id": period_id, "rpt": rpt[0] if rpt else None, "audit": logs}
