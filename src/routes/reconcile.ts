@@ -4,6 +4,7 @@ import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
+import { respondIfKillSwitch } from "../safety/killSwitch";
 const pool = new Pool();
 
 export async function closeAndIssue(req:any, res:any) {
@@ -19,6 +20,7 @@ export async function closeAndIssue(req:any, res:any) {
 }
 
 export async function payAto(req:any, res:any) {
+  if (respondIfKillSwitch(res)) return;
   const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
   const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
   if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
@@ -34,6 +36,7 @@ export async function payAto(req:any, res:any) {
 }
 
 export async function paytoSweep(req:any, res:any) {
+  if (respondIfKillSwitch(res)) return;
   const { abn, amount_cents, reference } = req.body;
   const r = await paytoDebit(abn, amount_cents, reference);
   return res.json(r);

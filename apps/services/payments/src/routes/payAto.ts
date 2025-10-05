@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { respondIfKillSwitch } from '../middleware/killSwitch.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -15,6 +16,9 @@ function genUUID() {
  * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
  */
 export async function payAtoRelease(req: Request, res: Response) {
+  if (respondIfKillSwitch(res)) {
+    return;
+  }
   const { abn, taxType, periodId, amountCents } = req.body || {};
   if (!abn || !taxType || !periodId) {
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
