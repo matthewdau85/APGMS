@@ -4,6 +4,7 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
+import { fileURLToPath } from 'node:url';
 
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
@@ -23,22 +24,34 @@ const connectionString =
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
 
-const app = express();
-app.use(express.json());
+export function createPaymentsRouter() {
+  const router = express.Router();
+  router.use(express.json());
 
-// Health check
-app.get('/health', (_req, res) => res.json({ ok: true }));
+  router.post('/deposit', deposit);
+  router.post('/payAto', rptGate, payAtoRelease);
+  router.get('/balance', balance);
+  router.get('/ledger', ledger);
 
-// Endpoints
-app.post('/deposit', deposit);
-app.post('/payAto', rptGate, payAtoRelease);
-app.get('/balance', balance);
-app.get('/ledger', ledger);
+  return router;
+}
 
-// 404 fallback
-app.use((_req, res) => res.status(404).send('Not found'));
+export function createPaymentsApp() {
+  const app = express();
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`[payments] listening on http://localhost:${PORT}`);
-});
+  app.get('/health', (_req, res) => res.json({ ok: true }));
+  app.use(createPaymentsRouter());
+  app.use((_req, res) => res.status(404).send('Not found'));
+
+  return app;
+}
+
+const app = createPaymentsApp();
+
+const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMainModule) {
+  app.listen(PORT, () => {
+    console.log(`[payments] listening on http://localhost:${PORT}`);
+  });
+}

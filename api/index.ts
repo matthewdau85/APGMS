@@ -1,10 +1,17 @@
-// server/index.ts
 import express from "express";
-import bodyParser from "body-parser";
-import { router as paymentsApi } from "./api/payments";
 
-const app = express();
-app.use(bodyParser.json());
-app.use("/api/payments", paymentsApi);
+import { router as paymentsApi } from "./payments";
 
-app.listen(8080, () => console.log("App on http://localhost:8080"));
+export function createApp() {
+  const app = express();
+  app.use("/api/payments", paymentsApi);
+  return app;
+}
+
+if (require.main === module) {
+  const port = Number(process.env.PORT ?? 8080);
+  const app = createApp();
+  app.listen(port, () => {
+    console.log(`App on http://localhost:${port}`);
+  });
+}
