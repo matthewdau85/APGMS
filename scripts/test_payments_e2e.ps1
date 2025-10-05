@@ -127,18 +127,37 @@ if ($dupRejected) {
   Say "duplicate release: FAIL (should have been rejected) resp=$($dup | ConvertTo-Json -Compress)" "Red"
 }
 
-# 7) Snapshot ledger rows
+# 7) Ledger API read-back
+$ledgerUrl = $BaseUrl.TrimEnd('/') + "/ledger?abn=$abn&taxType=$taxType&periodId=$periodId"
+$ledger = Call-Api "GET" $ledgerUrl
+$ledgerOk = (-not $ledger.__error)
+if ($ledgerOk) {
+  $rowCount = ($ledger.rows | Measure-Object).Count
+  $releaseRows = @($ledger.rows | Where-Object { $_.amount_cents -lt 0 -and $_.rpt_verified -eq $true -and $_.release_uuid })
+  if ($rowCount -lt 2 -or $releaseRows.Count -lt 1) {
+    $ledgerOk = $false
+    $ledgerDetail = "rows=$rowCount releaseRows=$($releaseRows.Count)"
+  } else {
+    $ledgerDetail = "rows=$rowCount"
+    Say "ledger: PASS $($ledger | ConvertTo-Json -Compress)" "Green"
+  }
+} else {
+  $ledgerDetail = "status=$($ledger.status) body=$($ledger.body)"
+  Say "ledger: FAIL status=$($ledger.status) body=$($ledger.body)" "Red"
+}
+
+# 8) Snapshot ledger rows direct from SQL (for logs)
 $selSql = "SELECT id,amount_cents,balance_after_cents,rpt_verified,release_uuid,created_at FROM owa_ledger WHERE abn='$abn' AND tax_type='$taxType' AND period_id='$periodId' ORDER BY id ASC;"
 $rows = Psql-Exec $selSql
 $rowsClean = ($rows -split "`r?`n") | Where-Object { $_ -and ($_ -notmatch '^\s*$') }
 
-# 8) Cleanup
+# 9) Cleanup
 $env:PGPASSWORD = $PGPASSWORD
 $null = Psql-Exec "DELETE FROM evidence_bundles WHERE abn='$abn' AND tax_type='$taxType' AND period_id='$periodId';"
 $null = Psql-Exec "DELETE FROM owa_ledger WHERE abn='$abn' AND tax_type='$taxType' AND period_id='$periodId';"
 $null = Psql-Exec "DELETE FROM rpt_tokens WHERE abn='$abn' AND tax_type='$taxType' AND period_id='$periodId';"
 
-# 9) Report (PowerShell-safeâ€”no ternaries)
+# 10) Report (PowerShell-safeâ€”no ternaries)
 $depResult  = if ($depOk) { "PASS" } else { "FAIL" }
 $depDetail  = if ($depOk) { "ledger_id=$($dep.ledger_id)" } else { "status=$($dep.status) body=$($dep.body)" }
 
@@ -148,6 +167,9 @@ $relDetail  = if ($relOk) { "ledger_id=$($rel.ledger_id)" } else { "status=$($re
 $dupResult  = if ($dupRejected) { "PASS" } else { "FAIL" }
 $dupDetail  = if ($dupRejected) { "rejected" } else { "unexpectedly accepted" }
 
+$ledgerResult = if ($ledgerOk) { "PASS" } else { "FAIL" }
+if (-not $ledgerDetail) { $ledgerDetail = if ($ledgerOk) { "rows=$($ledger.rows.Length)" } else { "unknown" } }
+
 Say "`n================= E2E TEST REPORT =================" "Yellow"
 "{0,-7} {1,-6} {2}" -f "Step","Result","Detail" | Write-Host
 "{0,-7} {1,-6} {2}" -f "health","PASS","ok=true" | Write-Host
@@ -155,6 +177,7 @@ Say "`n================= E2E TEST REPORT =================" "Yellow"
 "{0,-7} {1,-6} {2}" -f "deposit",$depResult,$depDetail | Write-Host
 "{0,-7} {1,-6} {2}" -f "release",$relResult,$relDetail | Write-Host
 "{0,-7} {1,-6} {2}" -f "dupRel",$dupResult,$dupDetail | Write-Host
+"{0,-7} {1,-6} {2}" -f "ledger",$ledgerResult,$ledgerDetail | Write-Host
 
 Say "`nLedger rows for ${periodId}:" "DarkGray"
 $rowsClean | ForEach-Object { Write-Host "  $_" }
