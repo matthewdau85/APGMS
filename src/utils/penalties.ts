@@ -1,5 +1,7 @@
+import { schedules } from "../tax";
+
 export function calculatePenalties(daysLate: number, amountDue: number): number {
-  const basePenalty = amountDue * 0.05;
-  const dailyInterest = amountDue * 0.0002;
-  return basePenalty + (dailyInterest * daysLate);
+  const liabilityCents = Math.round(amountDue * 100);
+  const penaltyCents = schedules.penalty(liabilityCents, daysLate);
+  return penaltyCents / 100;
 }
