@@ -1,4 +1,4 @@
-﻿import { Request, Response } from "express";
+import { Request, Response, Router } from "express";
 import { pool } from "../index.js";
 import { randomUUID } from "node:crypto";
 
@@ -52,3 +52,6 @@ export async function deposit(req: Request, res: Response) {
     return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
   }
 }
+
+export const router = Router();
+router.post("/", deposit);

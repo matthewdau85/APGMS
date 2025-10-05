@@ -1,9 +1,12 @@
-﻿import { issueRPT } from "../rpt/issuer";
+import { Router } from "express";
+import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
+import { idempotency } from "../middleware/idempotency";
+
 const pool = new Pool();
 
 export async function closeAndIssue(req:any, res:any) {
@@ -50,3 +53,9 @@ export async function evidence(req:any, res:any) {
   const { abn, taxType, periodId } = req.query as any;
   res.json(await buildEvidenceBundle(abn, taxType, periodId));
 }
+
+export const router = Router();
+router.post("/close-issue", closeAndIssue);
+router.post("/pay", idempotency(), payAto);
+router.post("/payto/sweep", paytoSweep);
+router.post("/settlement/webhook", settlementWebhook);
