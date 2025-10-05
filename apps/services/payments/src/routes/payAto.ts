@@ -1,8 +1,7 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
-import { pool } from '../index.js';
+import { pool } from '../db.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -85,6 +84,9 @@ export async function payAtoRelease(req: Request, res: Response) {
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
+    if (e?.code === '23505' && typeof e?.constraint === 'string' && e.constraint.includes('ux_owa_single_negative_release')) {
+      return res.status(400).json({ error: 'Release already exists for period' });
+    }
     // common failures: unique single-release-per-period, allow-list, etc.
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {

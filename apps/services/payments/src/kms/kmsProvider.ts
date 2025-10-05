@@ -38,5 +38,7 @@ export async function getKms(): Promise<KmsProvider> {
 }
 
 export function selectKms(): IKms {
+  const override = (globalThis as any).__APGMS_TEST_KMS__ as IKms | undefined;
+  if (override) return override;
   return new LocalKeyProvider();
 }
