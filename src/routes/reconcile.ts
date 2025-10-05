@@ -2,7 +2,11 @@
 import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
-import { parseSettlementCSV } from "../settlement/splitParser";
+import {
+  parseSettlementEnvelope,
+  SettlementValidationError,
+} from "../settlement/splitParser";
+import { settlementEvents, getSettlementMetrics } from "../settlement/events";
 import { Pool } from "pg";
 const pool = new Pool();
 
@@ -40,13 +44,120 @@ export async function paytoSweep(req:any, res:any) {
 }
 
 export async function settlementWebhook(req:any, res:any) {
-  const csvText = req.body?.csv || "";
-  const rows = parseSettlementCSV(csvText);
-  // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
-  return res.json({ ingested: rows.length });
+  const receivedAt = new Date().toISOString();
+  const payload = req.body ?? {};
+  const rawPayload = typeof payload === "object" ? payload : {};
+
+  try {
+    const parsed = await parseSettlementEnvelope(payload, {
+      async hasSeen(fileId: string) {
+        const { rowCount } = await pool.query(
+          "select 1 from settlement_files where file_id = $1 and status = 'ACCEPTED'",
+          [fileId]
+        );
+        return rowCount > 0;
+      },
+    });
+
+    try {
+      await pool.query(
+        `insert into settlement_files
+          (file_id, schema_version, generated_at, received_at, signer_key_id, signature_verified, hmac_key_id, hmac_verified,
+           csv_sha256, row_count, status, raw_payload, verification_artifacts)
+         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'ACCEPTED',$11,$12)`,
+        [
+          parsed.fileId,
+          parsed.schemaVersion,
+          parsed.generatedAt,
+          receivedAt,
+          parsed.signerKeyId,
+          parsed.signatureValid,
+          parsed.hmacKeyId,
+          parsed.hmacValid,
+          parsed.csvHash,
+          parsed.rows.length,
+          rawPayload,
+          {
+            canonical_message: parsed.canonicalMessage,
+            timestamp_skew_minutes: parsed.timestampSkewMinutes,
+          },
+        ]
+      );
+    } catch (dbErr: any) {
+      if (dbErr?.code !== "23505") {
+        throw dbErr;
+      }
+    }
+
+    settlementEvents.emit({
+      type: "settlement.accepted",
+      fileId: parsed.fileId,
+      rowCount: parsed.rows.length,
+      generatedAt: parsed.generatedAt,
+      receivedAt,
+      signerKeyId: parsed.signerKeyId,
+      hmacKeyId: parsed.hmacKeyId,
+    });
+
+    // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
+    return res.json({ status: "ACCEPTED", fileId: parsed.fileId, ingested: parsed.rows.length });
+  } catch (err: any) {
+    const code = err instanceof SettlementValidationError ? err.code : "UNKNOWN";
+    const httpStatus = code === "REPLAYED_FILE" ? 409 : err instanceof SettlementValidationError ? 400 : 500;
+    const errorDetail = err instanceof SettlementValidationError ? err.details ?? {} : { message: err?.message };
+
+    await pool.query(
+      `insert into settlement_files
+        (file_id, received_at, status, error_code, error_detail, raw_payload)
+       values ($1,$2,'REJECTED',$3,$4,$5)`,
+      [rawPayload?.file_id ?? null, receivedAt, code, errorDetail, rawPayload]
+    );
+
+    settlementEvents.emit({
+      type: "settlement.rejected",
+      fileId: rawPayload?.file_id,
+      receivedAt,
+      errorCode: code,
+    });
+
+    return res.status(httpStatus).json({ error: code, detail: err?.message, metadata: errorDetail });
+  }
 }
 
 export async function evidence(req:any, res:any) {
   const { abn, taxType, periodId } = req.query as any;
   res.json(await buildEvidenceBundle(abn, taxType, periodId));
+}
+
+export async function listSettlementFiles(req:any, res:any) {
+  const limitRaw = Number(req.query?.limit ?? 50);
+  const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(1, limitRaw), 200) : 50;
+  const { rows } = await pool.query(
+    `select id, file_id, schema_version, generated_at, received_at, signer_key_id, signature_verified,
+            hmac_key_id, hmac_verified, row_count, status, error_code
+       from settlement_files
+      order by received_at desc
+      limit $1`,
+    [limit]
+  );
+  res.json(rows);
+}
+
+export async function getSettlementFile(req:any, res:any) {
+  const fileId = req.params?.fileId;
+  if (!fileId) {
+    return res.status(400).json({ error: "MISSING_FILE_ID" });
+  }
+  const { rows } = await pool.query(
+    `select * from settlement_files where file_id = $1 order by received_at desc limit 1`,
+    [fileId]
+  );
+  if (rows.length === 0) {
+    return res.status(404).json({ error: "NOT_FOUND" });
+  }
+  res.json(rows[0]);
+}
+
+export function settlementMetricsHandler(_req:any, res:any) {
+  res.json(getSettlementMetrics());
 }

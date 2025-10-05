@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SettlementIngestionPanel from "../components/SettlementIngestionPanel";
 
 export default function Audit() {
   const [logs] = useState([
@@ -12,7 +13,7 @@ export default function Audit() {
   ]);
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold">Compliance & Audit</h1>
       <p className="text-sm text-muted-foreground">
         Track every action in your PAYGW and GST account for compliance.
@@ -36,6 +37,7 @@ export default function Audit() {
         </table>
       </div>
       <button className="mt-4 bg-primary text-white p-2 rounded-md">Download Full Log</button>
+      <SettlementIngestionPanel />
     </div>
   );
 }
