@@ -17,6 +17,17 @@ const pool = new Pool({
   host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
 });
 
+function canonicalJson(value) {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return '[' + value.map(canonicalJson).join(',') + ']';
+  }
+  const keys = Object.keys(value).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalJson(value[k])).join(',') + '}';
+}
+
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
   console.error(e);
@@ -74,6 +85,9 @@ app.post('/rpt/issue', ah(async (req,res)=>{
   }
 
   // patent-critical: canonical payload string + sha256 saved alongside signature
+  const nonce = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 15*60*1000);
+
   const payload = {
     entity_id: p.abn,
     period_id: p.period_id,
@@ -85,11 +99,12 @@ app.post('/rpt/issue', ah(async (req,res)=>{
     thresholds,
     rail_id: "EFT",
     reference: ATO_PRN,
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(),
-    nonce: crypto.randomUUID()
+    expiry_ts: expiresAt.toISOString(),
+    expires_at: expiresAt.toISOString(),
+    nonce
   };
 
-  const payloadStr = JSON.stringify(payload);
+  const payloadStr = canonicalJson(payload);
   const payloadSha256 = crypto.createHash('sha256').update(payloadStr).digest('hex');
   const msg = new TextEncoder().encode(payloadStr);
 
@@ -98,11 +113,23 @@ app.post('/rpt/issue', ah(async (req,res)=>{
   const sig = nacl.sign.detached(msg, new Uint8Array(skBuf));
   const signature = Buffer.from(sig).toString('base64');
 
-  // 7 params insert (payload_c14n + payload_sha256)
   await pool.query(
-    insert into rpt_tokens(abn,tax_type,period_id,payload,signature,payload_c14n,payload_sha256)
-     values (,,,,,,),
-    [abn, taxType, periodId, payload, signature, payloadStr, payloadSha256]
+    `insert into rpt_tokens(
+        abn,tax_type,period_id,payload,signature,status,
+        payload_c14n,payload_sha256,nonce,expires_at
+      ) values ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10)`,
+    [
+      abn,
+      taxType,
+      periodId,
+      JSON.stringify(payload),
+      signature,
+      'active',
+      payloadStr,
+      payloadSha256,
+      nonce,
+      expiresAt.toISOString()
+    ]
   );
 
   await pool.query(update periods set state='READY_RPT' where id=, [p.id]);

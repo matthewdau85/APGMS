@@ -22,16 +22,22 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     throw new Error("BLOCKED_DISCREPANCY");
   }
 
+  const expiresAt = new Date(Date.now() + 15*60*1000).toISOString();
   const payload: RptPayload = {
     entity_id: row.abn, period_id: row.period_id, tax_type: row.tax_type,
     amount_cents: Number(row.final_liability_cents),
-    merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
+    merkle_root: row.merkle_root ?? null, running_balance_hash: row.running_balance_hash ?? null,
     anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
+    expiry_ts: expiresAt, expires_at: expiresAt, nonce: crypto.randomUUID()
   };
-  const signature = signRpt(payload, new Uint8Array(secretKey));
-  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
-    [abn, taxType, periodId, payload, signature]);
+  const { signature, payload_c14n, payload_sha256 } = signRpt(payload, new Uint8Array(secretKey));
+  await pool.query(
+    `insert into rpt_tokens(
+       abn,tax_type,period_id,payload,signature,status,
+       payload_c14n,payload_sha256,nonce,expires_at
+     ) values ($1,$2,$3,$4::jsonb,$5,'active',$6,$7,$8,$9)`,
+    [abn, taxType, periodId, JSON.stringify(payload), signature, payload_c14n, payload_sha256, payload.nonce, expiresAt]
+  );
   await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
   return { payload, signature };
 }

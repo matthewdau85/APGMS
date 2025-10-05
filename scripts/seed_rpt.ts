@@ -22,20 +22,24 @@ function hexToBuf(hex: string) { return Buffer.from(hex, "hex"); }
   const periodId = "2024Q4";
   const kid = "dev-ed25519-kms-001"; // mirrors KMS key id in prod
 
+  const expiresAtIso = new Date(Date.now() + 24*3600*1000).toISOString();
+
   const payload = {
     abn, taxType, periodId,
     ceilingCents: 200000,
     issuedAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 24*3600*1000).toISOString(),
+    expiresAt: expiresAtIso,
+    expires_at: expiresAtIso,
     nonce: crypto.randomBytes(16).toString("hex"),
     kid
   };
 
   const c14n = canonicalize(payload);
-  const sha = crypto.createHash("sha256").update(c14n).digest(); // Buffer
+  const sha = crypto.createHash("sha256").update(c14n).digest("hex");
 
   // Ed25519 sign the canonical JSON
   const sig = crypto.sign(null, Buffer.from(c14n), key); // Ed25519
+  const sigB64 = sig.toString("base64");
 
   const client = new Client({ connectionString: url });
   await client.connect();
@@ -62,8 +66,8 @@ function hexToBuf(hex: string) { return Buffer.from(hex, "hex"); }
       kid,
       payload,
       c14n,
-      sha,          // BYTEA
-      sig,          // BYTEA
+      sha,
+      sigB64,
       payload.nonce,
       payload.expiresAt
     ]
