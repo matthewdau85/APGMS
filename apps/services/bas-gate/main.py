@@ -36,7 +36,9 @@ def transition(req: TransitionReq):
     else:
         cur.execute("INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
                     (req.period_id, req.target_state, req.reason_code, prev, h))
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('bas_gate',%s,%s,%s)",
-                (payload, prev, h))
+    cur.execute(
+        "INSERT INTO audit_log(category,message,hash_prev,hash_this,prev_hash,terminal_hash) VALUES ('bas_gate',%s,%s,%s,%s,%s)",
+        (payload, prev, h, prev, h)
+    )
     conn.commit(); cur.close(); conn.close()
     return {"ok": True, "hash": h}
