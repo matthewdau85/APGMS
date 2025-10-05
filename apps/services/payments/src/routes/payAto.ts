@@ -1,8 +1,8 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { sha256Hex } from '../utils/crypto';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -42,8 +42,9 @@ export async function payAtoRelease(req: Request, res: Response) {
     // fetch last balance in this period (by id order), default 0
     const { rows: lastRows } = await client.query<{
       balance_after_cents: string | number;
+      hash_after: string | null;
     }>(
-      `SELECT balance_after_cents
+      `SELECT balance_after_cents, hash_after
        FROM owa_ledger
        WHERE abn=$1 AND tax_type=$2 AND period_id=$3
        ORDER BY id DESC
@@ -51,18 +52,21 @@ export async function payAtoRelease(req: Request, res: Response) {
       [abn, taxType, periodId]
     );
     const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
+    const prevHash = lastRows.length ? lastRows[0].hash_after ?? '' : '';
     const newBal = lastBal + amt;
 
     const release_uuid = genUUID();
+    const transfer_uuid = genUUID();
+    const bank_receipt_hash = `synthetic:release:${release_uuid.slice(0, 12)}`;
+    const hash_after = sha256Hex(prevHash + bank_receipt_hash + String(newBal));
 
     const insert = `
       INSERT INTO owa_ledger
         (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
-      RETURNING id, transfer_uuid, balance_after_cents
+         rpt_verified, release_uuid, bank_receipt_hash, prev_hash, hash_after, created_at)
+      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, $8, $9, $10, now())
+      RETURNING id, transfer_uuid, balance_after_cents, hash_after
     `;
-    const transfer_uuid = genUUID();
     const { rows: ins } = await client.query(insert, [
       abn,
       taxType,
@@ -71,6 +75,9 @@ export async function payAtoRelease(req: Request, res: Response) {
       amt,
       newBal,
       release_uuid,
+      bank_receipt_hash,
+      prevHash,
+      hash_after,
     ]);
 
     await client.query('COMMIT');
@@ -80,8 +87,10 @@ export async function payAtoRelease(req: Request, res: Response) {
       ledger_id: ins[0].id,
       transfer_uuid,
       release_uuid,
+      bank_receipt_hash,
       balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      hash_after: ins[0].hash_after,
+      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid ?? null, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
     await client.query('ROLLBACK');

@@ -1,6 +1,7 @@
 ﻿import { Pool } from "pg";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
+import { sha256Hex } from "../crypto/merkle";
 import { exceeds } from "../anomaly/deterministic";
 const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
@@ -29,9 +30,27 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
     expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
   };
+  const payload_c14n = JSON.stringify(payload);
+  const payload_sha256 = sha256Hex(payload_c14n);
   const signature = signRpt(payload, new Uint8Array(secretKey));
-  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
-    [abn, taxType, periodId, payload, signature]);
+  const keyId = process.env.RPT_KEY_ID || null;
+  await pool.query(
+    `insert into rpt_tokens(
+       abn,tax_type,period_id,payload,payload_c14n,payload_sha256,signature,key_id,nonce,expires_at,status
+     ) values ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,'ISSUED')`,
+    [
+      abn,
+      taxType,
+      periodId,
+      payload_c14n,
+      payload_c14n,
+      payload_sha256,
+      signature,
+      keyId,
+      payload.nonce,
+      payload.expiry_ts
+    ]
+  );
   await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
   return { payload, signature };
 }
