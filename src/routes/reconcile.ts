@@ -1,7 +1,7 @@
 ﻿import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
-import { debit as paytoDebit } from "../payto/adapter";
+import { payto } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
 const pool = new Pool();
@@ -34,9 +34,16 @@ export async function payAto(req:any, res:any) {
 }
 
 export async function paytoSweep(req:any, res:any) {
-  const { abn, amount_cents, reference } = req.body;
-  const r = await paytoDebit(abn, amount_cents, reference);
-  return res.json(r);
+  try {
+    const { mandateId, amountCents, ref } = req.body || {};
+    if (!mandateId || amountCents == null) {
+      return res.status(400).json({ error: "mandateId and amountCents required" });
+    }
+    const result = await payto.sweep(String(mandateId), Number(amountCents), String(ref || ""));
+    return res.json(result);
+  } catch (e:any) {
+    return res.status(400).json({ error: e?.message || "sweep failed" });
+  }
 }
 
 export async function settlementWebhook(req:any, res:any) {
