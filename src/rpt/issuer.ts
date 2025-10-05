@@ -1,8 +1,8 @@
-﻿import { Pool } from "pg";
+﻿import { getPool } from "../db/pool";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
 import { exceeds } from "../anomaly/deterministic";
-const pool = new Pool();
+const pool = getPool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
 
 export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {

@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { getShadowReport } from "./shadow/report";
 
 dotenv.config();
 
@@ -17,6 +18,42 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.get("/ops/shadow/report", async (req, res) => {
+  try {
+    const query = req.query as Record<string, string | undefined>;
+    const fromParam = query.from;
+    const toParam = query.to;
+    const opParam = query.operation;
+
+    let fromDate: Date | undefined;
+    if (fromParam) {
+      const parsed = new Date(fromParam);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: "INVALID_FROM" });
+      }
+      fromDate = parsed;
+    }
+
+    let toDate: Date | undefined;
+    if (toParam) {
+      const parsed = new Date(toParam);
+      if (Number.isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: "INVALID_TO" });
+      }
+      toDate = parsed;
+    }
+
+    const report = await getShadowReport({
+      from: fromDate,
+      to: toDate,
+      operation: opParam,
+    });
+    res.json(report);
+  } catch (err: any) {
+    res.status(500).json({ error: "SHADOW_REPORT_FAILED", detail: err?.message || String(err) });
+  }
+});
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);

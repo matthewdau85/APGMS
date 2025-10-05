@@ -3,8 +3,8 @@ import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
-import { Pool } from "pg";
-const pool = new Pool();
+import { getPool } from "../db/pool";
+const pool = getPool();
 
 export async function closeAndIssue(req:any, res:any) {
   const { abn, taxType, periodId, thresholds } = req.body;

@@ -1,5 +1,5 @@
-﻿import { Pool } from "pg";
-const pool = new Pool();
+﻿import { getPool } from "../db/pool";
+const pool = getPool();
 /** Express middleware for idempotency via Idempotency-Key header */
 export function idempotency() {
   return async (req:any, res:any, next:any) => {
