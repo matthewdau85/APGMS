@@ -1,7 +1,10 @@
 ﻿# apps/services/bank-egress/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os, psycopg2, json
+import json
+import os
+import psycopg2
+from libs.core.providers import bindings, get_bank
 from libs.rpt.rpt import verify
 
 app = FastAPI(title="bank-egress")
@@ -19,8 +22,13 @@ def db():
         port=int(os.getenv("PGPORT","5432"))
     )
 
+@app.get("/debug/providers")
+def provider_bindings():
+    return {"bindings": bindings()}
+
+
 @app.post("/egress/remit")
-def remit(req: EgressReq):
+async def remit(req: EgressReq):
     if "signature" not in req.rpt or not verify({k:v for k,v in req.rpt.items() if k!="signature"}, req.rpt["signature"]):
         raise HTTPException(400, "invalid RPT signature")
     conn = db(); cur = conn.cursor()
@@ -28,9 +36,21 @@ def remit(req: EgressReq):
     row = cur.fetchone()
     if not row or row[0] != "RPT-Issued":
         raise HTTPException(409, "gate not in RPT-Issued")
-    # Here you would call the real bank API via mTLS. For now, we just log.
-    payload = json.dumps({"period_id": req.period_id, "action": "remit"})
+    amount = 0
+    try:
+        amount = int(req.rpt.get("payload", {}).get("amount_cents", 0))
+    except Exception:
+        amount = 0
+
+    bank = get_bank()
+    try:
+        payout = await bank.payout(req.rpt, amount, {"periodId": req.period_id})
+    except Exception as exc:
+        conn.rollback(); cur.close(); conn.close()
+        raise HTTPException(502, f"bank payout failed: {exc}") from exc
+
+    payload = json.dumps({"period_id": req.period_id, "action": "remit", "payout": payout})
     cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('egress',%s,NULL,NULL)", (payload,))
     cur.execute("UPDATE bas_gate_states SET state='Remitted', updated_at=NOW() WHERE period_id=%s", (req.period_id,))
     conn.commit(); cur.close(); conn.close()
-    return {"ok": True}
+    return {"ok": True, "payout": payout}

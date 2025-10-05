@@ -1,0 +1,13 @@
+{
+  "name": "@core/providers",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "registry.js",
+  "types": "registry.d.ts",
+  "dependencies": {
+    "@aws-sdk/client-kms": "^3.645.0",
+    "@core/ports": "workspace:*",
+    "axios": "^1.7.7",
+    "tweetnacl": "^1.0.3"
+  }
+}
