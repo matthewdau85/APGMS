@@ -1,7 +1,7 @@
 {
     "scripts": {
         "start": "node dist/index.js",
-        "build": "echo build root",
+        "build": "tsc --project tsconfig.build.json && node -e \"const fs=require('fs');const path=require('path');const src=path.join('dist','src','index.js');if(!fs.existsSync(src)) throw new Error('Missing dist/src/index.js');const dest=path.join('dist','index.js');fs.mkdirSync(path.dirname(dest),{recursive:true});fs.writeFileSync(dest, 'require(\\'./src/index.js\\');\\n');\" && tsc --project tsconfig.libs.json && tsc --project tsconfig.payments.json",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
         "lint": "echo lint root"
@@ -9,7 +9,7 @@
     "version": "0.1.0",
     "name": "apgms",
     "private": true,
-    "packageManager": "pnpm@9",
+    "packageManager": "pnpm@9.0.0",
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
