@@ -1,0 +1,24 @@
+{
+  "bundle_id": "apgms-demo-2024",
+  "issued_at": "2024-07-01T00:00:00Z",
+  "issuer": "APGMS Demo Authority",
+  "versions": [
+    {
+      "id": "REAL-2024-07-01",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "gst_rate": "0.10",
+      "paygw_brackets": [
+        {
+          "threshold_cents": 80000,
+          "rate": "0.15"
+        },
+        {
+          "threshold_cents": null,
+          "rate": "0.20"
+        }
+      ]
+    }
+  ],
+  "signature": "2da026f4c1deae56ec22ae36856e567ce5b58fb82400ca157e74ac0c39e67df5"
+}
