@@ -1,6 +1,10 @@
 import { GstInput } from "../types/tax";
+import { postJson } from "./taxEngineClient";
 
-export function calculateGst({ saleAmount, exempt = false }: GstInput): number {
-  if (exempt) return 0;
-  return saleAmount * 0.1;
+type GstResponse = { gst: number };
+
+export async function calculateGst({ saleAmount, exempt = false }: GstInput): Promise<number> {
+  const payload = { amount: saleAmount, exempt };
+  const result = await postJson<GstResponse>("/calculate/gst", payload);
+  return result.gst ?? 0;
 }

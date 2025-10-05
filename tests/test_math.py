@@ -9,10 +9,10 @@ from app.tax_rules import gst_line_tax, paygw_weekly
 def test_gst(amount_cents, expected):
     assert gst_line_tax(amount_cents, "GST") == expected
 
-@pytest.mark.parametrize("gross, expected", [
-    (50_000, 7_500),     # 15% below bracket
-    (80_000, 12_000),    # top of bracket
-    (100_000, 16_000),   # 12,000 + 20% of 20,000
+@pytest.mark.parametrize("gross_cents, kwargs, expected", [
+    (150_000, {}, 30_285),
+    (200_000, {"tax_free_threshold": False}, 46_285),
+    (200_000, {"stsl": True}, 56_285),
 ])
-def test_paygw(gross, expected):
-    assert paygw_weekly(gross) == expected
+def test_paygw(gross_cents, kwargs, expected):
+    assert paygw_weekly(gross_cents, **kwargs) == expected

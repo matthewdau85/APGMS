@@ -4,6 +4,11 @@ export type PaygwInput = {
   taxWithheld: number;
   period: "weekly" | "fortnightly" | "monthly" | "quarterly";
   deductions?: number;
+  method?: "table_ato" | "formula_progressive" | "percent_simple" | "flat_plus_percent" | "bonus_marginal" | "net_to_gross";
+  taxFreeThreshold?: boolean;
+  stsl?: boolean;
+  targetNet?: number;
+  solverMethod?: "table_ato" | "formula_progressive";
 };
 
 export type GstInput = {
