@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { pool } from "../index.js";
+import { pool } from "../db.js";
 
 export async function balance(req: Request, res: Response) {
   try {

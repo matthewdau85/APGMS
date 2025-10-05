@@ -1,17 +1,26 @@
 // apps/services/payments/src/middleware/rptGate.ts
 import { Request, Response, NextFunction } from "express";
-import pg from "pg"; const { Pool } = pg;
-import { sha256Hex } from "../utils/crypto";
-import { selectKms } from "../kms/kmsProvider";
+import { sha256Hex } from "../utils/crypto.js";
+import { selectKms } from "../kms/kmsProvider.js";
+import { pool } from "../db.js";
 
 const kms = selectKms();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function rptGate(req: Request, res: Response, next: NextFunction) {
   try {
     const { abn, taxType, periodId } = req.body || {};
     if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing abn/taxType/periodId" });
+    }
+
+    const existingRelease = await pool.query(
+      `SELECT release_uuid FROM owa_ledger
+       WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND amount_cents < 0
+       LIMIT 1`,
+      [abn, taxType, periodId]
+    );
+    if (existingRelease.rowCount) {
+      return res.status(400).json({ error: "Release already exists for period" });
     }
 
     // Accept pending/active. Order by created_at so newest wins.
