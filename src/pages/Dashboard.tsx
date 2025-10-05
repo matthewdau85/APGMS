@@ -1,6 +1,17 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useApp } from '../context/AppContext';
+
+function OwaBalanceCard() {
+  const { balance } = useApp();
+  return (
+    <div className="bg-white p-4 rounded-xl shadow space-y-2">
+      <h2 className="text-lg font-semibold">OWA Balance</h2>
+      <p>{balance !== undefined ? `$${balance.toFixed(2)}` : '—'}</p>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const complianceStatus = {
@@ -28,6 +39,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <OwaBalanceCard />
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Lodgments</h2>
           <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
