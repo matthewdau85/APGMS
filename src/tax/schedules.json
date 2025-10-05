@@ -1,0 +1,30 @@
+{
+  "version": "2024-25",
+  "paygw": {
+    "default_period": "weekly",
+    "tolerance_cents": 50,
+    "formula_progressive": {
+      "period": "weekly",
+      "brackets": [
+        { "up_to": 359.0, "a": 0.0, "b": 0.0, "fixed": 0.0 },
+        { "up_to": 438.0, "a": 0.19, "b": 68.0, "fixed": 0.0 },
+        { "up_to": 548.0, "a": 0.234, "b": 87.82, "fixed": 0.0 },
+        { "up_to": 721.0, "a": 0.347, "b": 148.5, "fixed": 0.0 },
+        { "up_to": 865.0, "a": 0.345, "b": 147.0, "fixed": 0.0 },
+        { "up_to": 999999.0, "a": 0.39, "b": 183.0, "fixed": 0.0 }
+      ],
+      "tax_free_threshold": true,
+      "rounding": "HALF_UP"
+    }
+  },
+  "gst": {
+    "codes": {
+      "GST": 0.1,
+      "GST_FREE": 0.0,
+      "EXEMPT": 0.0,
+      "ZERO_RATED": 0.0,
+      "": 0.1
+    },
+    "tolerance_cents": 50
+  }
+}
