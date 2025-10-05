@@ -6,19 +6,22 @@ const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
 
 export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
-  const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
+  const p = await pool.query(
+    "select * from periods where abn=$1 and tax_type=$2 and period_id=$3",
+    [abn, taxType, periodId]
+  );
   if (p.rowCount === 0) throw new Error("PERIOD_NOT_FOUND");
   const row = p.rows[0];
   if (row.state !== "CLOSING") throw new Error("BAD_STATE");
 
   const v = row.anomaly_vector || {};
   if (exceeds(v, thresholds)) {
-    await pool.query("update periods set state='BLOCKED_ANOMALY' where id=", [row.id]);
+    await pool.query("update periods set state=$1 where id=$2", ['BLOCKED_ANOMALY', row.id]);
     throw new Error("BLOCKED_ANOMALY");
   }
   const epsilon = Math.abs(Number(row.final_liability_cents) - Number(row.credited_to_owa_cents));
   if (epsilon > (thresholds["epsilon_cents"] ?? 0)) {
-    await pool.query("update periods set state='BLOCKED_DISCREPANCY' where id=", [row.id]);
+    await pool.query("update periods set state=$1 where id=$2", ['BLOCKED_DISCREPANCY', row.id]);
     throw new Error("BLOCKED_DISCREPANCY");
   }
 
@@ -30,8 +33,10 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
   };
   const signature = signRpt(payload, new Uint8Array(secretKey));
-  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
-    [abn, taxType, periodId, payload, signature]);
-  await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
+  await pool.query(
+    "insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values ($1,$2,$3,$4,$5)",
+    [abn, taxType, periodId, payload, signature]
+  );
+  await pool.query("update periods set state=$1 where id=$2", ['READY_RPT', row.id]);
   return { payload, signature };
 }
