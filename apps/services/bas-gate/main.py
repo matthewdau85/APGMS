@@ -1,5 +1,5 @@
 ﻿# apps/services/bas-gate/main.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 import os, psycopg2, json, time
 
@@ -40,3 +40,25 @@ def transition(req: TransitionReq):
                 (payload, prev, h))
     conn.commit(); cur.close(); conn.close()
     return {"ok": True, "hash": h}
+
+@app.get("/gate/transition")
+def read_transition(period_id: str | None = Query(default=None, alias="periodId"), periodId: str | None = Query(default=None)):
+    pid = period_id or periodId
+    if not pid:
+        raise HTTPException(400, "missing period_id")
+
+    conn = db(); cur = conn.cursor()
+    cur.execute("SELECT period_id, state, reason_code, updated_at FROM bas_gate_states WHERE period_id=%s", (pid,))
+    row = cur.fetchone()
+    cur.close(); conn.close()
+
+    if not row:
+        raise HTTPException(404, "period not found")
+
+    period, state, reason_code, updated_at = row
+    return {
+        "period_id": period,
+        "state": state,
+        "reason_code": reason_code,
+        "updated_at": updated_at.isoformat() if updated_at else None,
+    }

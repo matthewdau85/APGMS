@@ -1,17 +1,43 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useCompliance } from '../context/ComplianceContext';
 
 export default function Dashboard() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65,
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { data: complianceStatus, isLoading, isError, error } = useCompliance();
+
+  if (isLoading || !complianceStatus) {
+    return (
+      <div className="main-card">
+        <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6">
+          <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
+          <p className="text-sm opacity-90">
+            Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
+          </p>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow text-center">
+          <p className="text-gray-600">Loading compliance data…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="main-card space-y-4">
+        <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow">
+          <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
+          <p className="text-sm opacity-90">
+            Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
+          </p>
+        </div>
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl shadow">
+          <p className="font-semibold">Unable to load compliance insights.</p>
+          <p className="text-sm">{error?.message || 'Unknown error'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="main-card">
