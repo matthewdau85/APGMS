@@ -8,8 +8,9 @@ export default function ComplianceReports({ history }: { history: TaxReport[] })
       <ul>
         {history.map((rep, i) => (
           <li key={i}>
-            PAYGW: ${rep.paygwLiability.toFixed(2)} | GST: ${rep.gstPayable.toFixed(2)} | Total: ${rep.totalPayable.toFixed(2)}
-            | Status: {rep.complianceStatus}
+            PAYGW: ${rep.paygwLiability.toFixed(2)} | GST: ${rep.gstPayable.toFixed(2)} |
+            FTL Penalty: ${rep.ftlPenalty.toFixed(2)} | GIC: ${rep.gicInterest.toFixed(2)} |
+            Total: ${rep.totalPayable.toFixed(2)} | Status: {rep.complianceStatus}
           </li>
         ))}
       </ul>

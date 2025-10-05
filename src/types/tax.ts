@@ -14,6 +14,8 @@ export type GstInput = {
 export type TaxReport = {
   paygwLiability: number;
   gstPayable: number;
+  ftlPenalty: number;
+  gicInterest: number;
   totalPayable: number;
   discrepancies?: string[];
   complianceStatus: "OK" | "WARNING" | "ALERT";
