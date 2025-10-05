@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { v1Router } from "./routes/v1";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
@@ -17,6 +18,9 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// API v1 shim for smoke/e2e
+app.use("/api/v1", v1Router);
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);

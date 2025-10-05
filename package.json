@@ -4,7 +4,11 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "migrate": "tsx scripts/migrate.ts",
+        "seed": "tsx scripts/seed.ts",
+        "smoke": "tsx scripts/smoke.ts",
+        "test": "node --import tsx --test tests/unit/schedules.spec.ts"
     },
     "version": "0.1.0",
     "name": "apgms",

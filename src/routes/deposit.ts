@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { pool } from "../services/db";
 import { randomUUID } from "node:crypto";
 
 export async function deposit(req: Request, res: Response) {
@@ -25,21 +25,25 @@ export async function deposit(req: Request, res: Response) {
       );
       const prevBal = last[0]?.balance_after_cents ?? 0;
       const newBal = prevBal + amt;
+      const receipt = `rcpt:${randomUUID()}`;
 
       const { rows: ins } = await client.query(
         `INSERT INTO owa_ledger
-           (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,now())
+           (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,now())
          RETURNING id,transfer_uuid,balance_after_cents`,
-        [abn, taxType, periodId, randomUUID(), amt, newBal]
+        [abn, taxType, periodId, randomUUID(), amt, newBal, receipt]
       );
+
+      await client.query(`SELECT periods_sync_totals($1,$2,$3)`, [abn, taxType, periodId]);
 
       await client.query("COMMIT");
       return res.json({
         ok: true,
         ledger_id: ins[0].id,
         transfer_uuid: ins[0].transfer_uuid,
-        balance_after_cents: ins[0].balance_after_cents
+        balance_after_cents: ins[0].balance_after_cents,
+        bank_receipt_hash: receipt
       });
 
     } catch (e:any) {
