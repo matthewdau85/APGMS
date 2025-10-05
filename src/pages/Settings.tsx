@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useAppContext } from "../context/AppContext";
+import { formatCurrencyFromCents } from "../hooks/usePeriodData";
 
 const tabs = [
   "Business Profile",
@@ -14,16 +16,38 @@ const tabs = [
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState(tabs[0]);
-  // Mock business profile state
+  const { query, summary, vaultBalanceCents, totals, ledger, isLoading, error, refresh } = useAppContext();
   const [profile, setProfile] = useState({
-    abn: "12 345 678 901",
-    name: "Example Pty Ltd",
-    trading: "Example Vending",
+    abn: query.abn,
+    name: "Demo Pty Ltd",
+    trading: "APGMS Demo",
     contact: "info@example.com"
   });
 
+  useEffect(() => {
+    setProfile((prev) => ({
+      ...prev,
+      abn: query.abn,
+    }));
+  }, [query.abn]);
+
   return (
     <div className="settings-card">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Settings</h1>
+          <p className="text-sm text-gray-500">Manage organisation details, accounts, and compliance notifications.</p>
+        </div>
+        <button className="button" onClick={refresh}>Refresh data</button>
+      </div>
+
+      {isLoading && <p className="text-sm text-gray-500">Loading live balances…</p>}
+      {error && (
+        <div className="text-red-600 text-sm font-medium" role="alert">
+          Unable to load settings data: {error}
+        </div>
+      )}
+
       <div className="tabs-row">
         {tabs.map(tab => (
           <div
@@ -83,6 +107,18 @@ export default function Settings() {
                 onChange={e => setProfile({ ...profile, contact: e.target.value })}
               />
             </div>
+            <div style={{
+              background: "#fff",
+              borderRadius: 10,
+              padding: 16,
+              marginTop: 12,
+              fontSize: 14,
+              color: "#333"
+            }}>
+              <p><strong>Current Period:</strong> {summary.lastBAS ?? query.periodId}</p>
+              <p><strong>Next BAS Due:</strong> {summary.nextDue ?? "TBC"}</p>
+              <p><strong>Outstanding Payments:</strong> {summary.outstandingAmounts[0] ?? "None"}</p>
+            </div>
           </form>
         )}
         {activeTab === "Accounts" && (
@@ -116,6 +152,8 @@ export default function Settings() {
               </tbody>
             </table>
             <div style={{ marginTop: 18 }}>
+              <p style={{ fontSize: 14, marginBottom: 8 }}>Vault balance: <strong>{formatCurrencyFromCents(vaultBalanceCents)}</strong></p>
+              <p style={{ fontSize: 12, color: "#666" }}>Deposited this period: {formatCurrencyFromCents(totals.totalDepositsCents)} · Released: {formatCurrencyFromCents(totals.totalReleasesCents)}</p>
               <button className="button">Link New Account</button>
             </div>
           </div>
@@ -178,11 +216,25 @@ export default function Settings() {
         )}
         {activeTab === "Compliance & Audit" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Audit Log (Mock)</h3>
-            <ul>
-              <li>05/06/2025 - PAYGW transfer scheduled</li>
-              <li>29/05/2025 - BAS submitted</li>
+            <h3>Period Ledger Activity</h3>
+            <ul style={{ fontSize: 14, lineHeight: 1.6 }}>
+              {ledger.slice(0, 5).map(entry => (
+                <li key={entry.id}>
+                  {entry.created_at ? new Date(entry.created_at).toLocaleString() : '—'} · {entry.amount_cents >= 0 ? 'Deposit' : 'Release'} {formatCurrencyFromCents(Math.abs(entry.amount_cents))}
+                </li>
+              ))}
+              {ledger.length === 0 && <li>No audit events recorded for this period.</li>}
             </ul>
+            {summary.alerts.length > 0 && (
+              <div style={{ marginTop: 16, background: '#fffbe6', borderRadius: 8, padding: 12, border: '1px solid #facc15' }}>
+                <h4 style={{ marginBottom: 6 }}>Alerts</h4>
+                <ul style={{ marginLeft: 18 }}>
+                  {summary.alerts.map((alert, idx) => (
+                    <li key={idx}>{alert}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
         {activeTab === "Customisation" && (
