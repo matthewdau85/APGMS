@@ -3,7 +3,7 @@ import { GstInput } from "../types/tax";
 import { calculateGst } from "../utils/gst";
 
 export default function GstCalculator({ onResult }: { onResult: (liability: number) => void }) {
-  const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false });
+  const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false, purchases: [] });
 
   return (
     <div className="card">
