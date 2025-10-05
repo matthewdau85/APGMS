@@ -1,21 +1,44 @@
-﻿# Node
+# Node & TS
 node_modules/
-npm-debug.log*
-yarn.lock
-pnpm-lock.yaml
-
-# Build/artifacts
 dist/
 build/
+out/
 coverage/
+.nyc_output/
 *.log
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+.turbo/
+.next/
+.next-cache/
+.cache/
 
-# Env/secrets
+# TypeScript build
+*.tsbuildinfo
+
+# Env & secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
 
-# OS/editor
+# Project-specific secrets you mentioned
+.env.local
+
+# OS / editor junk
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+.idea/
 .vscode/
+
+# DB dumps / large blobs
+*.sql
+*.dump
+*.bak
+evidence_blobs/
+postgres-data/
