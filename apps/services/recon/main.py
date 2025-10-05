@@ -1,9 +1,11 @@
 ﻿# apps/services/recon/main.py
 from fastapi import FastAPI
+from libs.fixtures import attach_fixture_recorder
 from pydantic import BaseModel
 import os, psycopg2, json, math
 
 app = FastAPI(title="recon")
+attach_fixture_recorder(app)
 
 class ReconReq(BaseModel):
     period_id: str

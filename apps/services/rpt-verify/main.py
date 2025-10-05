@@ -1,8 +1,10 @@
 from fastapi import FastAPI, HTTPException
+from libs.fixtures import attach_fixture_recorder
 from pydantic import BaseModel
 import nacl.signing, nacl.encoding, hashlib
 
 app = FastAPI()
+attach_fixture_recorder(app, port_label="rpt-verify")
 
 class VerifyIn(BaseModel):
     kid: str

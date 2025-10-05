@@ -89,3 +89,12 @@ For demonstration and prototyping only—real-world deployments require further 
 Contributing
 Pull requests are welcome!
 For major changes, please open an issue first to discuss what you’d like to change.
+
+Record & Replay Fixtures
+To capture HTTP interactions for parity testing, services emit JSONL fixtures under `fixtures/<port>/<YYYYMMDD>/`. Use the `tools/replay` CLI to compare a recorded provider with its opposite implementation:
+
+```
+tools/replay --port bank --fixture 20251005
+```
+
+Provide environment variables `REPLAY_BASE_<PORT>_PRIMARY` and `REPLAY_BASE_<PORT>_SECONDARY` so the CLI knows where to send replay traffic. Semantic comparison paths can be customised per port with `fixtures/<port>/semantic-fields.json` (JSON array of dot paths).

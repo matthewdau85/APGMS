@@ -1,10 +1,12 @@
 ﻿# apps/services/bank-egress/main.py
 from fastapi import FastAPI, HTTPException
+from libs.fixtures import attach_fixture_recorder
 from pydantic import BaseModel
 import os, psycopg2, json
 from libs.rpt.rpt import verify
 
 app = FastAPI(title="bank-egress")
+attach_fixture_recorder(app, port_label="bank")
 
 class EgressReq(BaseModel):
     period_id: str

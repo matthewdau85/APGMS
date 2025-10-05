@@ -1,6 +1,7 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from fastapi import FastAPI, Response
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+from libs.fixtures import attach_fixture_recorder
 
 app = FastAPI(title="APGMS Tax Engine")
 
@@ -37,6 +38,8 @@ try:
     app  # reuse if exists
 except NameError:
     app = FastAPI(title="tax-engine")
+
+attach_fixture_recorder(app, port_label="tax-engine")
 
 NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 SUBJECT_INPUT = os.getenv("SUBJECT_INPUT", "apgms.normalized.v1")

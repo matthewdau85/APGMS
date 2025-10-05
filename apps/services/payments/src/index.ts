@@ -5,6 +5,7 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
+import { createFixtureRecorder } from './middleware/fixtureRecorder.js';
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
@@ -25,6 +26,7 @@ export const pool = new Pool({ connectionString });
 
 const app = express();
 app.use(express.json());
+app.use(createFixtureRecorder({ portLabel: 'payments' }));
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
