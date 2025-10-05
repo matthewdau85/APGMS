@@ -14,14 +14,9 @@ export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", refere
   return rows[0];
 }
 
-/** Idempotent release with a stable transfer_uuid (simulate bank release) */
+/** Release with a stable transfer_uuid (simulate bank release) */
 export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: number, rail: "EFT"|"BPAY", reference: string) {
   const transfer_uuid = uuidv4();
-  try {
-    await pool.query("insert into idempotency_keys(key,last_status) values(,)", [transfer_uuid, "INIT"]);
-  } catch {
-    return { transfer_uuid, status: "DUPLICATE" };
-  }
   const bank_receipt_hash = "bank:" + transfer_uuid.slice(0,12);
 
   const { rows } = await pool.query(
@@ -37,6 +32,5 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
     [abn, taxType, periodId, transfer_uuid, -amountCents, newBal, bank_receipt_hash, prevHash, hashAfter]
   );
   await appendAudit("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
-  await pool.query("update idempotency_keys set last_status= where key=", [transfer_uuid, "DONE"]);
   return { transfer_uuid, bank_receipt_hash };
 }

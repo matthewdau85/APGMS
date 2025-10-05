@@ -3,6 +3,11 @@ type Common = { abn: string; taxType: string; periodId: string };
 export type DepositArgs = Common & { amountCents: number };   // > 0
 export type ReleaseArgs = Common & { amountCents: number };   // < 0
 
+export type RequestContext = {
+  idempotencyKey?: string;
+  traceId?: string;
+};
+
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
   process.env.NEXT_PUBLIC_PAYMENTS_BASE_URL ||
@@ -20,19 +25,26 @@ async function handle(res: Response) {
   return json;
 }
 
+function applyContext(headers: Record<string, string>, context?: RequestContext) {
+  if (!context) return headers;
+  if (context.idempotencyKey) headers["Idempotency-Key"] = context.idempotencyKey;
+  if (context.traceId) headers["X-Trace-Id"] = context.traceId;
+  return headers;
+}
+
 export const Payments = {
-  async deposit(args: DepositArgs) {
+  async deposit(args: DepositArgs, context?: RequestContext) {
     const res = await fetch(`${BASE}/deposit`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: applyContext({ "content-type": "application/json" }, context),
       body: JSON.stringify(args),
     });
     return handle(res);
   },
-  async payAto(args: ReleaseArgs) {
+  async payAto(args: ReleaseArgs, context?: RequestContext) {
     const res = await fetch(`${BASE}/payAto`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: applyContext({ "content-type": "application/json" }, context),
       body: JSON.stringify(args),
     });
     return handle(res);

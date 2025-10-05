@@ -10,6 +10,8 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { createExpressIdempotencyMiddleware } from '../../../../libs/idempotency/express.js';
+import { IdempotencyStore } from '../../../../libs/idempotency/store.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -25,6 +27,9 @@ export const pool = new Pool({ connectionString });
 
 const app = express();
 app.use(express.json());
+
+const idemStore = new IdempotencyStore(pool);
+app.use(createExpressIdempotencyMiddleware({ store: idemStore, mode: 'downstream' }));
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));

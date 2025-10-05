@@ -65,9 +65,91 @@ create table if not exists remittance_destinations (
   unique (abn, rail, reference)
 );
 
+do $$
+begin
+  create type idempotency_status as enum ('pending','applied','failed');
+exception when duplicate_object then
+  null;
+end $$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'idempotency_keys'
+      and column_name = 'key'
+  ) then
+    execute 'alter table idempotency_keys rename column key to id';
+  end if;
+exception when undefined_table then
+  null;
+end $$;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'idempotency_keys'
+      and column_name = 'created_at'
+  ) then
+    execute 'alter table idempotency_keys rename column created_at to first_seen_at';
+  end if;
+exception when undefined_table then
+  null;
+end $$;
+
 create table if not exists idempotency_keys (
-  key text primary key,
-  created_at timestamptz default now(),
-  last_status text,
-  response_hash text
+  id text primary key,
+  first_seen_at timestamptz not null default now(),
+  status idempotency_status not null default 'pending',
+  response_hash text,
+  failure_cause text,
+  ttl_secs int not null default 86400
 );
+
+alter table if exists idempotency_keys
+  add column if not exists failure_cause text,
+  add column if not exists ttl_secs int not null default 86400,
+  add column if not exists status idempotency_status not null default 'pending',
+  add column if not exists first_seen_at timestamptz not null default now();
+
+alter table if exists idempotency_keys
+  alter column first_seen_at set default now();
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'idempotency_keys'
+      and column_name = 'last_status'
+  ) then
+    update idempotency_keys
+      set status = case
+        when coalesce(lower(last_status), '') in ('done','applied','complete') then 'applied'
+        when coalesce(lower(last_status), '') in ('failed','error') then 'failed'
+        when coalesce(lower(last_status), '') = '' then status
+        else 'pending'
+      end
+      where status = 'pending';
+    alter table idempotency_keys drop column if exists last_status;
+  end if;
+exception when undefined_table then
+  null;
+end $$;
+
+create table if not exists idempotency_responses (
+  hash text primary key,
+  status_code int not null,
+  body jsonb not null,
+  content_type text,
+  headers jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_idempotency_keys_status on idempotency_keys(status);
