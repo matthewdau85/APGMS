@@ -9,7 +9,8 @@ export async function ledger(req: Request, res: Response) {
     }
 
     const q = `
-      SELECT id, amount_cents, balance_after_cents, rpt_verified, release_uuid, bank_receipt_id, created_at
+      SELECT id, amount_cents, balance_after_cents, rpt_verified, release_uuid,
+             bank_receipt_hash, bank_receipt_id, prev_hash, hash_after, created_at
       FROM owa_ledger
       WHERE abn=$1 AND tax_type=$2 AND period_id=$3
       ORDER BY id ASC
