@@ -4,7 +4,9 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "openapi": "tsx scripts/openapi.ts",
+        "client:gen": "node tools/openapi-typescript.mjs openapi.json -o src/api/types.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
@@ -13,6 +15,9 @@
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
+        "openapi-typescript": "^6.7.2",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^4.6.3",
         "ts-node": "^10.9.2",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3"

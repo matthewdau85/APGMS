@@ -6,6 +6,102 @@ import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
 const pool = new Pool();
 
+/**
+ * @openapi
+ * {
+ *   "paths": {
+ *     "/api/close-issue": {
+ *       "post": {
+ *         "summary": "Close a BAS period and issue an RPT token",
+ *         "description": "Transitions the specified period to READY_RPT and returns the signed remittance payload.",
+ *         "requestBody": {
+ *           "required": true,
+ *           "content": {
+ *             "application/json": {
+ *               "schema": { "$ref": "#/components/schemas/ReconcileRequest" }
+ *             }
+ *           }
+ *         },
+ *         "responses": {
+ *           "200": {
+ *             "description": "Issued remittance payload and signature",
+ *             "content": {
+ *               "application/json": {
+ *                 "schema": { "$ref": "#/components/schemas/RptIssueResponse" }
+ *               }
+ *             }
+ *           },
+ *           "400": {
+ *             "description": "Validation failure or blocked issuance",
+ *             "content": {
+ *               "application/json": {
+ *                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+ *               }
+ *             }
+ *           }
+ *         }
+ *       }
+ *     }
+ *   },
+ *   "components": {
+ *     "schemas": {
+ *       "ReconcileRequest": {
+ *         "type": "object",
+ *         "required": ["abn", "taxType", "periodId"],
+ *         "properties": {
+ *           "abn": { "type": "string" },
+ *           "taxType": { "type": "string", "enum": ["GST", "PAYGW"] },
+ *           "periodId": { "type": "string" },
+ *           "thresholds": {
+ *             "type": "object",
+ *             "additionalProperties": { "type": "number" },
+ *             "description": "Override anomaly thresholds for reconciliation"
+ *           }
+ *         }
+ *       },
+ *       "RptPayload": {
+ *         "type": "object",
+ *         "required": [
+ *           "entity_id",
+ *           "period_id",
+ *           "tax_type",
+ *           "amount_cents",
+ *           "merkle_root",
+ *           "running_balance_hash",
+ *           "anomaly_vector",
+ *           "thresholds",
+ *           "rail_id",
+ *           "reference",
+ *           "expiry_ts",
+ *           "nonce"
+ *         ],
+ *         "properties": {
+ *           "entity_id": { "type": "string" },
+ *           "period_id": { "type": "string" },
+ *           "tax_type": { "type": "string" },
+ *           "amount_cents": { "type": "integer" },
+ *           "merkle_root": { "type": "string" },
+ *           "running_balance_hash": { "type": "string" },
+ *           "anomaly_vector": { "type": "object", "additionalProperties": { "type": "number" } },
+ *           "thresholds": { "type": "object", "additionalProperties": { "type": "number" } },
+ *           "rail_id": { "type": "string" },
+ *           "reference": { "type": "string" },
+ *           "expiry_ts": { "type": "string", "format": "date-time" },
+ *           "nonce": { "type": "string" }
+ *         }
+ *       },
+ *       "RptIssueResponse": {
+ *         "type": "object",
+ *         "required": ["payload", "signature"],
+ *         "properties": {
+ *           "payload": { "$ref": "#/components/schemas/RptPayload" },
+ *           "signature": { "type": "string" }
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ */
 export async function closeAndIssue(req:any, res:any) {
   const { abn, taxType, periodId, thresholds } = req.body;
   // TODO: set state -> CLOSING, compute final_liability_cents, merkle_root, running_balance_hash beforehand
@@ -46,6 +142,68 @@ export async function settlementWebhook(req:any, res:any) {
   return res.json({ ingested: rows.length });
 }
 
+/**
+ * @openapi
+ * {
+ *   "paths": {
+ *     "/api/evidence": {
+ *       "get": {
+ *         "summary": "Fetch the reconciliation evidence bundle",
+ *         "parameters": [
+ *           { "in": "query", "name": "abn", "required": true, "schema": { "type": "string" } },
+ *           { "in": "query", "name": "taxType", "required": true, "schema": { "type": "string", "enum": ["GST", "PAYGW"] } },
+ *           { "in": "query", "name": "periodId", "required": true, "schema": { "type": "string" } }
+ *         ],
+ *         "responses": {
+ *           "200": {
+ *             "description": "Evidence bundle containing ledger deltas and the most recent RPT",
+ *             "content": {
+ *               "application/json": {
+ *                 "schema": { "$ref": "#/components/schemas/EvidenceBundle" }
+ *               }
+ *             }
+ *           }
+ *         }
+ *       }
+ *     }
+ *   },
+ *   "components": {
+ *     "schemas": {
+ *       "LedgerDelta": {
+ *         "type": "object",
+ *         "required": ["ts", "amount_cents"],
+ *         "properties": {
+ *           "ts": { "type": "string", "format": "date-time" },
+ *           "amount_cents": { "type": "integer" },
+ *           "hash_after": { "type": "string", "nullable": true },
+ *           "bank_receipt_hash": { "type": "string", "nullable": true }
+ *         }
+ *       },
+ *       "EvidenceBundle": {
+ *         "type": "object",
+ *         "required": [
+ *           "bas_labels",
+ *           "rpt_payload",
+ *           "rpt_signature",
+ *           "owa_ledger_deltas",
+ *           "bank_receipt_hash",
+ *           "anomaly_thresholds",
+ *           "discrepancy_log"
+ *         ],
+ *         "properties": {
+ *           "bas_labels": { "type": "object", "additionalProperties": { "type": "string", "nullable": true } },
+ *           "rpt_payload": { "$ref": "#/components/schemas/RptPayload", "nullable": true },
+ *           "rpt_signature": { "type": "string", "nullable": true },
+ *           "owa_ledger_deltas": { "type": "array", "items": { "$ref": "#/components/schemas/LedgerDelta" } },
+ *           "bank_receipt_hash": { "type": "string", "nullable": true },
+ *           "anomaly_thresholds": { "type": "object", "additionalProperties": { "type": "number" } },
+ *           "discrepancy_log": { "type": "array", "items": { "type": "object" } }
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ */
 export async function evidence(req:any, res:any) {
   const { abn, taxType, periodId } = req.query as any;
   res.json(await buildEvidenceBundle(abn, taxType, periodId));

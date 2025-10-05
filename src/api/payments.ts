@@ -1,6 +1,9 @@
 // src/api/payments.ts
 import express from "express";
 import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import type { components } from "./types";
+
+type BalanceResponse = components["schemas"]["BalanceResponse"];
 
 export const paymentsApi = express.Router();
 
@@ -11,7 +14,7 @@ paymentsApi.get("/balance", async (req, res) => {
     if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     }
-    const data = await Payments.balance({ abn, taxType, periodId });
+    const data: BalanceResponse = await Payments.balance({ abn, taxType, periodId });
     res.json(data);
   } catch (err: any) {
     res.status(500).json({ error: err?.message || "Balance failed" });
