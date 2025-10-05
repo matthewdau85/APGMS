@@ -1,7 +1,11 @@
 // libs/paymentsClient.ts
 type Common = { abn: string; taxType: string; periodId: string };
 export type DepositArgs = Common & { amountCents: number };   // > 0
-export type ReleaseArgs = Common & { amountCents: number };   // < 0
+export type ReleaseArgs = Common & {
+  amountCents: number;   // < 0
+  stp: { paygwCents: number; gstCents: number; period: string };
+  bank: { debitAccount: string; creditAccount: string; reference: string };
+};
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
