@@ -204,10 +204,10 @@ if ($chkActive.ok -and $chkActive.value -ne "") {
   Say "No active/pending RPT found for release period — copying latest ACTIVE…" "Yellow"
   $copySql = @"
 INSERT INTO rpt_tokens
-  (abn, tax_type, period_id, payload, signature, status, created_at,
+  (abn, tax_type, period_id, payload, signature, rates_version, status, created_at,
    payload_c14n, payload_sha256, nonce, expires_at)
 SELECT
-  abn, tax_type, '$PeriodRelease', payload, signature, 'active', now(),
+  abn, tax_type, '$PeriodRelease', payload, signature, rates_version, 'active', now(),
   payload_c14n, payload_sha256, nonce || '-doctor', now() + interval '7 days'
 FROM rpt_tokens
 WHERE abn='$ABN' AND tax_type='$TaxType' AND status='active'

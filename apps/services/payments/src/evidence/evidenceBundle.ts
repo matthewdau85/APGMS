@@ -12,7 +12,7 @@ type BuildParams = {
 
 export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   const rpt = await client.query(
-    "SELECT rpt_id, payload_c14n, payload_sha256, signature FROM rpt_tokens WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND status='ISSUED' ORDER BY created_at DESC LIMIT 1",
+    "SELECT rpt_id, payload_c14n, payload_sha256, signature, rates_version FROM rpt_tokens WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND status='ISSUED' ORDER BY created_at DESC LIMIT 1",
     [p.abn, p.taxType, p.periodId]
   );
   if (!rpt.rows.length) throw new Error("Missing RPT for bundle");
@@ -56,5 +56,8 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
     canonicalJson(p.bankReceipts), canonicalJson(p.atoReceipts), canonicalJson(p.operatorOverrides)
   ];
   const out = await client.query(ins, vals);
-  return out.rows[0].bundle_id as number;
+  return {
+    bundleId: out.rows[0].bundle_id as number,
+    ratesVersion: r.rates_version as string,
+  };
 }

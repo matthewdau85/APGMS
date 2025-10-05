@@ -216,10 +216,10 @@ if ($haveRpt.ok -and $haveRpt.value -ne "") {
   Say "No ACTIVE/PENDING RPT — copying latest ACTIVE to target period…" "Yellow"
   $ins = Psql -Sql @"
 INSERT INTO rpt_tokens
-  (abn, tax_type, period_id, payload, signature, status, created_at,
+  (abn, tax_type, period_id, payload, signature, rates_version, status, created_at,
    payload_c14n, payload_sha256, nonce, expires_at)
 SELECT
-  abn, tax_type, '$ReleasePeriod', payload, signature, 'active', now(),
+  abn, tax_type, '$ReleasePeriod', payload, signature, rates_version, 'active', now(),
   payload_c14n, payload_sha256, nonce || '-e2e', now() + interval '7 days'
 FROM rpt_tokens
 WHERE abn='$ABN' AND tax_type='$TaxType' AND status='active'

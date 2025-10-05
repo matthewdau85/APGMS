@@ -103,6 +103,7 @@ async function main() {
   const TAX_TYPE  = process.env.SEED_TAX_TYPE  || 'GST';
   const PERIOD_ID = process.env.SEED_PERIOD_ID || '2025Q1';
   const EXPIRES_IN_DAYS = parseInt(process.env.SEED_EXPIRES_DAYS || '7', 10);
+  const RATES_VERSION = process.env.RPT_RATES_VERSION || '2024-10-ATO-v1';
 
   const payload = {
     abn: ABN,
@@ -110,6 +111,7 @@ async function main() {
     periodId: PERIOD_ID,
     issuedAt: new Date().toISOString(),
     kid: process.env.KMS_KEY_ID || 'local-ed25519',
+    ratesVersion: RATES_VERSION,
   };
 
   const c14nStr = c14n(payload);
@@ -125,9 +127,9 @@ async function main() {
 
   const sql = `
     INSERT INTO rpt_tokens
-      (abn, tax_type, period_id, payload, signature, status, created_at, payload_c14n, payload_sha256, nonce, expires_at)
+      (abn, tax_type, period_id, payload, signature, rates_version, status, created_at, payload_c14n, payload_sha256, nonce, expires_at)
     VALUES
-      ($1,  $2,       $3,        $4::jsonb, $5,      $6,     now(),      $7,           $8,              $9,    $10)
+      ($1,  $2,       $3,        $4::jsonb, $5,      $6,     $7,         now(),        $8,              $9,    $10,   $11)
     RETURNING id, status, created_at
   `;
   const args = [
@@ -136,6 +138,7 @@ async function main() {
     PERIOD_ID,
     JSON.stringify(payload),
     signature.toString('base64'), // keep text signature (your current schema column type)
+    RATES_VERSION,
     'active',                     // consistent with your partial-unique index
     c14nStr,
     payloadSha256,
