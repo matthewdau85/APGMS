@@ -5,7 +5,10 @@ ALTER TABLE owa_ledger
   ADD COLUMN IF NOT EXISTS prev_hash text,
   ADD COLUMN IF NOT EXISTS hash_after text,
   ADD COLUMN IF NOT EXISTS transfer_uuid uuid,
-  ADD COLUMN IF NOT EXISTS bank_receipt_hash text;
+  ADD COLUMN IF NOT EXISTS bank_receipt_hash text,
+  ADD COLUMN IF NOT EXISTS rpt_verified boolean NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS release_uuid uuid,
+  ADD COLUMN IF NOT EXISTS bank_receipt_id text;
 
 -- Idempotency on the “real world receipt”
 CREATE UNIQUE INDEX IF NOT EXISTS owa_uniq_bank_receipt
@@ -19,7 +22,10 @@ CREATE INDEX IF NOT EXISTS owa_ledger_period_order_idx
 -- (B) RPT: canonical storage (you already added; keep for completeness)
 ALTER TABLE rpt_tokens
   ADD COLUMN IF NOT EXISTS payload_c14n   text,
-  ADD COLUMN IF NOT EXISTS payload_sha256 text;
+  ADD COLUMN IF NOT EXISTS payload_sha256 text,
+  ADD COLUMN IF NOT EXISTS key_id         text,
+  ADD COLUMN IF NOT EXISTS nonce          text,
+  ADD COLUMN IF NOT EXISTS expires_at     timestamptz;
 
 -- (C) State machine check (guardrails)
 DO $$
@@ -45,7 +51,7 @@ CREATE OR REPLACE FUNCTION owa_append(
   p_abn text, p_tax text, p_period text,
   p_amount bigint,             -- +credit / -debit
   p_bank_receipt text          -- NULL for synthetic; string for idempotent real-world credit/debit
-) RETURNS TABLE(id int, balance_after bigint, hash_after text) AS $$
+) RETURNS TABLE(id bigint, balance_after bigint, hash_after text) AS $$
 DECLARE
   _prev_bal bigint := 0;
   _prev_hash text := '';

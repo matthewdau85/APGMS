@@ -87,14 +87,18 @@ async function main() {
   };
 
   const enc = new _TextEncoder();
-  const msg = enc.encode(JSON.stringify(payload));
+  const payloadJson = JSON.stringify(payload);
+  const msg = enc.encode(payloadJson);
   const sig = nacl.sign.detached(msg, b64ToU8(RPT_ED25519_SECRET_BASE64));
   const signature = Buffer.from(sig).toString('base64');
+  const payloadSha = crypto.createHash('sha256').update(payloadJson).digest('hex');
 
   // Insert RPT explicitly as JSON
   await client.query(
-    "insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values ($1,$2,$3,$4::jsonb,$5)",
-    [abn, taxType, periodId, JSON.stringify(payload), signature]
+    `insert into rpt_tokens(
+       abn,tax_type,period_id,payload,payload_c14n,payload_sha256,signature,key_id,nonce,expires_at,status
+     ) values ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,'ISSUED')`,
+    [abn, taxType, periodId, payloadJson, payloadJson, payloadSha, signature, kid, payload.nonce, payload.expiry_ts]
   );
   await client.query("update periods set state='READY_RPT' where id=$1", [row.id]);
 

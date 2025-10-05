@@ -12,7 +12,7 @@ type BuildParams = {
 
 export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   const rpt = await client.query(
-    "SELECT rpt_id, payload_c14n, payload_sha256, signature FROM rpt_tokens WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND status='ISSUED' ORDER BY created_at DESC LIMIT 1",
+    "SELECT id as rpt_id, payload_c14n, payload_sha256, signature FROM rpt_tokens WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND status='ISSUED' ORDER BY created_at DESC LIMIT 1",
     [p.abn, p.taxType, p.periodId]
   );
   if (!rpt.rows.length) throw new Error("Missing RPT for bundle");
@@ -23,7 +23,7 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   const normalization = { payroll_hash: "NA", pos_hash: "NA" };
 
   const beforeQ = await client.query(
-    "SELECT COALESCE(SUM(amount_cents),0) bal FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND entry_id < (SELECT max(entry_id) FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3)",
+    "SELECT COALESCE(SUM(amount_cents),0) bal FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND id < (SELECT max(id) FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3)",
     [p.abn, p.taxType, p.periodId]
   );
   const afterQ = await client.query(

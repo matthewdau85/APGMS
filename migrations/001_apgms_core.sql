@@ -1,4 +1,7 @@
 -- 001_apgms_core.sql
+
+-- cryptographic helpers for gen_random_uuid() + digest()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 create table if not exists periods (
   id serial primary key,
   abn text not null,
@@ -21,13 +24,21 @@ create table if not exists owa_ledger (
   abn text not null,
   tax_type text not null,
   period_id text not null,
-  transfer_uuid uuid not null,
+  transfer_uuid uuid not null default gen_random_uuid(),
   amount_cents bigint not null,
   balance_after_cents bigint not null,
   bank_receipt_hash text,
   prev_hash text,
   hash_after text,
-  created_at timestamptz default now(),
+  rpt_verified boolean not null default false,
+  release_uuid uuid,
+  bank_receipt_id text,
+  created_at timestamptz not null default now(),
+  constraint owa_release_guard
+    check (
+      amount_cents >= 0
+      or (amount_cents < 0 and rpt_verified = true and release_uuid is not null)
+    ),
   unique (transfer_uuid)
 );
 
@@ -39,9 +50,14 @@ create table if not exists rpt_tokens (
   tax_type text not null,
   period_id text not null,
   payload jsonb not null,
+  payload_c14n text,
+  payload_sha256 text,
   signature text not null,
+  key_id text,
+  nonce text,
+  expires_at timestamptz,
   status text not null default 'ISSUED',
-  created_at timestamptz default now()
+  created_at timestamptz not null default now()
 );
 
 create table if not exists audit_log (
