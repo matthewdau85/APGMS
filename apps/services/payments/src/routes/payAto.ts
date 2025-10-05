@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { getComposition } from '../composition.js';
+import { assertAbnAllowed, assertBpayCrn } from '../rails/validators.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -28,6 +30,20 @@ export async function payAtoRelease(req: Request, res: Response) {
     return res.status(400).json({ error: 'amountCents must be negative for a release' });
   }
 
+  try {
+    assertAbnAllowed(abn);
+  } catch (err: any) {
+    const status = Number(err?.statusCode) || 403;
+    return res.status(status).json({ error: err?.message || 'abn_not_allowlisted' });
+  }
+
+  const composition = getComposition();
+  const rail = String(req.body?.rail || 'EFT').toUpperCase();
+  const reference = req.body?.reference ? String(req.body.reference) : undefined;
+  const crnCandidate = req.body?.crn || req.body?.bpayCrn || req.body?.BPAYReference;
+  const absoluteAmount = Math.abs(amt);
+  let bankResult: { id: string; status: string } | null = null;
+
   // rptGate attaches req.rpt when verification succeeds
   const rpt = (req as any).rpt;
   if (!rpt) {
@@ -52,6 +68,19 @@ export async function payAtoRelease(req: Request, res: Response) {
     );
     const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
     const newBal = lastBal + amt;
+
+    if (composition.features.banking === 'real') {
+      if (rail === 'BPAY') {
+        if (!crnCandidate) {
+          throw Object.assign(new Error('Missing BPAY CRN'), { statusCode: 400 });
+        }
+        const crn = String(crnCandidate);
+        assertBpayCrn(crn);
+        bankResult = await composition.ports.banking.bpay(abn, crn, absoluteAmount);
+      } else {
+        bankResult = await composition.ports.banking.eft(abn, absoluteAmount, reference);
+      }
+    }
 
     const release_uuid = genUUID();
 
@@ -82,11 +111,13 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      bank_result: bankResult ?? undefined,
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
+    const status = Number(e?.statusCode) || 400;
     // common failures: unique single-release-per-period, allow-list, etc.
-    return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
+    return res.status(status).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {
     client.release();
   }
