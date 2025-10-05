@@ -2,28 +2,43 @@
 import express from "express";
 import dotenv from "dotenv";
 
+import { validateEnv } from "./config/env";
+import { authenticateRequest, requireRole } from "./middleware/auth";
+import { scrubPII, piiAwareLogger } from "./middleware/pii";
+import { requireServiceSignature } from "./middleware/serviceSignature";
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { exportAuditLog } from "./routes/audit";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
 dotenv.config();
+validateEnv();
 
 const app = express();
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({
+  limit: "2mb",
+  verify: (req: express.Request, _res, buf) => {
+    req.rawBody = buf.toString("utf8");
+  },
+}));
 
-// (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
+app.use(scrubPII);
+app.use(piiAwareLogger);
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
+// Authentication guard for API routes
+app.use("/api", authenticateRequest);
+
 // Existing explicit endpoints
-app.post("/api/pay", idempotency(), payAto);
-app.post("/api/close-issue", closeAndIssue);
-app.post("/api/payto/sweep", paytoSweep);
-app.post("/api/settlement/webhook", settlementWebhook);
-app.get("/api/evidence", evidence);
+app.post("/api/pay", requireServiceSignature, requireRole(["operator", "approver"]), idempotency(), payAto);
+app.post("/api/close-issue", requireServiceSignature, requireRole(["approver", "assessor"]), closeAndIssue);
+app.post("/api/payto/sweep", requireServiceSignature, requireRole(["operator"]), paytoSweep);
+app.post("/api/settlement/webhook", requireServiceSignature, requireRole(["assessor", "operator"]), settlementWebhook);
+app.get("/api/evidence", requireRole(["auditor", "assessor"]), evidence);
+app.get("/api/audit/export", requireRole(["auditor", "assessor"]), exportAuditLog);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
