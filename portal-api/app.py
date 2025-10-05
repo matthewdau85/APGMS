@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import time
+
+from flags import get_proto_flags_dict
 
 app = FastAPI(title="APGMS Portal API", version="0.1.0")
 
@@ -15,6 +17,11 @@ def metrics():
         "# TYPE portal_up gauge",
         "portal_up 1"
     ]))
+
+
+@app.get("/debug/flags")
+def debug_flags():
+    return {"flags": get_proto_flags_dict()}
 
 @app.get("/dashboard/yesterday")
 def yesterday():

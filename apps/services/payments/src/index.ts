@@ -10,6 +10,7 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { getProtoFlags } from './flags.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -28,6 +29,9 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/debug/flags', (_req, res) => {
+  res.json({ flags: getProtoFlags() });
+});
 
 // Endpoints
 app.post('/deposit', deposit);
