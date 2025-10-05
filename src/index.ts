@@ -1,13 +1,14 @@
-﻿// src/index.ts
+// src/index.ts
+import "dotenv/config";
 import express from "express";
-import dotenv from "dotenv";
 
+import { FEATURES } from "./config/features";
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
-dotenv.config();
+console.log("[features]", FEATURES);
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
