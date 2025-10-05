@@ -9,7 +9,7 @@ const pool = new Pool();
 export async function closeAndIssue(req:any, res:any) {
   const { abn, taxType, periodId, thresholds } = req.body;
   // TODO: set state -> CLOSING, compute final_liability_cents, merkle_root, running_balance_hash beforehand
-  const thr = thresholds || { epsilon_cents: 50, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
+  const thr = thresholds || { epsilon_cents: 50, sigma: 3.0, materiality_cents: 500 };
   try {
     const rpt = await issueRPT(abn, taxType, periodId, thr);
     return res.json(rpt);
