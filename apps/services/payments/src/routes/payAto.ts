@@ -42,8 +42,9 @@ export async function payAtoRelease(req: Request, res: Response) {
     // fetch last balance in this period (by id order), default 0
     const { rows: lastRows } = await client.query<{
       balance_after_cents: string | number;
+      hash_after: string | null;
     }>(
-      `SELECT balance_after_cents
+      `SELECT balance_after_cents, hash_after
        FROM owa_ledger
        WHERE abn=$1 AND tax_type=$2 AND period_id=$3
        ORDER BY id DESC
@@ -51,18 +52,23 @@ export async function payAtoRelease(req: Request, res: Response) {
       [abn, taxType, periodId]
     );
     const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
+    const prevHash = lastRows.length ? lastRows[0].hash_after : null;
     const newBal = lastBal + amt;
 
     const release_uuid = genUUID();
+    const transfer_uuid = genUUID();
+    const bank_receipt_hash = `release:${release_uuid}`;
+    const hash_after = crypto.createHash('sha256')
+      .update(`${prevHash ?? ''}${bank_receipt_hash}${newBal}`)
+      .digest('hex');
 
     const insert = `
       INSERT INTO owa_ledger
         (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
+         bank_receipt_hash, prev_hash, hash_after, rpt_verified, release_uuid, created_at)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, TRUE, $10, now())
       RETURNING id, transfer_uuid, balance_after_cents
     `;
-    const transfer_uuid = genUUID();
     const { rows: ins } = await client.query(insert, [
       abn,
       taxType,
@@ -70,6 +76,9 @@ export async function payAtoRelease(req: Request, res: Response) {
       transfer_uuid,
       amt,
       newBal,
+      bank_receipt_hash,
+      prevHash,
+      hash_after,
       release_uuid,
     ]);
 
@@ -80,7 +89,7 @@ export async function payAtoRelease(req: Request, res: Response) {
       ledger_id: ins[0].id,
       transfer_uuid,
       release_uuid,
-      balance_after_cents: ins[0].balance_after_cents,
+      balance_after_cents: Number(ins[0].balance_after_cents),
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {

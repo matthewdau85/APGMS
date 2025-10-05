@@ -78,61 +78,10 @@ COMMENT ON TABLE rpt_tokens IS 'Reconciliation Pass Tokens with key id and expir
 '@
 
 Write-TextFile (Join-Path $migrationsDir "20251005_002_owa_constraints.sql") @'
-CREATE TABLE IF NOT EXISTS owa_ledger (
-  entry_id          BIGSERIAL PRIMARY KEY,
-  abn               VARCHAR(14) NOT NULL,
-  tax_type          VARCHAR(16) NOT NULL,
-  period_id         VARCHAR(32) NOT NULL,
-  amount_cents      BIGINT NOT NULL,
-  rpt_verified      BOOLEAN NOT NULL DEFAULT false,
-  release_uuid      UUID,
-  bank_receipt_id   VARCHAR(128),
-  hash_before       CHAR(64),
-  hash_after        CHAR(64),
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-ALTER TABLE owa_ledger
-  ADD CONSTRAINT owa_deposit_only_chk
-  CHECK (
-    amount_cents >= 0
-    OR (amount_cents < 0 AND rpt_verified = true AND release_uuid IS NOT NULL)
-  );
-
-CREATE UNIQUE INDEX IF NOT EXISTS owa_release_uuid_uidx
-  ON owa_ledger (release_uuid) WHERE release_uuid IS NOT NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS owa_single_release_uidx
-  ON owa_ledger (abn, tax_type, period_id)
-  WHERE amount_cents < 0;
-
--- requires pgcrypto: CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE OR REPLACE FUNCTION owa_chain_hash_after()
-RETURNS TRIGGER AS $$
-DECLARE
-  prev_hash CHAR(64);
-BEGIN
-  SELECT hash_after INTO prev_hash
-  FROM owa_ledger
-  WHERE abn = NEW.abn AND tax_type = NEW.tax_type AND period_id = NEW.period_id
-  ORDER BY entry_id DESC
-  LIMIT 1;
-
-  NEW.hash_before := COALESCE(prev_hash, repeat('0', 64));
-  NEW.hash_after  := encode(digest(
-      NEW.abn || '|' || NEW.tax_type || '|' || NEW.period_id || '|' ||
-      NEW.amount_cents::text || '|' || COALESCE(NEW.bank_receipt_id,'') || '|' ||
-      COALESCE(NEW.release_uuid::text,'') || '|' || NEW.created_at::text || '|' ||
-      NEW.hash_before, 'sha256'), 'hex');
-
-  RETURN NEW;
-END $$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_owa_chain_hash ON owa_ledger;
-
-CREATE TRIGGER trg_owa_chain_hash
-BEFORE INSERT ON owa_ledger
-FOR EACH ROW EXECUTE FUNCTION owa_chain_hash_after();
+-- 20251005_002_owa_constraints.sql consolidated via migrations/001_apgms_core.sql
+-- The authoritative ledger schema is managed by the TypeScript service migrations.
+-- This file intentionally remains empty so legacy automation does not fight the
+-- canonical migration chain.
 '@
 
 Write-TextFile (Join-Path $migrationsDir "20251005_003_evidence_bundle.sql") @'

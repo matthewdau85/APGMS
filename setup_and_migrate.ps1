@@ -134,61 +134,11 @@ COMMIT;
 # >>> PATCH the owa_constraints migration that scaffold just wrote (002) <<< 
 $fixedPath2 = Join-Path $RepoRoot 'db\migrations\20251005_002_owa_constraints.sql'
 $fixedSql2 = @'
--- 20251005_002_owa_constraints.sql (fixed: add missing columns + constraints, data-safe)
+-- 20251005_002_owa_constraints.sql (superseded by consolidated migrations)
 BEGIN;
-
--- Base table (idempotent)
-CREATE TABLE IF NOT EXISTS owa_ledger (
-  id                   BIGSERIAL PRIMARY KEY,
-  abn                  TEXT        NOT NULL,
-  tax_type             TEXT        NOT NULL,
-  period_id            TEXT        NOT NULL,
-  amount_cents         BIGINT      NOT NULL,
-  balance_after_cents  BIGINT      NOT NULL,
-  rpt_verified         BOOLEAN     NOT NULL DEFAULT false,
-  release_uuid         UUID,
-  bank_receipt_id      TEXT,
-  hash_before          BYTEA,
-  hash_after           BYTEA,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- Bring existing installs up-to-date
-ALTER TABLE owa_ledger ADD COLUMN IF NOT EXISTS rpt_verified        BOOLEAN     NOT NULL DEFAULT false;
-ALTER TABLE owa_ledger ADD COLUMN IF NOT EXISTS release_uuid        UUID;
-ALTER TABLE owa_ledger ADD COLUMN IF NOT EXISTS bank_receipt_id     TEXT;
-ALTER TABLE owa_ledger ADD COLUMN IF NOT EXISTS hash_after          BYTEA;
-
--- Deposit-only enforcement (add NOT VALID, fix data, then VALIDATE)
-ALTER TABLE owa_ledger DROP CONSTRAINT IF EXISTS chk_deposit_only;
-
-ALTER TABLE owa_ledger
-  ADD CONSTRAINT chk_deposit_only
-  CHECK (amount_cents >= 0 OR (rpt_verified AND release_uuid IS NOT NULL))
-  NOT VALID;
-
--- Backfill any existing negatives that would violate the rule
-UPDATE owa_ledger
-SET rpt_verified = TRUE,
-    release_uuid = COALESCE(release_uuid, gen_random_uuid())
-WHERE amount_cents < 0
-  AND (rpt_verified IS NOT TRUE OR release_uuid IS NULL);
-
--- Now enforce the rule for future rows
-ALTER TABLE owa_ledger VALIDATE CONSTRAINT chk_deposit_only;
-
--- Single-shot release per period (only one negative entry per {abn,tax_type,period_id})
-DROP INDEX IF EXISTS ux_owa_single_release_per_period;
-CREATE UNIQUE INDEX IF NOT EXISTS ux_owa_single_release_per_period
-  ON owa_ledger (abn, tax_type, period_id)
-  WHERE amount_cents < 0;
-
--- Unique release_uuid when present
-DROP INDEX IF EXISTS ux_owa_release_uuid;
-CREATE UNIQUE INDEX IF NOT EXISTS ux_owa_release_uuid
-  ON owa_ledger (release_uuid)
-  WHERE release_uuid IS NOT NULL;
-
+-- The canonical OWA ledger DDL now lives in migrations/001_apgms_core.sql.
+-- This placeholder intentionally performs no additional schema changes so
+-- legacy provisioning scripts do not diverge from the authoritative schema.
 COMMIT;
 '@
 [System.IO.File]::WriteAllText($fixedPath2, $fixedSql2, $utf8NoBom)
