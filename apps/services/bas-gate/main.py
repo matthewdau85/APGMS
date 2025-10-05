@@ -10,6 +10,14 @@ class TransitionReq(BaseModel):
     target_state: str
     reason_code: str | None = None
 
+
+class GateState(BaseModel):
+    period_id: str
+    state: str
+    reason_code: str | None = None
+    hash_prev: str | None = None
+    hash_this: str
+
 def db():
     return psycopg2.connect(
         host=os.getenv("PGHOST","127.0.0.1"),
@@ -40,3 +48,32 @@ def transition(req: TransitionReq):
                 (payload, prev, h))
     conn.commit(); cur.close(); conn.close()
     return {"ok": True, "hash": h}
+
+
+@app.get("/gate/status/{period_id}", response_model=GateState)
+def gate_status(period_id: str):
+    conn = db(); cur = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT period_id, state, reason_code, hash_prev, hash_this
+            FROM bas_gate_states
+            WHERE period_id=%s
+            ORDER BY updated_at DESC
+            LIMIT 1
+            """,
+            (period_id,),
+        )
+        row = cur.fetchone()
+    finally:
+        cur.close(); conn.close()
+    if not row:
+        raise HTTPException(404, "period not found")
+    period, state, reason_code, hash_prev, hash_this = row
+    return GateState(
+        period_id=period,
+        state=state,
+        reason_code=reason_code,
+        hash_prev=hash_prev,
+        hash_this=hash_this,
+    )
