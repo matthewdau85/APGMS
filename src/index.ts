@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { ops } from "./ops/health";
 
 dotenv.config();
 
@@ -15,8 +16,8 @@ app.use(express.json({ limit: "2mb" }));
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
 
-// Simple health check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+// Operational endpoints (health/metrics)
+app.use("/", ops);
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
