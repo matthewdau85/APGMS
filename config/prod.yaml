@@ -1,0 +1,14 @@
+providers:
+  bank: https://bank.prod.example.com
+  kms: https://kms.prod.example.com
+  rates: https://rates.prod.example.com
+  idp: https://idp.prod.example.com
+  statements: https://statements.prod.example.com
+PROTO_KILL_SWITCH: false
+SHADOW_MODE: false
+TZ: UTC
+MOCK_BANK: false
+MOCK_KMS: false
+MOCK_RATES: false
+MOCK_IDP: false
+MOCK_STATEMENTS: false

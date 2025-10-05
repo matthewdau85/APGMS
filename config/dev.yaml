@@ -1,0 +1,14 @@
+providers:
+  bank: http://localhost:6101
+  kms: http://localhost:6102
+  rates: http://localhost:6103
+  idp: http://localhost:6104
+  statements: http://localhost:6105
+PROTO_KILL_SWITCH: false
+SHADOW_MODE: true
+TZ: UTC
+MOCK_BANK: true
+MOCK_KMS: true
+MOCK_RATES: true
+MOCK_IDP: true
+MOCK_STATEMENTS: true
