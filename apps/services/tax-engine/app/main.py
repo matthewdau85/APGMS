@@ -10,15 +10,17 @@ tax_events_processed = Counter(
     "Total tax calculation events processed"
 )
 
-@app.get("/healthz")
-def healthz():
-    return {"status": "ok"}
-
-# Prometheus metrics endpoint
 @app.get("/metrics")
 def metrics():
-    data = generate_latest()  # default process/python metrics + your counters
+    """Expose Prometheus metrics in the standard text exposition format."""
+    data = generate_latest()
     return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+
+
+@app.get("/healthz")
+def healthz():
+    """Basic liveness probe reporting overall service health."""
+    return {"ok": True}
 
 # Example: wherever you handle a tax calc event, call:
 # tax_events_processed.inc()
@@ -50,14 +52,6 @@ TAX_REQS = Counter("tax_requests_total", "Total tax requests consumed")
 TAX_OUT = Counter("tax_results_total", "Total tax results produced")
 NATS_CONNECTED = Gauge("taxengine_nats_connected", "1 if connected to NATS else 0")
 CALC_LAT = Histogram("taxengine_calc_seconds", "Calculate latency")
-
-@app.get("/metrics")
-def metrics():
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-@app.get("/healthz")
-def healthz():
-    return {"ok": True, "started": _started.is_set()}
 
 @app.get("/readyz")
 def readyz():
@@ -124,14 +118,6 @@ try:
     _started_event = globals().get("_started_event") or asyncio.Event()
     globals()["_ready_event"] = _ready_event
     globals()["_started_event"] = _started_event
-
-    @app.get("/metrics")
-    def _metrics():
-        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-    @app.get("/healthz")
-    def _healthz():
-        return {"ok": True, "started": _started_event.is_set()}
 
     @app.get("/readyz")
     def _readyz():
