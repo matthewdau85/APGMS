@@ -1,8 +1,10 @@
 ﻿# APGMS Patent Gate-and-Token Additions
 
 ## Quick start
-1) Apply migration in Postgres:
+1) Apply migrations in Postgres (run in order):
+   psql -h 127.0.0.1 -U postgres -d postgres -f migrations/001_apgms_core.sql
    psql -h 127.0.0.1 -U postgres -d postgres -f migrations/002_apgms_patent_core.sql
+   psql -h 127.0.0.1 -U postgres -d postgres -f migrations/002_patent_extensions.sql
 
 2) Build and run the services:
    docker compose -f docker-compose.patent.yml build
@@ -33,3 +35,8 @@
 Notes:
 - Replace the HMAC secret with KMS in production.
 - Enforce SoD in your auth layer: role A issues RPT, role B calls egress.
+
+## Canonical schema summary
+- `owa_ledger` now exposes both the tax-ledger cent-based fields and the patent credit view via the generated `credit_amount` column alongside `amount_cents`, idempotency hashes (`prev_hash`/`hash_after`) and banking references (`bank_receipt_hash`, `source_ref`, `audit_hash`).
+- `audit_log` remains an append-only hash chain (`prev_hash` → `terminal_hash`) while also carrying optional categorical metadata (`category`, `message`) for patent service audit trails. Both patent services and legacy appenders use the same table.
+- `rpt_store` is a compatibility view over `rpt_tokens`, so the Python audit bundle code can continue querying `rpt_store` without diverging storage.
