@@ -25,8 +25,9 @@ def metrics():
 
 # --- BEGIN TAX_ENGINE_CORE_APP ---
 import asyncio
+import json
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 from fastapi import FastAPI, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
@@ -41,6 +42,7 @@ except NameError:
 NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 SUBJECT_INPUT = os.getenv("SUBJECT_INPUT", "apgms.normalized.v1")
 SUBJECT_OUTPUT = os.getenv("SUBJECT_OUTPUT", "apgms.tax.v1")
+SUPPORTED_SCHEMA_VERSIONS = {"v1", "v2"}
 
 _nc: Optional[NATS] = None
 _started = asyncio.Event()
@@ -80,13 +82,34 @@ async def _connect_nats_with_retry() -> NATS:
         await asyncio.sleep(backoff)
         backoff = min(max_backoff, backoff * 2)
 
+def _normalise_payload(raw: bytes) -> Tuple[bytes, str]:
+    try:
+        payload = json.loads((raw or b"{}").decode("utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        raise ValueError("payload must be JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError("payload must be a JSON object")
+    version = payload.get("schema_version")
+    if not isinstance(version, str) or not version.strip():
+        version = "v1"
+    version = version.strip().lower()
+    if version not in SUPPORTED_SCHEMA_VERSIONS:
+        raise ValueError(f"unsupported schema_version {version}")
+    payload["schema_version"] = version
+    data = json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    return data, version
+
+
 async def _subscribe_and_run(nc: NATS):
     async def _on_msg(msg):
         with CALC_LAT.time():
+            try:
+                payload, _ = _normalise_payload(msg.data or b"{}")
+            except ValueError:
+                return
             TAX_REQS.inc()
-            data = msg.data or b"{}"
             # TODO: real calc -> publish real result
-            await nc.publish(SUBJECT_OUTPUT, data)
+            await nc.publish(SUBJECT_OUTPUT, payload)
             TAX_OUT.inc()
     await nc.subscribe(SUBJECT_INPUT, cb=_on_msg)
     _ready.set()

@@ -1,10 +1,17 @@
 import { Request, Response } from "express";
 import { pool } from "../index.js";
 import { randomUUID } from "node:crypto";
+import { normalizeSchemaVersion } from "../utils/schemaVersion.js";
 
 export async function deposit(req: Request, res: Response) {
   try {
-    const { abn, taxType, periodId, amountCents } = req.body || {};
+    const { abn, taxType, periodId, amountCents, schema_version } = req.body || {};
+    let schemaVersion: "v1" | "v2";
+    try {
+      schemaVersion = normalizeSchemaVersion(schema_version);
+    } catch (err: any) {
+      return res.status(400).json({ error: "Unsupported schema_version", detail: String(err?.message || err) });
+    }
     if (!abn || !taxType || !periodId) return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     const amt = Number(amountCents);
     if (!Number.isFinite(amt) || amt <= 0) return res.status(400).json({ error: "amountCents must be positive for a deposit" });
@@ -31,7 +38,12 @@ export async function deposit(req: Request, res: Response) {
       );
 
       await client.query("COMMIT");
-      return res.json({ ok: true, ledger_id: ins[0].id, balance_after_cents: ins[0].balance_after_cents });
+      return res.json({
+        schema_version: schemaVersion,
+        ok: true,
+        ledger_id: ins[0].id,
+        balance_after_cents: ins[0].balance_after_cents,
+      });
 
     } catch (e:any) {
       await client.query("ROLLBACK");

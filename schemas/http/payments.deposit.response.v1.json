@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payments deposit response v1",
+  "type": "object",
+  "required": ["schema_version", "ok", "ledger_id", "balance_after_cents"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["v1", "v2"] },
+    "ok": { "type": "boolean" },
+    "ledger_id": { "type": "integer", "minimum": 0 },
+    "balance_after_cents": { "type": "integer" }
+  },
+  "additionalProperties": true
+}
