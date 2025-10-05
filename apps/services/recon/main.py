@@ -20,6 +20,6 @@ def run(req: ReconReq):
     gst_ok = math.isclose(req.gst_total, req.owa_gst, abs_tol=req.tolerance)
     anomaly_ok = req.anomaly_score < 0.8
     if pay_ok and gst_ok and anomaly_ok:
-        return {"pass": True, "reason_code": None, "controls": ["BAS-GATE","RPT"], "next_state": "RPT-Issued"}
+        return {"pass": True, "reason_code": None, "controls": ["BAS-GATE","RPT"], "next_state": "RPT_ISSUED"}
     reason = "shortfall" if (not pay_ok or not gst_ok) else "anomaly_breach"
-    return {"pass": False, "reason_code": reason, "controls": ["BLOCK"], "next_state": "Blocked"}
+    return {"pass": False, "reason_code": reason, "controls": ["BLOCK"], "next_state": "BLOCKED"}

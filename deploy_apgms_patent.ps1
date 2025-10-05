@@ -211,10 +211,17 @@ $mig = @'
 -- 002_apgms_patent_core.sql
 -- BAS Gate state machine, OWA ledger, audit hash chain, RPT store
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'gate_state') THEN
+    CREATE TYPE gate_state AS ENUM ('OPEN','RECONCILING','RPT_ISSUED','RELEASED','BLOCKED');
+  END IF;
+END$$;
+
 CREATE TABLE IF NOT EXISTS bas_gate_states (
   id SERIAL PRIMARY KEY,
   period_id VARCHAR(32) NOT NULL,
-  state VARCHAR(20) NOT NULL CHECK (state IN ('Open','Pending-Close','Reconciling','RPT-Issued','Remitted','Blocked')),
+  state gate_state NOT NULL,
   reason_code VARCHAR(64),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   hash_prev CHAR(64),
@@ -222,6 +229,98 @@ CREATE TABLE IF NOT EXISTS bas_gate_states (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_bas_gate_period ON bas_gate_states (period_id);
+
+CREATE TABLE IF NOT EXISTS bas_gate_transition_log (
+  id BIGSERIAL PRIMARY KEY,
+  period_id VARCHAR(32) NOT NULL,
+  actor TEXT,
+  reason TEXT,
+  trace_id TEXT,
+  from_state gate_state,
+  to_state gate_state NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ix_bas_gate_transition_period ON bas_gate_transition_log (period_id, created_at DESC);
+
+DO $$
+DECLARE
+  has_varchar_column BOOLEAN;
+BEGIN
+  SELECT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'bas_gate_states' AND column_name = 'state' AND udt_name <> 'gate_state'
+  ) INTO has_varchar_column;
+
+  IF has_varchar_column THEN
+    ALTER TABLE bas_gate_states DROP CONSTRAINT IF EXISTS bas_gate_states_state_check;
+    UPDATE bas_gate_states SET state = 'OPEN' WHERE state = 'Open';
+    UPDATE bas_gate_states SET state = 'RECONCILING' WHERE state IN ('Pending-Close','Reconciling');
+    UPDATE bas_gate_states SET state = 'RPT_ISSUED' WHERE state = 'RPT-Issued';
+    UPDATE bas_gate_states SET state = 'RELEASED' WHERE state = 'Remitted';
+    UPDATE bas_gate_states SET state = 'BLOCKED' WHERE state = 'Blocked';
+    ALTER TABLE bas_gate_states ALTER COLUMN state TYPE gate_state USING state::gate_state;
+  END IF;
+END$$;
+
+CREATE OR REPLACE FUNCTION bas_gate_validate_transition()
+RETURNS TRIGGER AS $$
+DECLARE
+  prior_state gate_state;
+  actor TEXT;
+  why TEXT;
+  trace TEXT;
+  allowed BOOLEAN := FALSE;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.state = OLD.state THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'INSERT' THEN
+    prior_state := NULL;
+  ELSE
+    prior_state := OLD.state;
+  END IF;
+
+  actor := NULLIF(current_setting('apgms.actor', TRUE), '');
+  why := COALESCE(NULLIF(current_setting('apgms.reason', TRUE), ''), NEW.reason_code);
+  trace := NULLIF(current_setting('apgms.trace_id', TRUE), '');
+
+  IF prior_state IS NULL THEN
+    allowed := NEW.state IN ('OPEN','BLOCKED');
+  ELSE
+    CASE prior_state
+      WHEN 'OPEN' THEN
+        allowed := NEW.state IN ('OPEN','RECONCILING','BLOCKED');
+      WHEN 'RECONCILING' THEN
+        allowed := NEW.state IN ('RECONCILING','RPT_ISSUED','BLOCKED');
+      WHEN 'RPT_ISSUED' THEN
+        allowed := NEW.state IN ('RPT_ISSUED','RELEASED','BLOCKED');
+      WHEN 'RELEASED' THEN
+        allowed := NEW.state = 'RELEASED';
+      WHEN 'BLOCKED' THEN
+        allowed := NEW.state IN ('BLOCKED','RECONCILING');
+    END CASE;
+  END IF;
+
+  IF NOT allowed THEN
+    RAISE EXCEPTION 'Invalid BAS gate transition from % to %', prior_state, NEW.state
+      USING ERRCODE = 'P0001',
+            HINT = 'Valid transitions: OPEN→RECONCILING→RPT_ISSUED→RELEASED. Use BLOCKED for holds; resolve blocks via RECONCILING.';
+  END IF;
+
+  INSERT INTO bas_gate_transition_log(period_id, actor, reason, trace_id, from_state, to_state)
+  VALUES (NEW.period_id, actor, why, trace, prior_state, NEW.state);
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS bas_gate_state_guard ON bas_gate_states;
+CREATE TRIGGER bas_gate_state_guard
+BEFORE INSERT OR UPDATE ON bas_gate_states
+FOR EACH ROW
+EXECUTE FUNCTION bas_gate_validate_transition();
 
 CREATE TABLE IF NOT EXISTS owa_ledger (
   id SERIAL PRIMARY KEY,
@@ -328,14 +427,20 @@ $basMain = @'
 # apps/services/bas-gate/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os, psycopg2, json, time
+import os, psycopg2, json, time, uuid
 
 app = FastAPI(title="bas-gate")
+
+VALID_STATES = {"OPEN", "RECONCILING", "RPT_ISSUED", "RELEASED", "BLOCKED"}
+DEFAULT_ACTOR = os.getenv("BAS_GATE_DEFAULT_ACTOR", "bas-gate-service")
+
 
 class TransitionReq(BaseModel):
     period_id: str
     target_state: str
     reason_code: str | None = None
+    actor: str | None = None
+    trace_id: str | None = None
 
 def db():
     return psycopg2.connect(
@@ -348,25 +453,59 @@ def db():
 
 @app.post("/gate/transition")
 def transition(req: TransitionReq):
-    if req.target_state not in {"Open","Pending-Close","Reconciling","RPT-Issued","Remitted","Blocked"}:
+    target_state = req.target_state.upper()
+    if target_state not in VALID_STATES:
         raise HTTPException(400, "invalid state")
-    conn = db(); cur = conn.cursor()
-    cur.execute("SELECT hash_this FROM bas_gate_states WHERE period_id=%s", (req.period_id,))
-    row = cur.fetchone()
-    prev = row[0] if row else None
-    payload = json.dumps({"period_id": req.period_id, "state": req.target_state, "ts": int(time.time())}, separators=(",",":"))
-    import libs.audit_chain.chain as ch
-    h = ch.link(prev, payload)
-    if row:
-        cur.execute("UPDATE bas_gate_states SET state=%s, reason_code=%s, updated_at=NOW(), hash_prev=%s, hash_this=%s WHERE period_id=%s",
-                    (req.target_state, req.reason_code, prev, h, req.period_id))
-    else:
-        cur.execute("INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
-                    (req.period_id, req.target_state, req.reason_code, prev, h))
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('bas_gate',%s,%s,%s)",
-                (payload, prev, h))
-    conn.commit(); cur.close(); conn.close()
-    return {"ok": True, "hash": h}
+
+    actor = req.actor or DEFAULT_ACTOR
+    trace_id = req.trace_id or uuid.uuid4().hex
+
+    conn = db()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT hash_this FROM bas_gate_states WHERE period_id=%s", (req.period_id,))
+        row = cur.fetchone()
+        prev = row[0] if row else None
+        payload = json.dumps({"period_id": req.period_id, "state": target_state, "ts": int(time.time())}, separators=(",",":"))
+        import libs.audit_chain.chain as ch
+        h = ch.link(prev, payload)
+
+        cur.execute("SELECT set_config('apgms.actor', %s, true)", (actor,))
+        cur.execute("SELECT set_config('apgms.trace_id', %s, true)", (trace_id,))
+        cur.execute("SELECT set_config('apgms.reason', %s, true)", (req.reason_code or "",))
+
+        if row:
+            cur.execute(
+                "UPDATE bas_gate_states SET state=%s, reason_code=%s, updated_at=NOW(), hash_prev=%s, hash_this=%s WHERE period_id=%s",
+                (target_state, req.reason_code, prev, h, req.period_id)
+            )
+        else:
+            cur.execute(
+                "INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
+                (req.period_id, target_state, req.reason_code, prev, h)
+            )
+        cur.execute(
+            "INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('bas_gate',%s,%s,%s)",
+            (payload, prev, h)
+        )
+        conn.commit()
+        return {"ok": True, "hash": h, "trace_id": trace_id}
+    except psycopg2.Error as exc:
+        conn.rollback()
+        if getattr(exc, "pgcode", None) == "P0001":
+            diag = getattr(exc, "diag", None)
+            message = getattr(diag, "message_primary", str(exc)) if diag else str(exc)
+            hint = getattr(diag, "hint", None)
+            detail = {
+                "error": "invalid_transition",
+                "message": message,
+                "hint": hint or "Check BAS gate state machine policy and resolve blocking conditions."
+            }
+            raise HTTPException(status_code=409, detail=detail) from None
+        raise HTTPException(status_code=500, detail="database error") from None
+    finally:
+        cur.close()
+        conn.close()
 '@
 Write-Text -Path (Join-Path $RepoPath "apps\services\bas-gate\main.py") -Content $basMain
 Write-Text -Path (Join-Path $RepoPath "apps\services\bas-gate\requirements.txt") -Content $commonReq
@@ -395,9 +534,9 @@ def run(req: ReconReq):
     gst_ok = math.isclose(req.gst_total, req.owa_gst, abs_tol=req.tolerance)
     anomaly_ok = req.anomaly_score < 0.8
     if pay_ok and gst_ok and anomaly_ok:
-        return {"pass": True, "reason_code": None, "controls": ["BAS-GATE","RPT"], "next_state": "RPT-Issued"}
+        return {"pass": True, "reason_code": None, "controls": ["BAS-GATE","RPT"], "next_state": "RPT_ISSUED"}
     reason = "shortfall" if (not pay_ok or not gst_ok) else "anomaly_breach"
-    return {"pass": False, "reason_code": reason, "controls": ["BLOCK"], "next_state": "Blocked"}
+    return {"pass": False, "reason_code": reason, "controls": ["BLOCK"], "next_state": "BLOCKED"}
 '@
 Write-Text -Path (Join-Path $RepoPath "apps\services\recon\main.py") -Content $reconMain
 Write-Text -Path (Join-Path $RepoPath "apps\services\recon\requirements.txt") -Content $commonReq
@@ -407,14 +546,18 @@ $bankMain = @'
 # apps/services/bank-egress/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os, psycopg2, json
+import os, psycopg2, json, uuid
 from libs.rpt.rpt import verify
 
 app = FastAPI(title="bank-egress")
 
+DEFAULT_ACTOR = os.getenv("BANK_EGRESS_DEFAULT_ACTOR", "bank-egress-service")
+
+
 class EgressReq(BaseModel):
     period_id: str
     rpt: dict
+    trace_id: str | None = None
 
 def db():
     return psycopg2.connect(
@@ -427,19 +570,43 @@ def db():
 
 @app.post("/egress/remit")
 def remit(req: EgressReq):
-    if "signature" not in req.rpt or not verify({k:v for k,v in req.rpt.items() if k!="signature"}, req.rpt["signature"]):
+    if "signature" not in req.rpt or not verify({k: v for k, v in req.rpt.items() if k != "signature"}, req.rpt["signature"]):
         raise HTTPException(400, "invalid RPT signature")
-    conn = db(); cur = conn.cursor()
-    cur.execute("SELECT state FROM bas_gate_states WHERE period_id=%s", (req.period_id,))
-    row = cur.fetchone()
-    if not row or row[0] != "RPT-Issued":
-        raise HTTPException(409, "gate not in RPT-Issued")
-    # Here you would call the real bank API via mTLS. For now, we just log.
-    payload = json.dumps({"period_id": req.period_id, "action": "remit"})
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('egress',%s,NULL,NULL)", (payload,))
-    cur.execute("UPDATE bas_gate_states SET state='Remitted', updated_at=NOW() WHERE period_id=%s", (req.period_id,))
-    conn.commit(); cur.close(); conn.close()
-    return {"ok": True}
+    conn = db()
+    cur = conn.cursor()
+    trace_id = req.trace_id or uuid.uuid4().hex
+    try:
+        cur.execute("SELECT state FROM bas_gate_states WHERE period_id=%s", (req.period_id,))
+        row = cur.fetchone()
+        if not row or row[0] != "RPT_ISSUED":
+            raise HTTPException(409, "gate not in RPT_ISSUED")
+        payload = json.dumps({"period_id": req.period_id, "action": "remit", "trace_id": trace_id})
+        cur.execute("SELECT set_config('apgms.actor', %s, true)", (DEFAULT_ACTOR,))
+        cur.execute("SELECT set_config('apgms.trace_id', %s, true)", (trace_id,))
+        cur.execute("SELECT set_config('apgms.reason', %s, true)", ("release",))
+        cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('egress',%s,NULL,NULL)", (payload,))
+        cur.execute("UPDATE bas_gate_states SET state='RELEASED', updated_at=NOW() WHERE period_id=%s", (req.period_id,))
+        conn.commit()
+        return {"ok": True, "trace_id": trace_id}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except psycopg2.Error as exc:
+        conn.rollback()
+        if getattr(exc, "pgcode", None) == "P0001":
+            diag = getattr(exc, "diag", None)
+            message = getattr(diag, "message_primary", str(exc)) if diag else str(exc)
+            hint = getattr(diag, "hint", None)
+            detail = {
+                "error": "invalid_transition",
+                "message": message,
+                "hint": hint or "Gate must be in RPT_ISSUED before release."
+            }
+            raise HTTPException(status_code=409, detail=detail) from None
+        raise HTTPException(status_code=500, detail="database error") from None
+    finally:
+        cur.close()
+        conn.close()
 '@
 Write-Text -Path (Join-Path $RepoPath "apps\services\bank-egress\main.py") -Content $bankMain
 Write-Text -Path (Join-Path $RepoPath "apps\services\bank-egress\requirements.txt") -Content $commonReq
@@ -565,9 +732,9 @@ $readme = @'
    docker compose -f docker-compose.patent.yml up -d
 
 3) Happy path (manual):
-   # 3.1 move gate to RPT-Issued (after your recon pass)
+   # 3.1 move gate to RPT_ISSUED (after your recon pass)
    curl -X POST http://localhost:8101/gate/transition -H "content-type: application/json" ^
-     -d "{""period_id"":""2024Q4"",""target_state"":""RPT-Issued""}"
+     -d "{""period_id"":""2024Q4"",""target_state"":""RPT_ISSUED"",""actor"":""ops-user"",""trace_id"":""demo-trace""}"
 
    # 3.2 generate an RPT in Python REPL (or via your engine):
    # from libs.rpt.rpt import build
@@ -575,7 +742,7 @@ $readme = @'
 
    # 3.3 remit (bank-egress)
    curl -X POST http://localhost:8103/egress/remit -H "content-type: application/json" ^
-     -d "{""period_id"":""2024Q4"",""rpt"":{""period_id"":""2024Q4"",""paygw_total"":100.0,""gst_total"":200.0,""source_digests"":{""payroll"":""abc"",""pos"":""def""},""anomaly_score"":0.1,""expires_at"":9999999999,""nonce"":""deadbeef"",""signature"":""REPLACE_WITH_REAL_SIGNATURE""}}"
+     -d "{""period_id"":""2024Q4"",""trace_id"":""demo-remit"",""rpt"":{""period_id"":""2024Q4"",""paygw_total"":100.0,""gst_total"":200.0,""source_digests"":{""payroll"":""abc"",""pos"":""def""},""anomaly_score"":0.1,""expires_at"":9999999999,""nonce"":""deadbeef"",""signature"":""REPLACE_WITH_REAL_SIGNATURE""}}"
 
 4) Acceptance tests:
    # assuming your venv:
