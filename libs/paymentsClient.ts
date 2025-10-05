@@ -4,10 +4,11 @@ export type DepositArgs = Common & { amountCents: number };   // > 0
 export type ReleaseArgs = Common & { amountCents: number };   // < 0
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
-const BASE =
+const rawBase =
   process.env.NEXT_PUBLIC_PAYMENTS_BASE_URL ||
   process.env.PAYMENTS_BASE_URL ||
   "http://localhost:3001";
+const BASE = rawBase.replace(/\/$/, "");
 
 async function handle(res: Response) {
   const text = await res.text();
