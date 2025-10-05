@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { getPool } from "../db/pool";
 import { randomUUID } from "node:crypto";
 
 export async function deposit(req: Request, res: Response) {
@@ -13,7 +13,7 @@ export async function deposit(req: Request, res: Response) {
       return res.status(400).json({ error: "amountCents must be positive for a deposit" });
     }
 
-    const client = await pool.connect();
+    const client = await getPool().connect();
     try {
       await client.query("BEGIN");
 
