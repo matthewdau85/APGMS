@@ -1,9 +1,10 @@
-﻿fastapi
+fastapi
 uvicorn[standard]
 pydantic
 jinja2
 prometheus-client
 httpx
 orjson
+asyncpg
 
 nats-py

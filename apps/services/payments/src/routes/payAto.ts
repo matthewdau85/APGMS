@@ -1,8 +1,13 @@
-﻿// apps/services/payments/src/routes/payAto.ts
+// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { logError, logInfo } from '../observability/logger.js';
+import { getTrace } from '../observability/trace.js';
+import { publishWithTrace } from '../observability/natsClient.js';
+import { anomalyBlockTotal, payoutAttemptTotal, rptIssuedTotal } from '../observability/metrics.js';
+
+const PAYOUT_SUBJECT = process.env.PAYOUT_SUBJECT || 'apgms.payments.release.v1';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -16,7 +21,11 @@ function genUUID() {
  */
 export async function payAtoRelease(req: Request, res: Response) {
   const { abn, taxType, periodId, amountCents } = req.body || {};
+  payoutAttemptTotal.inc();
+
   if (!abn || !taxType || !periodId) {
+    anomalyBlockTotal.inc();
+    logError(res, 'payout.validation_failed', { abn, taxType, periodId });
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
   }
 
@@ -25,24 +34,27 @@ export async function payAtoRelease(req: Request, res: Response) {
 
   // must be negative for a release
   if (amt >= 0) {
+    anomalyBlockTotal.inc();
+    logError(res, 'payout.invalid_amount', { abn, taxType, periodId, amountCents });
     return res.status(400).json({ error: 'amountCents must be negative for a release' });
   }
 
   // rptGate attaches req.rpt when verification succeeds
   const rpt = (req as any).rpt;
   if (!rpt) {
+    anomalyBlockTotal.inc();
+    logError(res, 'payout.rpt_missing', { abn, taxType, periodId });
     return res.status(403).json({ error: 'RPT not verified' });
   }
 
   const client = await pool.connect();
+  const trace = getTrace(res);
   try {
+    await client.query('SET application_name = $1', [`payments-${trace.traceId}`]);
     await client.query('BEGIN');
 
     // compute running balance AFTER this entry:
-    // fetch last balance in this period (by id order), default 0
-    const { rows: lastRows } = await client.query<{
-      balance_after_cents: string | number;
-    }>(
+    const { rows: lastRows } = await client.query<{ balance_after_cents: string | number }>(
       `SELECT balance_after_cents
        FROM owa_ledger
        WHERE abn=$1 AND tax_type=$2 AND period_id=$3
@@ -75,16 +87,46 @@ export async function payAtoRelease(req: Request, res: Response) {
 
     await client.query('COMMIT');
 
-    return res.json({
+    rptIssuedTotal.inc();
+    const response = {
       ok: true,
       ledger_id: ins[0].id,
       transfer_uuid,
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
-    });
+    };
+    logInfo(res, 'payout.success', { abn, taxType, periodId, amount_cents: amt, response });
+
+    try {
+      await publishWithTrace({
+        subject: PAYOUT_SUBJECT,
+        res,
+        payload: {
+          type: 'payout.release',
+          abn,
+          taxType,
+          periodId,
+          amountCents: amt,
+          idempotencyKey: req.header('idempotency-key') ?? null,
+          transferUuid: transfer_uuid,
+          releaseUuid: release_uuid,
+          occurredAt: new Date().toISOString(),
+        },
+      });
+    } catch (err) {
+      logError(res, 'payout.nats_publish_failed', {
+        abn,
+        taxType,
+        periodId,
+        error: String((err as Error)?.message ?? err),
+      });
+    }
+
+    return res.json(response);
   } catch (e: any) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
+    logError(res, 'payout.failed', { abn, taxType, periodId, error: String(e?.message || e) });
     // common failures: unique single-release-per-period, allow-list, etc.
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {

@@ -1,0 +1,97 @@
+{
+  "title": "APGMS Observability",
+  "uid": "apgms-observability",
+  "schemaVersion": 38,
+  "version": 1,
+  "timezone": "",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Payments Request Latency p95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(payments_request_latency_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "RPT Issued / min",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(rpt_issued_total[1m]))",
+          "legendFormat": "issued/min"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Payout Attempts / min",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum(rate(payout_attempt_total[1m]))",
+          "legendFormat": "attempts/min"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "Anomaly Blocks / min",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(anomaly_block_total[1m]))",
+          "legendFormat": "blocks/min"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Tax Engine Processing Latency",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(taxengine_calc_seconds_bucket[5m])) by (le))",
+          "legendFormat": "calc p95"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(taxengine_db_seconds_bucket[5m])) by (le))",
+          "legendFormat": "db p95"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NATS Connectivity",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "taxengine_nats_connected",
+          "legendFormat": "tax-engine"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tax Engine Throughput",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 16 },
+      "targets": [
+        {
+          "expr": "sum(rate(tax_requests_total[5m]))",
+          "legendFormat": "requests/s"
+        },
+        {
+          "expr": "sum(rate(tax_results_total[5m]))",
+          "legendFormat": "results/s"
+        }
+      ]
+    }
+  ]
+}
