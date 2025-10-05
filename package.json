@@ -4,7 +4,9 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "if grep -R '\\`[^\\n]*WHERE [^\\n]* = \\${' --exclude-dir=node_modules --exclude-dir=.git --line-number .; then echo 'Found interpolated SQL'; exit 1; else echo 'SQL interpolation lint passed'; fi",
+        "test": "tsx --test tests/**/*.test.ts",
+        "lint:sql": "if grep -R '\\`[^\\n]*WHERE [^\\n]* = \\${' --exclude-dir=node_modules --exclude-dir=.git --line-number .; then echo 'Found interpolated SQL'; exit 1; else echo 'SQL interpolation lint passed'; fi"
     },
     "version": "0.1.0",
     "name": "apgms",
