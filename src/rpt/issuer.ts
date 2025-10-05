@@ -1,7 +1,11 @@
 ﻿import { Pool } from "pg";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
-import { exceeds } from "../anomaly/deterministic";
+import {
+  AnomalyVector,
+  Thresholds as AnomalyThresholds,
+  isAnomalous,
+} from "../anomaly/deterministic";
 const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
 
@@ -11,8 +15,21 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
   const row = p.rows[0];
   if (row.state !== "CLOSING") throw new Error("BAD_STATE");
 
-  const v = row.anomaly_vector || {};
-  if (exceeds(v, thresholds)) {
+  const rawVector = (row.anomaly_vector ?? {}) as Partial<AnomalyVector>;
+  const anomalyVector: AnomalyVector = {
+    variance_ratio: Number(rawVector.variance_ratio ?? 0),
+    dup_rate: Number(rawVector.dup_rate ?? 0),
+    gap_minutes: Number(rawVector.gap_minutes ?? 0),
+    delta_vs_baseline: Number(rawVector.delta_vs_baseline ?? 0),
+  };
+  const anomalyThresholds: AnomalyThresholds = {
+    variance_ratio: thresholds["variance_ratio"],
+    dup_rate: thresholds["dup_rate"],
+    gap_minutes: thresholds["gap_minutes"],
+    delta_vs_baseline: thresholds["delta_vs_baseline"],
+  };
+
+  if (isAnomalous(anomalyVector, anomalyThresholds)) {
     await pool.query("update periods set state='BLOCKED_ANOMALY' where id=", [row.id]);
     throw new Error("BLOCKED_ANOMALY");
   }
@@ -26,7 +43,7 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     entity_id: row.abn, period_id: row.period_id, tax_type: row.tax_type,
     amount_cents: Number(row.final_liability_cents),
     merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
-    anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
+    anomaly_vector: anomalyVector, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
     expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
   };
   const signature = signRpt(payload, new Uint8Array(secretKey));
