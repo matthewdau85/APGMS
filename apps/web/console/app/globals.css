@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-brand-surface text-slate-900 antialiased;
+}
+
+a {
+  @apply text-brand-primary underline;
+}
