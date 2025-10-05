@@ -1,16 +1,30 @@
-﻿import { Pool } from "pg";
+import type { Request } from "express";
+import { Pool } from "pg";
+import {
+  createExpressIdempotencyMiddleware,
+  derivePayoutKey,
+  installFetchIdempotencyPropagation,
+} from "../../libs/idempotency/express.js";
+
 const pool = new Pool();
-/** Express middleware for idempotency via Idempotency-Key header */
+installFetchIdempotencyPropagation();
+
+function semanticKey(req: Request): string | undefined {
+  if (!req?.method || !req.body) return undefined;
+  const method = req.method.toUpperCase();
+  if (method !== "POST" && method !== "PUT" && method !== "PATCH" && method !== "DELETE") {
+    return undefined;
+  }
+  const path = (req.path || req.originalUrl || "").toLowerCase();
+  if (path.includes("payato") || path.endsWith("/pay") || path.endsWith("/release")) {
+    return derivePayoutKey(req.body) ?? undefined;
+  }
+  return undefined;
+}
+
 export function idempotency() {
-  return async (req:any, res:any, next:any) => {
-    const key = req.header("Idempotency-Key");
-    if (!key) return next();
-    try {
-      await pool.query("insert into idempotency_keys(key,last_status) values(,)", [key, "INIT"]);
-      return next();
-    } catch {
-      const r = await pool.query("select last_status, response_hash from idempotency_keys where key=", [key]);
-      return res.status(200).json({ idempotent:true, status: r.rows[0]?.last_status || "DONE" });
-    }
-  };
+  return createExpressIdempotencyMiddleware({
+    pool,
+    deriveKey: semanticKey,
+  });
 }

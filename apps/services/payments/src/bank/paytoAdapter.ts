@@ -1,5 +1,6 @@
 ﻿import pg from "pg";
 import axios from "axios";
+import { attachAxiosIdempotencyInterceptor } from "../../../../../libs/idempotency/express.js";
 import https from "https";
 const agent = new https.Agent({
   ca: process.env.BANK_TLS_CA ? require("fs").readFileSync(process.env.BANK_TLS_CA) : undefined,
@@ -12,6 +13,8 @@ const client = axios.create({
   timeout: Number(process.env.BANK_TIMEOUT_MS || "8000"),
   httpsAgent: agent
 });
+
+attachAxiosIdempotencyInterceptor(client);
 
 export async function createMandate(abn: string, periodId: string, cap_cents: number) {
   const r = await client.post("/payto/mandates", { abn, periodId, cap_cents });
