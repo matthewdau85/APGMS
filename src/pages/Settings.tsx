@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { fetchSecurityConfig, toggleEncryption, toggleMfa, SecurityConfig } from "../api/security";
 
 const tabs = [
   "Business Profile",
@@ -21,6 +22,82 @@ export default function Settings() {
     trading: "Example Vending",
     contact: "info@example.com"
   });
+  const [securityConfig, setSecurityConfig] = useState<SecurityConfig | null>(null);
+  const [securityLoading, setSecurityLoading] = useState(true);
+  const [securityLoadError, setSecurityLoadError] = useState<string | null>(null);
+  const [securityActionError, setSecurityActionError] = useState<string | null>(null);
+  const [securityMessage, setSecurityMessage] = useState<string | null>(null);
+  const [mfaCodeInput, setMfaCodeInput] = useState("");
+  const [securityPending, setSecurityPending] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const cfg = await fetchSecurityConfig();
+        if (!cancelled) {
+          setSecurityConfig(cfg);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSecurityLoadError(err instanceof Error ? err.message : String(err));
+        }
+      } finally {
+        if (!cancelled) setSecurityLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const actor = "admin@example.com";
+  const role = "admin";
+
+  async function handleMfaToggle(enable: boolean) {
+    if (!securityConfig) return;
+    setSecurityPending(true);
+    setSecurityMessage(null);
+    setSecurityActionError(null);
+    try {
+      const updated = await toggleMfa(enable, {
+        config: securityConfig,
+        actor,
+        role,
+        code: mfaCodeInput || undefined
+      });
+      setSecurityConfig(updated);
+      setSecurityMessage(`MFA ${enable ? "enabled" : "disabled"} successfully.`);
+      setMfaCodeInput("");
+    } catch (err) {
+      setSecurityActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSecurityPending(false);
+    }
+  }
+
+  async function handleEncryptionToggle(enforce: boolean) {
+    if (!securityConfig) return;
+    setSecurityPending(true);
+    setSecurityMessage(null);
+    setSecurityActionError(null);
+    try {
+      const updated = await toggleEncryption(enforce, {
+        config: securityConfig,
+        actor,
+        role,
+        code: mfaCodeInput || undefined
+      });
+      setSecurityConfig(updated);
+      setSecurityMessage(`Transport encryption ${enforce ? "enforced" : "disabled"}.`);
+      setMfaCodeInput("");
+    } catch (err) {
+      setSecurityActionError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSecurityPending(false);
+    }
+  }
 
   return (
     <div className="settings-card">
@@ -167,13 +244,61 @@ export default function Settings() {
         {activeTab === "Security" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
             <h3>Security Settings</h3>
-            <label>
-              <input type="checkbox" defaultChecked /> Two-factor authentication enabled
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> SMS alerts on large payments
-            </label>
+            {securityLoading && <p>Loading security configuration…</p>}
+            {!securityLoading && securityLoadError && (
+              <p style={{ color: "#b00020" }}>Unable to load security settings: {securityLoadError}</p>
+            )}
+            {!securityLoading && securityConfig && (
+              <div className="space-y-4">
+                <div>
+                  <strong>MFA status:</strong> {securityConfig.mfaEnabled ? "Enabled" : "Disabled"}
+                </div>
+                <div>
+                  <strong>Transport encryption:</strong> {securityConfig.encryptionEnforced ? "Required" : "Optional"}
+                  <div style={{ fontSize: 12, color: "#555" }}>
+                    TLS detected: {securityConfig.tlsActive ? "yes" : "no"}
+                  </div>
+                </div>
+                {securityConfig.demoTotpSecret && (
+                  <div style={{ fontSize: 12, color: "#555" }}>
+                    Dev TOTP secret: {securityConfig.demoTotpSecret}
+                  </div>
+                )}
+                <div>
+                  <label htmlFor="security-mfa-code" style={{ display: "block", marginBottom: 8 }}>
+                    Current MFA code
+                  </label>
+                  <input
+                    id="security-mfa-code"
+                    className="settings-input"
+                    style={{ width: "100%" }}
+                    placeholder="Enter 6-digit code"
+                    value={mfaCodeInput}
+                    onChange={e => setMfaCodeInput(e.target.value)}
+                  />
+                </div>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <button
+                    className="button"
+                    disabled={securityPending}
+                    onClick={() => handleMfaToggle(!securityConfig.mfaEnabled)}
+                  >
+                    {securityConfig.mfaEnabled ? "Disable" : "Enable"} MFA for privileged actions
+                  </button>
+                  <button
+                    className="button"
+                    disabled={securityPending}
+                    onClick={() => handleEncryptionToggle(!securityConfig.encryptionEnforced)}
+                  >
+                    {securityConfig.encryptionEnforced ? "Disable" : "Enforce"} transport encryption
+                  </button>
+                </div>
+                {securityMessage && <div style={{ color: "#006400" }}>{securityMessage}</div>}
+                {securityActionError && (
+                  <div style={{ color: "#b00020" }}>{securityActionError}</div>
+                )}
+              </div>
+            )}
           </div>
         )}
         {activeTab === "Compliance & Audit" && (

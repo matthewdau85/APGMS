@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
+const securityService = require('./apps/services/auth/securityService');
 
 const app = express();
 app.use(bodyParser.json());
@@ -211,5 +212,91 @@ app.get('/evidence', ah(async (req,res)=>{
   });
 }));
 
+// ---------- SECURITY CONFIGURATION ----------
+app.get('/auth/security/config', ah(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const config = await securityService.ensureConfig(client);
+    res.json(securityService.serializeConfig(config, securityService.requestIsTls(req)));
+  } finally {
+    client.release();
+  }
+}));
+
+app.post('/auth/security/mfa', ah(async (req, res) => {
+  const actor = req.body.actor || 'unknown@apgms';
+  const role = req.body.role || 'user';
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const config = await securityService.ensureConfig(client, actor);
+    securityService.ensureTls(req, config);
+    const payload = securityService.decryptTransportPayload(config, req.body);
+    if (!payload || payload.action !== 'toggleMfa' || typeof payload.enable === 'undefined') {
+      const err = new Error('INVALID_REQUEST');
+      err.status = 400;
+      throw err;
+    }
+    securityService.ensureMfa(config, role, payload.code || req.body.code);
+    const updated = await securityService.setMfaEnabled(client, !!payload.enable, actor);
+    await securityService.appendSecurityAudit(client, actor, updated.mfa_enabled ? 'MFA_ENABLED' : 'MFA_DISABLED', {
+      actor,
+      role,
+      enable: !!payload.enable,
+      tls: securityService.requestIsTls(req)
+    });
+    await client.query('COMMIT');
+    res.json(securityService.serializeConfig(updated, securityService.requestIsTls(req)));
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}));
+
+app.post('/auth/security/encryption', ah(async (req, res) => {
+  const actor = req.body.actor || 'unknown@apgms';
+  const role = req.body.role || 'user';
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const config = await securityService.ensureConfig(client, actor);
+    securityService.ensureTls(req, config);
+    const payload = securityService.decryptTransportPayload(config, req.body);
+    if (!payload || payload.action !== 'toggleEncryption' || typeof payload.enforce === 'undefined') {
+      const err = new Error('INVALID_REQUEST');
+      err.status = 400;
+      throw err;
+    }
+    securityService.ensureMfa(config, role, payload.code || req.body.code);
+    const updated = await securityService.setEncryptionEnforced(client, !!payload.enforce, actor);
+    await securityService.appendSecurityAudit(client, actor, updated.encryption_enforced ? 'ENCRYPTION_ENABLED' : 'ENCRYPTION_DISABLED', {
+      actor,
+      role,
+      enforce: !!payload.enforce,
+      tls: securityService.requestIsTls(req)
+    });
+    await client.query('COMMIT');
+    res.json(securityService.serializeConfig(updated, securityService.requestIsTls(req)));
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}));
+
+app.get('/audit/security', ah(async (req, res) => {
+  const { rows } = await pool.query(
+    `select sae.event_time, sae.action, sae.actor, sae.payload, al.payload_hash, al.prev_hash, al.terminal_hash
+     from security_audit_events sae
+     join audit_log al on sae.audit_seq = al.seq
+     order by sae.event_time desc
+     limit 200`
+  );
+  res.json({ events: rows });
+}));
+
 const port = process.env.PORT ? +process.env.PORT : 8080;
-app.listen(port, ()=> console.log(APGMS demo API listening on :));
+app.listen(port, () => console.log(`APGMS demo API listening on :${port}`));
