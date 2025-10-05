@@ -12,7 +12,7 @@ export interface Thresholds {
   delta_vs_baseline?: number;
 }
 
-export function isAnomalous(v: AnomalyVector, thr: Thresholds = {}): boolean {
+export function exceeds(v: AnomalyVector, thr: Thresholds = {}): boolean {
   return (
     v.variance_ratio > (thr.variance_ratio ?? 0.25) ||
     v.dup_rate > (thr.dup_rate ?? 0.05) ||
