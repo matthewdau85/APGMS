@@ -1,8 +1,8 @@
-﻿import { Pool } from "pg";
-const pool = new Pool();
-/** Express middleware for idempotency via Idempotency-Key header */
+import { getPool } from "../db/pool";
+/** Express middleware for idempotency via `Idempotency-Key` header */
 export function idempotency() {
   return async (req:any, res:any, next:any) => {
+    const pool = getPool();
     const key = req.header("Idempotency-Key");
     if (!key) return next();
     try {

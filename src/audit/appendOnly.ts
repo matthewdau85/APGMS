@@ -1,8 +1,8 @@
-﻿import { sha256Hex } from "../crypto/merkle";
-import { Pool } from "pg";
-const pool = new Pool();
+import { sha256Hex } from "../crypto/merkle";
+import { getPool } from "../db/pool";
 
 export async function appendAudit(actor: string, action: string, payload: any) {
+  const pool = getPool();
   const { rows } = await pool.query("select terminal_hash from audit_log order by seq desc limit 1");
   const prevHash = rows[0]?.terminal_hash || "";
   const payloadHash = sha256Hex(JSON.stringify(payload));

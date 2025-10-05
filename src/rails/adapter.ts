@@ -1,11 +1,11 @@
-﻿import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import { appendAudit } from "../audit/appendOnly";
 import { sha256Hex } from "../crypto/merkle";
-const pool = new Pool();
+import { getPool } from "../db/pool";
 
 /** Allow-list enforcement and PRN/CRN lookup */
 export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", reference: string) {
+  const pool = getPool();
   const { rows } = await pool.query(
     "select * from remittance_destinations where abn= and rail= and reference=",
     [abn, rail, reference]
@@ -16,6 +16,7 @@ export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", refere
 
 /** Idempotent release with a stable transfer_uuid (simulate bank release) */
 export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: number, rail: "EFT"|"BPAY", reference: string) {
+  const pool = getPool();
   const transfer_uuid = uuidv4();
   try {
     await pool.query("insert into idempotency_keys(key,last_status) values(,)", [transfer_uuid, "INIT"]);
