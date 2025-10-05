@@ -1,52 +1,74 @@
-﻿import { issueRPT } from "../rpt/issuer";
-import { buildEvidenceBundle } from "../evidence/bundle";
-import { releasePayment, resolveDestination } from "../rails/adapter";
-import { debit as paytoDebit } from "../payto/adapter";
-import { parseSettlementCSV } from "../settlement/splitParser";
-import { Pool } from "pg";
-const pool = new Pool();
+import { Router } from "express";
+import { getPool } from "../db/pool";
+import { nextState } from "../recon/stateMachine";
+import { issueRPT } from "../rpt/issuer";
+import crypto from "crypto";
+export const router = Router();
 
-export async function closeAndIssue(req:any, res:any) {
-  const { abn, taxType, periodId, thresholds } = req.body;
-  // TODO: set state -> CLOSING, compute final_liability_cents, merkle_root, running_balance_hash beforehand
-  const thr = thresholds || { epsilon_cents: 50, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
+router.post("/close-and-issue", async (req, res) => {
+  const { abn, period_id } = req.body ?? {};
+  if (!abn || !period_id) return res.status(400).json({ error: "abn, period_id required" });
+
+  const pool = getPool();
+  const c = await pool.connect();
   try {
-    const rpt = await issueRPT(abn, taxType, periodId, thr);
-    return res.json(rpt);
+    await c.query("BEGIN");
+
+    const p = await c.query(
+      `select id, state, policy_threshold_bps from periods where id=$1 and abn=$2 for update`,
+      [period_id, abn]
+    );
+    if (!p.rowCount) throw new Error("period not found");
+    const period = p.rows[0];
+
+    const exp = await c.query(
+      `select coalesce(sum(expected_cents),0) as cents from recon_inputs where period_id=$1 and abn=$2`,
+      [period_id, abn]
+    );
+    const act = await c.query(
+      `select coalesce(sum(case when direction='credit' then amount_cents else -amount_cents end),0) as cents
+         from ledger where abn=$1 and period_id=$2`,
+      [abn, period_id]
+    );
+    const expC = Number(exp.rows[0].cents), actC = Number(act.rows[0].cents);
+    const delta = actC - expC;
+    const tolBps = Number(period.policy_threshold_bps ?? 100);
+    const within = Math.abs(delta) * 10000 <= Math.max(1, expC) * tolBps;
+
+    const headRow = await c.query(
+      `select coalesce(max(hash_head), '') as head from ledger where abn=$1 and period_id=$2`,
+      [abn, period_id]
+    );
+    const anomalyHash = crypto.createHash("sha256")
+      .update(JSON.stringify({ expC, actC, delta, tolBps }))
+      .digest("hex");
+    const combined = crypto.createHash("sha256")
+      .update((headRow.rows[0]?.head ?? "") + anomalyHash, "utf8")
+      .digest("hex");
+
+    const next = nextState(period.state, within ? "RECON_OK" : "RECON_FAIL");
+    await c.query(`update periods set state=$1, hash_head=$2 where id=$3`, [next, combined, period_id]);
+
+    let rpt: { token: string } | null = null;
+    if (within) {
+      rpt = await issueRPT(c, { abn, periodId: period_id, head: combined });
+      await c.query(
+        `insert into evidence_bundles (abn, period_id, rpt_token, delta_cents, tolerance_bps, details)
+         values ($1, $2, $3, $4, $5, $6)`,
+        [abn, period_id, rpt.token, delta, tolBps, { expC, actC, anomalyHash }]
+      );
+    } else {
+      await c.query(
+        `insert into evidence_bundles (abn, period_id, rpt_token, delta_cents, tolerance_bps, details)
+         values ($1, $2, null, $3, $4, $5)`,
+        [abn, period_id, delta, tolBps, { expC, actC, anomalyHash }]
+      );
+    }
+
+    await c.query("COMMIT");
+    res.json({ ok: true, within, rpt });
   } catch (e:any) {
-    return res.status(400).json({ error: e.message });
-  }
-}
-
-export async function payAto(req:any, res:any) {
-  const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
-  const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
-  if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
-  const payload = pr.rows[0].payload;
-  try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
-    await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
-    return res.json(r);
-  } catch (e:any) {
-    return res.status(400).json({ error: e.message });
-  }
-}
-
-export async function paytoSweep(req:any, res:any) {
-  const { abn, amount_cents, reference } = req.body;
-  const r = await paytoDebit(abn, amount_cents, reference);
-  return res.json(r);
-}
-
-export async function settlementWebhook(req:any, res:any) {
-  const csvText = req.body?.csv || "";
-  const rows = parseSettlementCSV(csvText);
-  // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
-  return res.json({ ingested: rows.length });
-}
-
-export async function evidence(req:any, res:any) {
-  const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
-}
+    await c.query("ROLLBACK");
+    res.status(500).json({ error: e.message });
+  } finally { c.release(); }
+});
