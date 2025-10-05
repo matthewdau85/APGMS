@@ -1,0 +1,9 @@
+{
+  "name": "eslint",
+  "version": "0.0.0-local",
+  "description": "Local fallback ESLint enforcing Pool usage.",
+  "bin": {
+    "eslint": "bin/eslint.js"
+  },
+  "license": "MIT"
+}

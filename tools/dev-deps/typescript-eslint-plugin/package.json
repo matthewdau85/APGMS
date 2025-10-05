@@ -1,0 +1,7 @@
+{
+  "name": "@typescript-eslint/eslint-plugin",
+  "version": "0.0.0-local",
+  "description": "Stub plugin package for offline linting.",
+  "main": "index.js",
+  "license": "MIT"
+}
