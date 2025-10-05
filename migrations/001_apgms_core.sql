@@ -33,6 +33,19 @@ create table if not exists owa_ledger (
 
 create index if not exists idx_owa_balance on owa_ledger(abn, tax_type, period_id, id);
 
+create table if not exists settlement_reversals (
+  id bigserial primary key,
+  txn_id text not null,
+  component text not null check (component in ('GST','NET')),
+  reversal_transfer_uuid uuid not null,
+  amount_cents bigint not null,
+  settlement_ts timestamptz not null,
+  created_at timestamptz default now(),
+  unique (txn_id, component, reversal_transfer_uuid)
+);
+
+create index if not exists idx_settlement_reversals_txn on settlement_reversals(txn_id);
+
 create table if not exists rpt_tokens (
   id bigserial primary key,
   abn text not null,
