@@ -7,6 +7,28 @@ import { selectKms } from "../kms/kmsProvider";
 const kms = selectKms();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
+function parseSignature(input: string): { kid?: string; signature: Buffer } {
+  if (!input) throw new Error("Missing signature");
+  if (input.includes(".")) {
+    const [kid, encoded] = input.split(".", 2);
+    try {
+      return { kid, signature: Buffer.from(encoded, "base64") };
+    } catch (err) {
+      throw new Error('Invalid base64 signature payload');
+    }
+  }
+
+  if (/^[0-9a-f]+$/i.test(input) && input.length % 2 === 0) {
+    return { signature: Buffer.from(input, "hex") };
+  }
+
+  try {
+    return { signature: Buffer.from(input, "base64") };
+  } catch (err) {
+    throw new Error('Signature encoding unsupported');
+  }
+}
+
 export async function rptGate(req: Request, res: Response, next: NextFunction) {
   try {
     const { abn, taxType, periodId } = req.body || {};
@@ -37,13 +59,13 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
       return res.status(403).json({ error: "Payload hash mismatch" });
     }
 
-    // Signature verify (signature is stored as base64 text in your seed)
+    // Signature verify (signature is stored as kid.base64 text in your seed)
     const payload = Buffer.from(r.payload_c14n);
-    const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
+    const { kid, signature } = parseSignature(r.signature);
+    const ok = await kms.verify(payload, signature, kid);
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256, kid };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });

@@ -1,42 +1,26 @@
-﻿// apps/services/payments/src/kms/kmsProvider.ts
-import { IKms } from "./IKms";
-import { LocalKeyProvider } from "./localKey";
+// apps/services/payments/src/kms/kmsProvider.ts
+import { IKms } from './IKms';
+import { LocalKeyProvider } from './localKey';
+import { RemoteKmsProvider } from './remoteKms';
+
 export interface KmsProvider {
   getKeyId(): string;
   signEd25519(data: Uint8Array, keyIdOverride?: string): Promise<Uint8Array>;
   verifyEd25519(data: Uint8Array, sig: Uint8Array, pubKey: Uint8Array): Promise<boolean>;
 }
 
-type Backend = "local" | "aws" | "gcp" | "hsm";
+type Backend = 'local' | 'remote' | 'aws' | 'gcp' | 'hsm';
 
 /**
- * Lazy-load correct provider using ESM dynamic import().
- * Select with env KMS_BACKEND = local|aws|gcp|hsm (default: local)
+ * Select the appropriate verification backend.
  */
-export async function getKms(): Promise<KmsProvider> {
-  const backend = (process.env.KMS_BACKEND ?? "local").toLowerCase() as Backend;
-
-  switch (backend) {
-    case "aws": {
-      const { AwsKmsProvider } = await import("./awsKms.js").catch(() => import("./awsKms"));
-      return new AwsKmsProvider();
-    }
-    case "gcp": {
-      const { GcpKmsProvider } = await import("./gcpKms.js").catch(() => import("./gcpKms"));
-      return new GcpKmsProvider();
-    }
-    case "hsm": {
-      const { HsmProvider } = await import("./hsm.js").catch(() => import("./hsm"));
-      return new HsmProvider();
-    }
-    case "local":
-    default: {
-      const { LocalKeyProvider } = await import("./localKey.js").catch(() => import("./localKey"));
-      return new LocalKeyProvider();
-    }
-  }
-}
-
 export function selectKms(): IKms {
-  return new LocalKeyProvider();
+  const backend = (process.env.KMS_BACKEND ?? 'remote').toLowerCase() as Backend;
+  switch (backend) {
+    case 'local':
+      return new LocalKeyProvider();
+    case 'remote':
+    default:
+      return new RemoteKmsProvider();
+  }
 }
