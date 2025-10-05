@@ -4,11 +4,15 @@ export type PaygwInput = {
   taxWithheld: number;
   period: "weekly" | "fortnightly" | "monthly" | "quarterly";
   deductions?: number;
+  taxFreeThreshold?: boolean;
+  stsl?: boolean;
+  bonus?: number;
 };
 
 export type GstInput = {
   saleAmount: number;
   exempt?: boolean;
+  purchases?: Array<{ amount: number; taxCode?: string }>;
 };
 
 export type TaxReport = {

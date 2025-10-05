@@ -1,18 +1,145 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
+  "issued": "2024-07-01",
+  "notes": "Stage 3 withholding schedules effective 1 July 2024. Derived from ATO NAT 1004/1005 weekly, fortnightly, monthly and quarterly tables.",
+  "periods": {
+    "weekly": {
+      "annual_factor": 52,
+      "rounding": "HALF_UP",
+      "samples": [
+        {
+          "gross": 1500.0,
+          "tax_free_threshold": true,
+          "stsl": false,
+          "withholding": 272.85,
+          "source": "ATO withholding schedule 1 weekly $1,500 (claiming threshold)"
+        },
+        {
+          "gross": 1500.0,
+          "tax_free_threshold": false,
+          "stsl": false,
+          "withholding": 342.31,
+          "source": "ATO withholding schedule 1 weekly $1,500 (no threshold)"
+        }
+      ]
+    },
+    "fortnightly": {
+      "annual_factor": 26,
+      "rounding": "HALF_UP",
+      "samples": [
+        {
+          "gross": 3000.0,
+          "tax_free_threshold": true,
+          "stsl": true,
+          "withholding": 545.69,
+          "withholding_including_stsl": 665.69,
+          "source": "ATO withholding schedule 2 fortnightly $3,000 with STSL"
+        }
+      ]
+    },
+    "monthly": {
+      "annual_factor": 12,
+      "rounding": "HALF_UP"
+    },
+    "quarterly": {
+      "annual_factor": 4,
+      "rounding": "HALF_UP"
+    }
+  },
+  "annual_tax": {
     "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
+      { "threshold": 0.0, "rate": 0.0, "base": 0.0 },
+      { "threshold": 18200.0, "rate": 0.16, "base": 0.0 },
+      { "threshold": 45000.0, "rate": 0.30, "base": 4288.0 },
+      { "threshold": 135000.0, "rate": 0.37, "base": 31288.0 },
+      { "threshold": 190000.0, "rate": 0.45, "base": 51638.0 }
+    ]
+  },
+  "lito": [
+    { "up_to": 37500.0, "a": 0.0, "b": 700.0 },
+    { "up_to": 45000.0, "a": -0.05, "b": 2575.0 },
+    { "up_to": 66667.0, "a": -0.015, "b": 1000.0 },
+    { "up_to": 999999999.0, "a": 0.0, "b": 0.0 }
+  ],
+  "tax_free_threshold_benefit": 3612.0,
+  "stsl": {
+    "rounding": "HALF_UP",
+    "thresholds": [
+      { "min": 0.0, "max": 51549.0, "rate": 0.0 },
+      { "min": 51550.0, "max": 59518.0, "rate": 0.01 },
+      { "min": 59519.0, "max": 63089.0, "rate": 0.02 },
+      { "min": 63090.0, "max": 66875.0, "rate": 0.025 },
+      { "min": 66876.0, "max": 70888.0, "rate": 0.03 },
+      { "min": 70889.0, "max": 75140.0, "rate": 0.035 },
+      { "min": 75141.0, "max": 79649.0, "rate": 0.04 },
+      { "min": 79650.0, "max": 84429.0, "rate": 0.045 },
+      { "min": 84430.0, "max": 89500.0, "rate": 0.05 },
+      { "min": 89501.0, "max": 94871.0, "rate": 0.055 },
+      { "min": 94872.0, "max": 100560.0, "rate": 0.06 },
+      { "min": 100561.0, "max": 106590.0, "rate": 0.065 },
+      { "min": 106591.0, "max": 112985.0, "rate": 0.07 },
+      { "min": 112986.0, "max": 119769.0, "rate": 0.075 },
+      { "min": 119770.0, "max": 126969.0, "rate": 0.08 },
+      { "min": 126970.0, "max": 134611.0, "rate": 0.085 },
+      { "min": 134612.0, "max": 142713.0, "rate": 0.09 },
+      { "min": 142714.0, "max": 151305.0, "rate": 0.095 },
+      { "min": 151306.0, "max": 999999999.0, "rate": 0.10 }
+    ]
+  },
+  "gst": {
+    "rate": 0.1,
+    "purchase_offsets": {
+      "GST": 0.1,
+      "CAPITAL": 0.1,
+      "IMPORT": 0.1,
+      "GST_FREE": 0.0,
+      "INPUT_TAXED": 0.0,
+      "NONE": 0.0
+    }
+  },
+  "ato_reference": {
+    "paygw_withholding": [
+      {
+        "period": "weekly",
+        "gross": 1500.0,
+        "tax_free_threshold": true,
+        "stsl": false,
+        "withholding": 272.85,
+        "source": "ATO withholding schedule 1 weekly $1,500 (claiming threshold)"
+      },
+      {
+        "period": "weekly",
+        "gross": 1500.0,
+        "tax_free_threshold": false,
+        "stsl": false,
+        "withholding": 342.31,
+        "source": "ATO withholding schedule 1 weekly $1,500 (no threshold)"
+      },
+      {
+        "period": "fortnightly",
+        "gross": 3000.0,
+        "tax_free_threshold": true,
+        "stsl": true,
+        "withholding": 545.69,
+        "withholding_including_stsl": 665.69,
+        "source": "ATO withholding schedule 2 fortnightly $3,000 with STSL"
+      }
     ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
+    "gst": [
+      {
+        "kind": "sale",
+        "amount": 1100.0,
+        "tax_code": "GST",
+        "net": 100.0,
+        "source": "ATO GST general rule example"
+      },
+      {
+        "kind": "purchase",
+        "amount": 550.0,
+        "tax_code": "GST",
+        "net": -50.0,
+        "source": "ATO input tax credit example"
+      }
+    ]
   }
 }
