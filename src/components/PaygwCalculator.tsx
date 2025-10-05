@@ -9,6 +9,8 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     taxWithheld: 0,
     period: "monthly",
     deductions: 0,
+    taxFreeThreshold: true,
+    stsl: false,
   });
 
   return (
@@ -70,6 +72,22 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
           <option value="monthly">Monthly</option>
           <option value="quarterly">Quarterly</option>
         </select>
+      </label>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: "0.5em" }}>
+        <input
+          type="checkbox"
+          checked={form.taxFreeThreshold ?? true}
+          onChange={e => setForm({ ...form, taxFreeThreshold: e.target.checked })}
+        />
+        Tax-free threshold claimed
+      </label>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: "0.5em" }}>
+        <input
+          type="checkbox"
+          checked={form.stsl ?? false}
+          onChange={e => setForm({ ...form, stsl: e.target.checked })}
+        />
+        STSL/HELP debt applies
       </label>
       <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculatePaygw(form))}>
         Calculate PAYGW

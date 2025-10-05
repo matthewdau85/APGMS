@@ -1,18 +1,71 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
+  "notes": "ATO PAYG withholding parameters (Stage 3 rates) effective 1 July 2024.",
+  "methods_enabled": [
+    "table_ato",
+    "formula_progressive",
+    "percent_simple",
+    "flat_plus_percent",
+    "bonus_marginal",
+    "net_to_gross"
+  ],
+  "periods": {
+    "weekly": { "periods_per_year": 52 },
+    "fortnightly": { "periods_per_year": 26 },
+    "monthly": { "periods_per_year": 12 },
+    "quarterly": { "periods_per_year": 4 }
+  },
+  "tax_scales": {
+    "tax_free_threshold": [
+      { "min": 0, "max": 18200, "rate": 0.0, "base": 0.0 },
+      { "min": 18200, "max": 45000, "rate": 0.16, "base": 0.0 },
+      { "min": 45000, "max": 135000, "rate": 0.30, "base": 4288.0 },
+      { "min": 135000, "max": 190000, "rate": 0.37, "base": 31288.0 },
+      { "min": 190000, "max": 1e12, "rate": 0.45, "base": 51638.0 }
     ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
-  }
+    "no_tax_free_threshold": [
+      { "min": 0, "max": 45000, "rate": 0.16, "base": 0.0 },
+      { "min": 45000, "max": 135000, "rate": 0.30, "base": 7200.0 },
+      { "min": 135000, "max": 190000, "rate": 0.37, "base": 34200.0 },
+      { "min": 190000, "max": 1e12, "rate": 0.45, "base": 54550.0 }
+    ]
+  },
+  "lito": [
+    { "min": 0, "max": 37500, "base": 700.0 },
+    { "min": 37500, "max": 45000, "base": 700.0, "taper": 0.05 },
+    { "min": 45000, "max": 66667, "base": 325.0, "taper": 0.015 }
+  ],
+  "medicare": {
+    "lower_threshold": 26000.0,
+    "upper_threshold": 32500.0,
+    "phase_in_rate": 0.1,
+    "levy_rate": 0.02
+  },
+  "stsl": [
+    { "min": 0, "rate": 0.0 },
+    { "min": 51550, "rate": 0.01 },
+    { "min": 59519, "rate": 0.02 },
+    { "min": 63090, "rate": 0.025 },
+    { "min": 66876, "rate": 0.03 },
+    { "min": 70889, "rate": 0.035 },
+    { "min": 75141, "rate": 0.04 },
+    { "min": 79652, "rate": 0.045 },
+    { "min": 84439, "rate": 0.05 },
+    { "min": 89520, "rate": 0.055 },
+    { "min": 94911, "rate": 0.06 },
+    { "min": 100630, "rate": 0.065 },
+    { "min": 106699, "rate": 0.07 },
+    { "min": 113138, "rate": 0.075 },
+    { "min": 119971, "rate": 0.08 },
+    { "min": 127220, "rate": 0.085 },
+    { "min": 134911, "rate": 0.09 },
+    { "min": 143071, "rate": 0.095 },
+    { "min": 151735, "rate": 0.10 }
+  ],
+  "examples": [
+    { "period": "weekly", "gross": 1500.0, "tax_free_threshold": true, "stsl": false, "withholding": 302.85 },
+    { "period": "weekly", "gross": 1500.0, "tax_free_threshold": true, "stsl": true, "withholding": 362.85 },
+    { "period": "monthly", "gross": 6000.0, "tax_free_threshold": true, "stsl": false, "withholding": 1215.0 },
+    { "period": "monthly", "gross": 6000.0, "tax_free_threshold": false, "stsl": false, "withholding": 1395.0 }
+  ]
 }
