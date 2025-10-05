@@ -1,17 +1,18 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { verifyFunds, initiateTransfer, submitSTPReport } from '../utils/bankApi';
+import { verifyFunds, initiateTransfer } from '../utils/bankApi';
+import { submitStpEvent } from '../utils/payrollApi';
 import { calculatePenalties } from '../utils/penalties';
 
 export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gstDue: number }) {
-  const { basHistory, setBasHistory, auditLog, setAuditLog } = useContext(AppContext);
+  const { basHistory, setBasHistory, auditLog, setAuditLog, adapterModes, logAdapterEvent } = useContext(AppContext);
   const [isProcessing, setIsProcessing] = useState(false);
 
   async function handleLodgment() {
     setIsProcessing(true);
     try {
-      const fundsOk = await verifyFunds(paygwDue, gstDue);
-      if (!fundsOk) {
+      const fundsResult = await verifyFunds(paygwDue, gstDue, { mode: adapterModes.bank, log: logAdapterEvent });
+      if (!fundsResult || fundsResult.status !== "OK") {
         setBasHistory([
           {
             period: new Date(),
@@ -27,8 +28,16 @@ export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gs
         setIsProcessing(false);
         return;
       }
-      await submitSTPReport({ paygw: paygwDue, gst: gstDue, period: new Date() });
-      await initiateTransfer(paygwDue, gstDue);
+      await submitStpEvent({ paygw: paygwDue, gst: gstDue, period: new Date() }, {
+        mode: adapterModes.payroll,
+        log: logAdapterEvent,
+      });
+      const transfer = await initiateTransfer(paygwDue, gstDue, { mode: adapterModes.bank, log: logAdapterEvent });
+      if (!transfer || transfer.status !== "OK") {
+        setAuditLog([...auditLog, { timestamp: Date.now(), action: `BAS transfer blocked`, user: "Admin" }]);
+        setIsProcessing(false);
+        return;
+      }
       setBasHistory([
         {
           period: new Date(),

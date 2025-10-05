@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import AdapterSimulator from "../components/AdapterSimulator";
 
 const tabs = [
   "Business Profile",
@@ -206,8 +207,11 @@ export default function Settings() {
         )}
         {activeTab === "Advanced" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Export Data</h3>
-            <button className="button">Export as CSV</button>
+            <h3>Sandbox Toolkit</h3>
+            <p style={{ color: "#666", fontSize: 14 }}>
+              Use the simulator below to flip adapter responses between success and error conditions.
+            </p>
+            <AdapterSimulator />
           </div>
         )}
       </div>

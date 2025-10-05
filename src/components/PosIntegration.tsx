@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { AppContext } from "../context/AppContext";
+import { submitSale } from "../utils/posApi";
 
 interface Sale {
   id: string;
@@ -11,16 +13,22 @@ interface PosIntegrationProps {
 }
 
 export default function PosIntegration({ sales, onAdd }: PosIntegrationProps) {
+  const { adapterModes, logAdapterEvent } = useContext(AppContext);
   const [id, setId] = useState("");
   const [amount, setAmount] = useState(0);
   const [exempt, setExempt] = useState(false);
 
-  function handleAdd() {
+  async function handleAdd() {
     if (id && amount > 0) {
-      onAdd(id, amount, exempt);
-      setId("");
-      setAmount(0);
-      setExempt(false);
+      try {
+        await submitSale({ id, amount, exempt }, { mode: adapterModes.pos, log: logAdapterEvent });
+        onAdd(id, amount, exempt);
+        setId("");
+        setAmount(0);
+        setExempt(false);
+      } catch (err: any) {
+        alert(`POS adapter error: ${err?.message || err}`);
+      }
     }
   }
 
