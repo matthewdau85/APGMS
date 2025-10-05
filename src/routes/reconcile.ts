@@ -1,5 +1,5 @@
 ﻿import { issueRPT } from "../rpt/issuer";
-import { buildEvidenceBundle } from "../evidence/bundle";
+import { buildEvidenceBundle, EvidenceNotFoundError } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
@@ -48,5 +48,17 @@ export async function settlementWebhook(req:any, res:any) {
 
 export async function evidence(req:any, res:any) {
   const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
+  if (!abn || !taxType || !periodId) {
+    return res.status(400).json({ error: "MISSING_PARAMS" });
+  }
+
+  try {
+    const bundle = await buildEvidenceBundle(abn, taxType, periodId);
+    return res.json(bundle);
+  } catch (err:any) {
+    if (err instanceof EvidenceNotFoundError) {
+      return res.status(404).json({ error: err.message });
+    }
+    throw err;
+  }
 }
