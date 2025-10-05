@@ -1,15 +1,15 @@
-﻿export type PeriodState = "OPEN"|"CLOSING"|"READY_RPT"|"BLOCKED_DISCREPANCY"|"BLOCKED_ANOMALY"|"RELEASED"|"FINALIZED";
-export interface Thresholds { epsilon_cents: number; variance_ratio: number; dup_rate: number; gap_minutes: number; }
+type State = "OPEN" | "RECONCILING" | "CLOSED_OK" | "CLOSED_FAIL";
+type Evt = "BEGIN_RECON" | "RECON_OK" | "RECON_FAIL";
 
-export function nextState(current: PeriodState, evt: string): PeriodState {
-  const t = ${current}:;
-  switch (t) {
-    case "OPEN:CLOSE": return "CLOSING";
-    case "CLOSING:PASS": return "READY_RPT";
-    case "CLOSING:FAIL_DISCREPANCY": return "BLOCKED_DISCREPANCY";
-    case "CLOSING:FAIL_ANOMALY": return "BLOCKED_ANOMALY";
-    case "READY_RPT:RELEASED": return "RELEASED";
-    case "RELEASED:FINALIZE": return "FINALIZED";
-    default: return current;
-  }
+const table: Record<string, State> = {
+  "OPEN:BEGIN_RECON": "RECONCILING",
+  "RECONCILING:RECON_OK": "CLOSED_OK",
+  "RECONCILING:RECON_FAIL": "CLOSED_FAIL",
+};
+
+export function nextState(current: State, evt: Evt): State {
+  const key = `${current}:${evt}`;
+  const next = table[key];
+  if (!next) throw new Error(`invalid transition ${key}`);
+  return next;
 }
