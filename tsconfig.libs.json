@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/libs",
+    "rootDir": "libs",
+    "module": "CommonJS",
+    "target": "ES2019",
+    "noEmitOnError": true,
+    "sourceMap": false
+  },
+  "include": ["libs/**/*.ts"]
+}

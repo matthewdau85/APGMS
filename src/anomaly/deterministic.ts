@@ -20,3 +20,7 @@ export function isAnomalous(v: AnomalyVector, thr: Thresholds = {}): boolean {
     Math.abs(v.delta_vs_baseline) > (thr.delta_vs_baseline ?? 0.1)
   );
 }
+
+export function exceeds(v: AnomalyVector, thr: Thresholds = {}): boolean {
+  return isAnomalous(v, thr);
+}

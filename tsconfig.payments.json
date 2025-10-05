@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/apps/services/payments",
+    "rootDir": "apps/services/payments",
+    "module": "CommonJS",
+    "target": "ES2019",
+    "noEmitOnError": true,
+    "sourceMap": false
+  },
+  "include": [
+    "apps/services/payments/src/index.ts",
+    "apps/services/payments/src/loadEnv.ts",
+    "apps/services/payments/src/routes/**/*.ts",
+    "apps/services/payments/src/middleware/**/*.ts",
+    "apps/services/payments/src/utils/**/*.ts"
+  ]
+}

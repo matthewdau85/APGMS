@@ -35,4 +35,14 @@ app.use("/api", api);
 app.use((_req, res) => res.status(404).send("Not found"));
 
 const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log("APGMS server listening on", port));
+const server = app.listen(port, () => console.log("APGMS server listening on", port));
+
+if (process.env.CI) {
+    const shutdownDelayMs = Number(process.env.CI_SERVER_SHUTDOWN_MS ?? "2000");
+    setTimeout(() => {
+        server.close(() => {
+            console.log("CI shutdown complete");
+            process.exit(0);
+        });
+    }, shutdownDelayMs);
+}
