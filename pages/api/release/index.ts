@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (amountCents >= 0) {
       return res.status(400).json({ error: "Release must be negative" });
     }
-    const data = await Payments.payAto({ abn, taxType, periodId, amountCents });
+    const data = await Payments.payAto({ abn, taxType, periodId, amountCents }, { req });
     return res.status(200).json(data);
   } catch (err: any) {
     return res.status(400).json({ error: err?.message || "Release failed" });
