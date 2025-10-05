@@ -1,7 +1,7 @@
 ﻿import { Pool } from "pg";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
-import { exceeds } from "../anomaly/deterministic";
+import { isAnomalous } from "../anomaly/deterministic";
 const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
 
@@ -12,7 +12,7 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
   if (row.state !== "CLOSING") throw new Error("BAD_STATE");
 
   const v = row.anomaly_vector || {};
-  if (exceeds(v, thresholds)) {
+  if (isAnomalous(v, thresholds)) {
     await pool.query("update periods set state='BLOCKED_ANOMALY' where id=", [row.id]);
     throw new Error("BLOCKED_ANOMALY");
   }

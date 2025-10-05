@@ -22,38 +22,55 @@ Security:
 Placeholder for MFA and encryption; easy to extend for production environments.
 
 Getting Started
-Clone the Repository
+---------------
 
+### Prerequisites
+
+- Node.js 20+ with [Corepack](https://nodejs.org/api/corepack.html) enabled (ships with modern Node installs). Corepack will provision `pnpm@9.12.2`, which is the package manager defined for this workspace.
+- A PostgreSQL instance if you want to exercise the Express routes that hit the database.
+
+### Clone & Install
+
+```bash
 git clone <your-repo-url>
 cd apgms
+corepack enable
+pnpm install
+```
 
-Install Dependencies
+### Development Commands
 
-npm install
+- `pnpm dev` – run the TypeScript sources with `tsx` for rapid iteration.
+- `pnpm lint` – ESLint (via `@typescript-eslint`) with `--max-warnings=0` so CI fails on new problems.
+- `pnpm typecheck` – `tsc --noEmit` to verify types without touching the build artefacts.
 
-Run the Development Server
+### Build & Run Pipeline
 
-npm start
+1. `pnpm build` runs the TypeScript compiler and emits JavaScript into `dist/`.
+2. `pnpm start` launches the compiled server (`node dist/index.js`).
 
-The app will start on http://localhost:3000
+The `dist/` directory is disposable and is ignored by Git; rerun `pnpm build` whenever you need fresh output.
 
-Build for Production
+### Containers & Compose
 
-npm run build
+- `Dockerfile.node` performs a multi-stage build: `npm ci`, `npm run build`, prunes dev dependencies, and copies only the compiled `dist/` artefacts into the runtime layer.
+- `docker-compose.yml` now exposes an `api` service that uses that image, so `docker compose up -d --build api` produces a container that runs the compiled JavaScript. The service binds to port `3000` by default via the `PORT` environment variable.
+- Use `docker compose up -d --build` to start the wider stack defined in the compose file (NATS, normalizer, etc.).
 
-Project Structure
+### Project Structure (excerpt)
+
+```
 apgms/
-├── public/ # Static assets and HTML
-├── src/
-│ ├── components/ # React components for UI modules
-│ ├── utils/ # Business logic, calculation, and API mock helpers
-│ ├── types/ # TypeScript types/interfaces
-│ ├── App.tsx # Main application component
-│ ├── index.tsx # Entry point
-│ └── index.css # App-wide styles
+├── docker-compose.yml
+├── Dockerfile.node        # builds the Express API from compiled JS
+├── src/                   # TypeScript source (Express, payments proxy, UI stubs)
+├── dist/                  # Generated JavaScript (ignored by Git)
+├── libs/                  # Shared client helpers consumed by the API
+├── apps/services/         # Co-located service source (payments, normalizer, ...)
 ├── package.json
 ├── tsconfig.json
 └── README.md
+```
 
 Customization & Integration
 Payroll/POS Integration:
