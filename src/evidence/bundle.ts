@@ -1,19 +1,58 @@
-﻿import { Pool } from "pg";
+import { Pool, PoolClient } from "pg";
+
 const pool = new Pool();
 
-export async function buildEvidenceBundle(abn: string, taxType: string, periodId: string) {
-  const p = (await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId])).rows[0];
-  const rpt = (await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId])).rows[0];
-  const deltas = (await pool.query("select created_at as ts, amount_cents, hash_after, bank_receipt_hash from owa_ledger where abn= and tax_type= and period_id= order by id", [abn, taxType, periodId])).rows;
-  const last = deltas[deltas.length-1];
-  const bundle = {
-    bas_labels: { W1: null, W2: null, "1A": null, "1B": null }, // TODO: populate
-    rpt_payload: rpt?.payload ?? null,
-    rpt_signature: rpt?.signature ?? null,
-    owa_ledger_deltas: deltas,
-    bank_receipt_hash: last?.bank_receipt_hash ?? null,
-    anomaly_thresholds: p?.thresholds ?? {},
-    discrepancy_log: []  // TODO: populate from recon diffs
-  };
-  return bundle;
+export interface EvidenceBundleInput {
+  abn: string;
+  periodId: number;
+  rptToken?: string;
+  deltaCents: number;
+  toleranceBps: number;
+  details?: any;
+}
+
+export interface EvidenceBundleRow {
+  id: number;
+  abn: string;
+  period_id: number;
+  rpt_token: string | null;
+  delta_cents: number;
+  tolerance_bps: number;
+  details: any;
+  created_at: Date;
+}
+
+export async function saveEvidence(
+  c: PoolClient,
+  input: EvidenceBundleInput
+): Promise<EvidenceBundleRow> {
+  const details = input.details ?? {};
+  const q = await c.query<EvidenceBundleRow>(
+    `insert into evidence_bundles (abn, period_id, rpt_token, delta_cents, tolerance_bps, details)
+     values ($1, $2, $3, $4, $5, $6)
+     returning *`,
+    [
+      input.abn,
+      input.periodId,
+      input.rptToken ?? null,
+      input.deltaCents,
+      input.toleranceBps,
+      details,
+    ]
+  );
+  return q.rows[0];
+}
+
+export async function getLatestEvidenceBundle(
+  abn: string,
+  periodId: number
+): Promise<EvidenceBundleRow | null> {
+  const q = await pool.query<EvidenceBundleRow>(
+    `select * from evidence_bundles
+     where abn = $1 and period_id = $2
+     order by created_at desc, id desc
+     limit 1`,
+    [abn, periodId]
+  );
+  return q.rows[0] ?? null;
 }
