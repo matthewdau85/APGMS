@@ -3,7 +3,7 @@ import { GstInput } from "../types/tax";
 import { calculateGst } from "../utils/gst";
 
 export default function GstCalculator({ onResult }: { onResult: (liability: number) => void }) {
-  const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false });
+  const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false, classification: "taxable" });
 
   return (
     <div className="card">
@@ -28,7 +28,13 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
         <input
           type="checkbox"
           checked={form.exempt}
-          onChange={e => setForm({ ...form, exempt: e.target.checked })}
+          onChange={e =>
+            setForm({
+              ...form,
+              exempt: e.target.checked,
+              classification: e.target.checked ? "gst_free" : "taxable",
+            })
+          }
         />
         GST Exempt
       </label>

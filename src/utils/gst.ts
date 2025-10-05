@@ -1,6 +1,22 @@
-import { GstInput } from "../types/tax";
+import {
+  BasSummary,
+  GstEvent,
+  GstEventClassification,
+  GstInput,
+  ReportingPeriod,
+} from "../types/tax";
+import { gstModule } from "./gstModule";
 
-export function calculateGst({ saleAmount, exempt = false }: GstInput): number {
-  if (exempt) return 0;
-  return saleAmount * 0.1;
+export function calculateGst(input: GstInput): number {
+  return gstModule.calculateSimpleGst(input);
 }
+
+export function aggregateBas(events: GstEvent[], period: ReportingPeriod): BasSummary {
+  return gstModule.aggregate(events, period);
+}
+
+export function classifyGstEvent(event: GstEvent): GstEventClassification {
+  return gstModule.classify(event);
+}
+
+export { gstModule };
