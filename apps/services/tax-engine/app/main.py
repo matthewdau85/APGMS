@@ -25,13 +25,18 @@ def metrics():
 
 # --- BEGIN TAX_ENGINE_CORE_APP ---
 import asyncio
+import json
 import os
-from typing import Optional
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
+
+from .domains import gst as gst_domain
+from .domains import payg_w as payg_w_domain
 
 try:
     app  # reuse if exists
@@ -41,6 +46,10 @@ except NameError:
 NATS_URL = os.getenv("NATS_URL", "nats://nats:4222")
 SUBJECT_INPUT = os.getenv("SUBJECT_INPUT", "apgms.normalized.v1")
 SUBJECT_OUTPUT = os.getenv("SUBJECT_OUTPUT", "apgms.tax.v1")
+
+_RULES_PATH = Path(__file__).resolve().parent / "rules" / "payg_w_2024_25.json"
+with _RULES_PATH.open("r", encoding="utf-8") as _fh:
+    PAYGW_RULES = json.load(_fh)
 
 _nc: Optional[NATS] = None
 _started = asyncio.Event()
@@ -81,12 +90,69 @@ async def _connect_nats_with_retry() -> NATS:
         backoff = min(max_backoff, backoff * 2)
 
 async def _subscribe_and_run(nc: NATS):
+    def _round(amount: float) -> float:
+        return float(f"{amount:.2f}")
+
+    def _compute_paygw(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        paygw_input = payload.get("payg_w")
+        if not paygw_input:
+            return None
+        calc = payg_w_domain.compute({"payg_w": paygw_input}, PAYGW_RULES)
+        withheld = float(paygw_input.get("tax_withheld", 0.0) or 0.0)
+        deductions = float(paygw_input.get("deductions", 0.0) or 0.0)
+        liability = max(calc["withholding"] - withheld - deductions, 0.0)
+        return {
+            "input": {
+                "gross": _round(calc["gross"]),
+                "period": paygw_input.get("period", "weekly"),
+                "tax_free_threshold": bool(paygw_input.get("tax_free_threshold", True)),
+                "stsl": bool(paygw_input.get("stsl", False)),
+                "tax_withheld": _round(withheld),
+                "deductions": _round(deductions),
+            },
+            "withholding": _round(calc["withholding"]),
+            "net": _round(calc["net"]),
+            "liability": _round(liability),
+            "explain": calc.get("explain", []),
+        }
+
+    def _compute_gst(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        gst_block = payload.get("gst") or {}
+        lines = gst_block.get("lines") or []
+        if not lines:
+            return None
+        totals = gst_domain.total_from_lines(lines)
+        remitted = float(gst_block.get("remitted", 0.0) or 0.0)
+        liability = max(totals["gst"] - remitted, 0.0)
+        return {
+            "taxable": _round(totals["taxable_amount"]),
+            "gst": _round(totals["gst"]),
+            "remitted": _round(remitted),
+            "liability": _round(liability),
+        }
+
     async def _on_msg(msg):
         with CALC_LAT.time():
             TAX_REQS.inc()
             data = msg.data or b"{}"
-            # TODO: real calc -> publish real result
-            await nc.publish(SUBJECT_OUTPUT, data)
+            try:
+                event = json.loads(data.decode("utf-8"))
+            except json.JSONDecodeError:
+                return
+            result: Dict[str, Any] = {
+                "id": event.get("id"),
+                "entity": event.get("entity"),
+                "period": event.get("period"),
+                "results": {}
+            }
+            paygw_result = _compute_paygw(event)
+            if paygw_result:
+                result["results"]["payg_w"] = paygw_result
+            gst_result = _compute_gst(event)
+            if gst_result:
+                result["results"]["gst"] = gst_result
+            tax_events_processed.inc()
+            await nc.publish(SUBJECT_OUTPUT, json.dumps(result, separators=(",", ":")).encode("utf-8"))
             TAX_OUT.inc()
     await nc.subscribe(SUBJECT_INPUT, cb=_on_msg)
     _ready.set()
@@ -146,7 +212,7 @@ except Exception:
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from .domains import payg_w as payg_w_mod
+payg_w_mod = payg_w_domain
 import os, json
 
 TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
