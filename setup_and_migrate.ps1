@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS rpt_tokens (
   period_id        TEXT        NOT NULL,
   key_id           TEXT        NOT NULL,
   payload_json     JSONB       NOT NULL,
+  rates_version    TEXT        NOT NULL,
   payload_sha256   BYTEA       NOT NULL,
   sig_ed25519      BYTEA       NOT NULL,
   nonce            TEXT        NOT NULL,
@@ -113,6 +114,15 @@ CREATE TABLE IF NOT EXISTS rpt_tokens (
   created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
   status           TEXT        NOT NULL CHECK (status IN ('pending','active','revoked','expired'))
 );
+
+ALTER TABLE rpt_tokens
+  ADD COLUMN IF NOT EXISTS rates_version TEXT;
+
+UPDATE rpt_tokens
+SET rates_version = COALESCE(rates_version, '2024-10-ATO-v1');
+
+ALTER TABLE rpt_tokens
+  ALTER COLUMN rates_version SET NOT NULL;
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_rpt_tokens_unique_pending_active
   ON rpt_tokens (abn, tax_type, period_id)

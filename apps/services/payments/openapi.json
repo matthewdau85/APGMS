@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Payments Service",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/payAto": {
+      "post": {
+        "summary": "Release funds to the ATO once an RPT has been verified",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["abn", "taxType", "periodId", "amountCents"],
+                "properties": {
+                  "abn": { "type": "string" },
+                  "taxType": { "type": "string" },
+                  "periodId": { "type": "string" },
+                  "amountCents": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "ledger_id",
+                    "transfer_uuid",
+                    "release_uuid",
+                    "balance_after_cents",
+                    "rpt_ref"
+                  ],
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "ledger_id": { "type": "integer" },
+                    "transfer_uuid": { "type": "string", "format": "uuid" },
+                    "release_uuid": { "type": "string", "format": "uuid" },
+                    "balance_after_cents": { "type": "integer" },
+                    "rpt_ref": {
+                      "$ref": "#/components/schemas/RptReference"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or business rule rejection"
+          },
+          "403": {
+            "description": "RPT missing or failed verification"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RptReference": {
+        "type": "object",
+        "required": ["rpt_id", "payload_sha256", "rates_version"],
+        "properties": {
+          "rpt_id": { "type": "integer" },
+          "kid": { "type": ["string", "null"] },
+          "payload_sha256": { "type": "string" },
+          "rates_version": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -40,6 +40,7 @@ create table if not exists rpt_tokens (
   period_id text not null,
   payload jsonb not null,
   signature text not null,
+  rates_version text not null,
   status text not null default 'ISSUED',
   created_at timestamptz default now()
 );
