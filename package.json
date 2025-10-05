@@ -1,18 +1,25 @@
 {
     "scripts": {
-        "start": "node dist/index.js",
-        "build": "echo build root",
-        "typecheck": "echo typecheck root",
+        "start": "node dist/src/index.js",
+        "build": "tsc -p tsconfig.server.json",
+        "typecheck": "tsc --noEmit -p tsconfig.server.json",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "eslint --max-warnings=0 \"{src,scripts,api,tests}/**/*.{ts,tsx}\"",
+        "watchdog": "tsx scripts/watchdog.ts",
+        "capture:snapshots": "tsx scripts/captureSnapshots.ts",
+        "test": "tsx --test \"tests/**/*.test.ts\""
     },
     "version": "0.1.0",
     "name": "apgms",
     "private": true,
-    "packageManager": "pnpm@9",
+    "packageManager": "pnpm@9.0.0",
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
+        "@typescript-eslint/eslint-plugin": "^7.17.0",
+        "@typescript-eslint/parser": "^7.17.0",
+        "eslint": "^8.57.1",
+        "eslint-config-prettier": "^9.1.0",
         "ts-node": "^10.9.2",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3"
