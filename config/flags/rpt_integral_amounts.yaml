@@ -1,0 +1,18 @@
+# Feature flag definition for enforcing integer-based money values in RPT payloads.
+flag: apgms.rpt.enforce_integral_amounts
+summary: Require PAYGW and GST totals to be expressed in integer cents.
+default: true
+owner: platform
+rollout:
+  environments:
+    dev: true
+    staging: true
+    prod: true
+controls:
+  env_var: APGMS_RPT_ALLOW_FLOAT_INPUTS
+  invert: true
+  description: |
+    Set to "1" to temporarily permit float inputs while downstream systems are migrated.
+safeguards:
+  - Always prefer integers/decimals for financial values.
+  - Monitor RPT build errors for TypeError spikes during rollout.
