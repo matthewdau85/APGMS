@@ -1,0 +1,47 @@
+name: Proto Feature
+description: Capture requirements for a new proto feature proposal.
+title: "[Proto Feature] "
+labels:
+  - feature
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Provide a concise description of the proto feature.
+      placeholder: Outline the user value and core behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Enumerate the conditions that must be satisfied for the feature to be considered complete.
+      placeholder: |
+        - [ ] Condition 1
+        - [ ] Condition 2
+    validations:
+      required: true
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test Plan
+      description: Describe manual and automated validation needed to confirm the feature works as expected.
+      placeholder: List unit, integration, and exploratory testing steps.
+    validations:
+      required: true
+  - type: textarea
+    id: rollout
+    attributes:
+      label: Rollout / Rollback Notes
+      description: Outline deployment sequencing, monitoring, and rollback actions.
+      placeholder: Include rollout stages, alerting, and recovery procedure.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies & Risks
+      description: Note any cross-team coordination, known risks, or external dependencies.
+    validations:
+      required: false
