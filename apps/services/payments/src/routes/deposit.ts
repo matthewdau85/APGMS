@@ -1,9 +1,14 @@
 import { Request, Response } from "express";
 import { pool } from "../index.js";
 import { randomUUID } from "node:crypto";
+import { isProtoKillSwitchEnabled, PROTOTYPE_KILL_SWITCH_MESSAGE } from "../flags.js";
 
 export async function deposit(req: Request, res: Response) {
   try {
+    if (isProtoKillSwitchEnabled()) {
+      return res.status(503).json({ error: PROTOTYPE_KILL_SWITCH_MESSAGE });
+    }
+
     const { abn, taxType, periodId, amountCents } = req.body || {};
     if (!abn || !taxType || !periodId) return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     const amt = Number(amountCents);
