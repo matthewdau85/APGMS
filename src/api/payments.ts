@@ -1,8 +1,11 @@
 // src/api/payments.ts
 import express from "express";
 import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { requireServiceSignature } from "../middleware/serviceSignature";
 
 export const paymentsApi = express.Router();
+
+paymentsApi.use(requireServiceSignature);
 
 // GET /api/balance?abn=&taxType=&periodId=
 paymentsApi.get("/balance", async (req, res) => {
