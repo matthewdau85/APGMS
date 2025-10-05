@@ -26,9 +26,42 @@ DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='periods_state_check') THEN
     ALTER TABLE periods ADD CONSTRAINT periods_state_check
-    CHECK (state IN ('OPEN','CLOSING','READY_RPT','RELEASED','BLOCKED_ANOMALY','BLOCKED_DISCREPANCY'));
+    CHECK (state IN ('OPEN','RECONCILING','RPT_ISSUED','RELEASED','BLOCKED'));
   END IF;
 END$$;
+
+CREATE OR REPLACE FUNCTION periods_state_guard()
+RETURNS trigger AS $$
+DECLARE
+  _ok boolean := FALSE;
+BEGIN
+  IF TG_OP = 'UPDATE' AND NEW.state IS DISTINCT FROM OLD.state THEN
+    IF NEW.state = OLD.state THEN
+      RETURN NEW;
+    END IF;
+
+    _ok :=
+      (OLD.state = 'OPEN'         AND NEW.state IN ('RECONCILING')) OR
+      (OLD.state = 'RECONCILING'  AND NEW.state IN ('RPT_ISSUED','BLOCKED')) OR
+      (OLD.state = 'RPT_ISSUED'   AND NEW.state IN ('RELEASED','BLOCKED')) OR
+      (OLD.state = 'BLOCKED'      AND NEW.state IN ('RECONCILING'));
+
+    IF NOT _ok THEN
+      RAISE EXCEPTION USING
+        ERRCODE = 'P0001',
+        MESSAGE = format('Illegal recon state transition: %s -> %s', OLD.state, NEW.state);
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_periods_state_guard ON periods;
+CREATE TRIGGER trg_periods_state_guard
+BEFORE UPDATE ON periods
+FOR EACH ROW
+WHEN (NEW.state IS DISTINCT FROM OLD.state)
+EXECUTE FUNCTION periods_state_guard();
 
 -- (D) Helper view: period balances computed from the ledger
 CREATE OR REPLACE VIEW v_period_balances AS
@@ -107,6 +140,6 @@ BEGIN
   UPDATE periods
   SET credited_to_owa_cents = COALESCE(_cred,0),
       final_liability_cents = COALESCE(_cred,0),
-      state = CASE WHEN state='OPEN' OR state='CLOSING' THEN 'CLOSING' ELSE state END
+      state = CASE WHEN state='OPEN' OR state='RECONCILING' THEN 'RECONCILING' ELSE state END
   WHERE abn=p_abn AND tax_type=p_tax AND period_id=p_period;
 END; $$ LANGUAGE plpgsql;
