@@ -1,4 +1,0 @@
-﻿packages:
-  - "apps/web/console"
-  - "apps/services/*"
-  - "libs/node-sdk"

@@ -1,1 +1,0 @@
-﻿E2E harness (P80): synthetic quarter, invariants, anomaly blocking.

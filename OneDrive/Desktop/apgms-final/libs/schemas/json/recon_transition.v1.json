@@ -1,8 +1,0 @@
-﻿{
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ReconTransitionV1",
-  "type": "object",
-  "properties": {
-    "state": { "type": "string" }
-  }
-}

@@ -1,6 +1,0 @@
-﻿apiVersion: 1
-policies:
-  - orgId: 1
-    receiver: apgms-webhook
-    group_by: ['alertname']
-    routes: []
