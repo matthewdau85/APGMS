@@ -81,7 +81,12 @@ export async function payAtoRelease(req: Request, res: Response) {
       transfer_uuid,
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      rpt_ref: {
+        rpt_id: rpt.rpt_id,
+        kid: rpt.kid,
+        payload_sha256: rpt.payload_sha256,
+        rates_version: rpt.rates_version,
+      },
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
