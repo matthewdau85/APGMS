@@ -15,7 +15,19 @@ export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", refere
 }
 
 /** Idempotent release with a stable transfer_uuid (simulate bank release) */
-export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: number, rail: "EFT"|"BPAY", reference: string) {
+type LedgerRow = {
+  balance_after_cents: number | string | null;
+  hash_after: string | null;
+};
+
+export async function releasePayment(
+  abn: string,
+  taxType: string,
+  periodId: string,
+  amountCents: number,
+  rail: "EFT" | "BPAY",
+  reference: string
+) {
   const transfer_uuid = uuidv4();
   try {
     await pool.query("insert into idempotency_keys(key,last_status) values(,)", [transfer_uuid, "INIT"]);
@@ -24,10 +36,11 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
   }
   const bank_receipt_hash = "bank:" + transfer_uuid.slice(0,12);
 
-  const { rows } = await pool.query(
+  const { rows } = await pool.query<LedgerRow>(
     "select balance_after_cents, hash_after from owa_ledger where abn= and tax_type= and period_id= order by id desc limit 1",
-    [abn, taxType, periodId]);
-  const prevBal = rows[0]?.balance_after_cents ?? 0;
+    [abn, taxType, periodId]
+  );
+  const prevBal = Number(rows[0]?.balance_after_cents ?? 0);
   const prevHash = rows[0]?.hash_after ?? "";
   const newBal = prevBal - amountCents;
   const hashAfter = sha256Hex(prevHash + bank_receipt_hash + String(newBal));

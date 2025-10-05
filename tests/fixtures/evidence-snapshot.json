@@ -1,0 +1,66 @@
+{
+  "meta": {
+    "generated_at": "2025-10-04T20:20:15.647Z",
+    "abn": "12345678901",
+    "taxType": "GST",
+    "periodId": "2025-09"
+  },
+  "period": {
+    "state": "RELEASED",
+    "accrued_cents": 0,
+    "credited_to_owa_cents": 123456,
+    "final_liability_cents": 123456,
+    "thresholds": {
+      "dup_rate": 0.01,
+      "gap_minutes": 60,
+      "epsilon_cents": 50,
+      "variance_ratio": 0.25,
+      "delta_vs_baseline": 0.2
+    }
+  },
+  "rpt": {
+    "payload": {
+      "entity_id": "12345678901",
+      "period_id": "2025-09",
+      "tax_type": "GST",
+      "amount_cents": 123456,
+      "rail_id": "EFT",
+      "reference": "1234567890",
+      "expiry_ts": "2025-10-04T20:32:18.735Z",
+      "nonce": "51f52375-138d-4198-8e8f-f393cdcbb1ac"
+    },
+    "created_at": "2025-10-04T20:17:18.772Z"
+  },
+  "owa_ledger_deltas": [
+    {
+      "ts": "2025-10-04T20:07:34.508Z",
+      "amount_cents": 50000,
+      "balance_after_cents": 50000,
+      "bank_receipt_hash": "rcpt:50a26f86-27a0-4201-8cc1-afb99e296296",
+      "hash_after": null
+    },
+    {
+      "ts": "2025-10-04T20:07:34.508Z",
+      "amount_cents": 40000,
+      "balance_after_cents": 90000,
+      "bank_receipt_hash": "rcpt:de0dc3d9-28ee-405e-9ab1-622a724a5b18",
+      "hash_after": null
+    },
+    {
+      "ts": "2025-10-04T20:07:34.508Z",
+      "amount_cents": 33456,
+      "balance_after_cents": 123456,
+      "bank_receipt_hash": "rcpt:6295e338-1b2d-4bc4-ab1e-62245763dd5c",
+      "hash_after": null
+    },
+    {
+      "ts": "2025-10-04T20:17:18.796Z",
+      "amount_cents": -123456,
+      "balance_after_cents": 0,
+      "bank_receipt_hash": "rcpt:4f61dd90-a76",
+      "hash_after": "6bd22221481cccb2e4b9a3a70c4e74822f2751b6e6e542641c46c25724732a5d"
+    }
+  ],
+  "bank_receipt_hash": "rcpt:4f61dd90-a76",
+  "discrepancy_log": []
+}

@@ -1,6 +1,8 @@
-﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { Request, Response } from "express";
+import { Pool } from "pg";
 import { randomUUID } from "node:crypto";
+
+const pool = new Pool();
 
 export async function deposit(req: Request, res: Response) {
   try {
@@ -17,16 +19,16 @@ export async function deposit(req: Request, res: Response) {
     try {
       await client.query("BEGIN");
 
-      const { rows: last } = await client.query(
+      const { rows: last } = await client.query<{ balance_after_cents: number | string }>(
         `SELECT balance_after_cents FROM owa_ledger
          WHERE abn=$1 AND tax_type=$2 AND period_id=$3
          ORDER BY id DESC LIMIT 1`,
         [abn, taxType, periodId]
       );
-      const prevBal = last[0]?.balance_after_cents ?? 0;
+      const prevBal = Number(last[0]?.balance_after_cents ?? 0);
       const newBal = prevBal + amt;
 
-      const { rows: ins } = await client.query(
+      const { rows: ins } = await client.query<{ id: number; transfer_uuid: string; balance_after_cents: number | string }>(
         `INSERT INTO owa_ledger
            (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
          VALUES ($1,$2,$3,$4,$5,$6,now())
@@ -39,16 +41,17 @@ export async function deposit(req: Request, res: Response) {
         ok: true,
         ledger_id: ins[0].id,
         transfer_uuid: ins[0].transfer_uuid,
-        balance_after_cents: ins[0].balance_after_cents
+        balance_after_cents: Number(ins[0].balance_after_cents),
       });
-
-    } catch (e:any) {
+    } catch (error) {
       await client.query("ROLLBACK");
-      return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
+      const message = error instanceof Error ? error.message : String(error);
+      return res.status(500).json({ error: "Deposit failed", detail: message });
     } finally {
       client.release();
     }
-  } catch (e:any) {
-    return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ error: "Deposit error", detail: message });
   }
 }
