@@ -10,6 +10,8 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { verify as bankVerify, initiate as bankInitiate, manual as bankManual } from './routes/bank.js';
+import { report as stpReport } from './routes/stp.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -32,6 +34,10 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 // Endpoints
 app.post('/deposit', deposit);
 app.post('/payAto', rptGate, payAtoRelease);
+app.post('/bank/verify', bankVerify);
+app.post('/bank/transfer', bankInitiate);
+app.post('/bank/manualTransfer', bankManual);
+app.post('/stp/report', stpReport);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
 

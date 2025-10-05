@@ -3,6 +3,8 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { submitReport } from '../clients/stpClient.js';
+import { transfer as bankTransfer } from '../clients/bankClient.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -14,8 +16,39 @@ function genUUID() {
  * - Inserts a single negative ledger entry for the given period
  * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
  */
+interface ReleaseRequestBody {
+  abn: string;
+  taxType: string;
+  periodId: string;
+  amountCents: number;
+  stp?: {
+    paygwCents: number;
+    gstCents: number;
+    period: string;
+  };
+  bank?: {
+    debitAccount: string;
+    creditAccount: string;
+    reference: string;
+  };
+}
+
+function isReleaseBody(body: any): body is ReleaseRequestBody {
+  return (
+    body &&
+    typeof body.abn === 'string' &&
+    typeof body.taxType === 'string' &&
+    typeof body.periodId === 'string' &&
+    typeof body.amountCents === 'number'
+  );
+}
+
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
+  if (!isReleaseBody(req.body)) {
+    return res.status(400).json({ error: 'Missing abn/taxType/periodId/amountCents' });
+  }
+
+  const { abn, taxType, periodId, amountCents, stp, bank } = req.body as ReleaseRequestBody;
   if (!abn || !taxType || !periodId) {
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
   }
@@ -32,6 +65,38 @@ export async function payAtoRelease(req: Request, res: Response) {
   const rpt = (req as any).rpt;
   if (!rpt) {
     return res.status(403).json({ error: 'RPT not verified' });
+  }
+
+  if (!stp) {
+    return res.status(400).json({ error: 'Missing STP payload' });
+  }
+  if (!bank || !bank.debitAccount || !bank.creditAccount || !bank.reference) {
+    return res.status(400).json({ error: 'Missing banking instructions' });
+  }
+
+  let stpConfirmation: { confirmationId: string; acceptedAt: string };
+  try {
+    stpConfirmation = await submitReport(stp);
+  } catch (err: any) {
+    return res.status(422).json({
+      error: 'STP_REJECTED',
+      detail: err?.message || 'STP submission rejected',
+    });
+  }
+
+  let bankResult: { bankReceiptHash: string; providerTransferId: string; status: string };
+  try {
+    bankResult = await bankTransfer({
+      amountCents: Math.abs(amt),
+      debitAccount: bank.debitAccount,
+      creditAccount: bank.creditAccount,
+      reference: bank.reference,
+    });
+  } catch (err: any) {
+    return res.status(402).json({
+      error: 'BANK_TRANSFER_FAILED',
+      detail: err?.message || 'Bank transfer failed',
+    });
   }
 
   const client = await pool.connect();
@@ -58,8 +123,8 @@ export async function payAtoRelease(req: Request, res: Response) {
     const insert = `
       INSERT INTO owa_ledger
         (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
+         rpt_verified, release_uuid, bank_receipt_hash, stp_confirmation_id, created_at)
+      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, $8, $9, now())
       RETURNING id, transfer_uuid, balance_after_cents
     `;
     const transfer_uuid = genUUID();
@@ -71,6 +136,8 @@ export async function payAtoRelease(req: Request, res: Response) {
       amt,
       newBal,
       release_uuid,
+      bankResult.bankReceiptHash,
+      stpConfirmation.confirmationId,
     ]);
 
     await client.query('COMMIT');
@@ -82,6 +149,8 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      bank_transfer: bankResult,
+      stp_confirmation: stpConfirmation,
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
