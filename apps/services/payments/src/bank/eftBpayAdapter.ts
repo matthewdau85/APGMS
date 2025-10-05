@@ -1,51 +1,81 @@
-﻿import pg from "pg";
-import https from "https";
-import axios from "axios";
 import { createHash, randomUUID } from "crypto";
+import { AdapterCallContext, AdapterMode, getAdapterMode, recordAdapterCall } from "./simulatorState.js";
 
-type Params = {
-  abn: string; taxType: string; periodId: string;
+export type BankTransferStatus = "OK" | "INSUFFICIENT_FUNDS" | "ERROR";
+
+export interface SendEftOrBpayParams extends AdapterCallContext {
+  abn: string;
+  taxType: string;
+  periodId: string;
   amount_cents: number;
   destination: { bpay_biller?: string; crn?: string; bsb?: string; acct?: string };
   idempotencyKey: string;
-};
+}
 
-const agent = new https.Agent({
-  ca: process.env.BANK_TLS_CA ? require("fs").readFileSync(process.env.BANK_TLS_CA) : undefined,
-  cert: process.env.BANK_TLS_CERT ? require("fs").readFileSync(process.env.BANK_TLS_CERT) : undefined,
-  key: process.env.BANK_TLS_KEY ? require("fs").readFileSync(process.env.BANK_TLS_KEY) : undefined,
-  rejectUnauthorized: true
-});
+export interface BankTransferSuccess {
+  status: "OK";
+  transfer_uuid: string;
+  provider_receipt_id: string;
+  bank_receipt_hash: string;
+  receipt_signature: string;
+  mode: AdapterMode;
+  callId: string;
+}
 
-const client = axios.create({
-  baseURL: process.env.BANK_API_BASE,
-  timeout: Number(process.env.BANK_TIMEOUT_MS || "8000"),
-  httpsAgent: agent
-});
+export interface BankTransferInsufficient {
+  status: "INSUFFICIENT_FUNDS";
+  reason: string;
+  mode: AdapterMode;
+  callId: string;
+}
 
-export async function sendEftOrBpay(p: Params): Promise<{transfer_uuid: string; bank_receipt_hash: string; provider_receipt_id: string}> {
-  const transfer_uuid = randomUUID();
+export type BankTransferResult = BankTransferSuccess | BankTransferInsufficient;
+
+export async function sendEftOrBpay(params: SendEftOrBpayParams): Promise<BankTransferResult> {
+  const mode = getAdapterMode("bank");
   const payload = {
-    amount_cents: p.amount_cents,
-    meta: { abn: p.abn, taxType: p.taxType, periodId: p.periodId, transfer_uuid },
-    destination: p.destination
+    amount_cents: params.amount_cents,
+    destination: params.destination,
+    meta: {
+      abn: params.abn,
+      taxType: params.taxType,
+      periodId: params.periodId,
+      idempotencyKey: params.idempotencyKey,
+    },
   };
 
-  const headers = { "Idempotency-Key": p.idempotencyKey };
-  const maxAttempts = 3;
-  let attempt = 0, lastErr: any;
-
-  while (attempt < maxAttempts) {
-    attempt++;
-    try {
-      const r = await client.post("/payments/eft-bpay", payload, { headers });
-      const receipt = r.data?.receipt_id || "";
-      const hash = createHash("sha256").update(receipt).digest("hex");
-      return { transfer_uuid, bank_receipt_hash: hash, provider_receipt_id: receipt };
-    } catch (e: any) {
-      lastErr = e;
-      await new Promise(s => setTimeout(s, attempt * 250));
-    }
+  if (mode === "error") {
+    const callId = recordAdapterCall("bank", payload, params, { error: "Simulated bank outage" });
+    throw new Error("Simulated bank outage");
   }
-  throw new Error("Bank transfer failed: " + String(lastErr?.message || lastErr));
+
+  if (mode === "insufficient") {
+    const response: BankTransferInsufficient = {
+      status: "INSUFFICIENT_FUNDS",
+      reason: "Simulated account has insufficient cleared funds",
+      mode,
+      callId: recordAdapterCall("bank", payload, params, {
+        response: { status: "INSUFFICIENT_FUNDS", reason: "Simulated account has insufficient cleared funds" },
+      }),
+    };
+    return response;
+  }
+
+  const transfer_uuid = randomUUID();
+  const provider_receipt_id = `SIM-${params.periodId}-${params.idempotencyKey.slice(0, 8)}`;
+  const bank_receipt_hash = createHash("sha256").update(provider_receipt_id).digest("hex");
+  const receipt_signature = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+
+  const response: BankTransferSuccess = {
+    status: "OK",
+    transfer_uuid,
+    provider_receipt_id,
+    bank_receipt_hash,
+    receipt_signature,
+    mode,
+    callId: "",
+  };
+
+  response.callId = recordAdapterCall("bank", payload, params, { response });
+  return response;
 }

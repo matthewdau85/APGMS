@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { AppContext } from "../context/AppContext";
+import { submitStpEvent } from "../utils/payrollApi";
 
 interface PayrollIntegrationProps {
   payroll: { employee: string; gross: number; withheld: number }[];
@@ -6,16 +8,25 @@ interface PayrollIntegrationProps {
 }
 
 export default function PayrollIntegration({ payroll, onAdd }: PayrollIntegrationProps) {
+  const { adapterModes, logAdapterEvent } = useContext(AppContext);
   const [employee, setEmployee] = useState("");
   const [gross, setGross] = useState(0);
   const [withheld, setWithheld] = useState(0);
 
-  function handleAdd() {
+  async function handleAdd() {
     if (employee && gross > 0) {
-      onAdd(employee, gross, withheld);
-      setEmployee("");
-      setGross(0);
-      setWithheld(0);
+      try {
+        await submitStpEvent({ employee, gross, withheld }, {
+          mode: adapterModes.payroll,
+          log: logAdapterEvent,
+        });
+        onAdd(employee, gross, withheld);
+        setEmployee("");
+        setGross(0);
+        setWithheld(0);
+      } catch (err: any) {
+        alert(`Payroll adapter error: ${err?.message || err}`);
+      }
     }
   }
 

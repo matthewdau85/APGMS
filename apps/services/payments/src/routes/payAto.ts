@@ -3,6 +3,9 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { sendEftOrBpay } from '../bank/eftBpayAdapter.js';
+import type { BankTransferSuccess } from '../bank/eftBpayAdapter.js';
+import { attachLedgerToCall } from '../bank/simulatorState.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -54,6 +57,23 @@ export async function payAtoRelease(req: Request, res: Response) {
     const newBal = lastBal + amt;
 
     const release_uuid = genUUID();
+    const bankAttempt = await sendEftOrBpay({
+      abn,
+      taxType,
+      periodId,
+      amount_cents: Math.abs(amt),
+      destination: { bpay_biller: '75556', crn: String(rpt.payload_sha256).slice(0, 10) },
+      idempotencyKey: release_uuid,
+    });
+
+    if (bankAttempt.status === 'INSUFFICIENT_FUNDS') {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        error: 'BANK_INSUFFICIENT_FUNDS',
+        detail: bankAttempt.reason,
+        adapter_call_id: bankAttempt.callId,
+      });
+    }
 
     const insert = `
       INSERT INTO owa_ledger
@@ -73,6 +93,23 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
     ]);
 
+    const bankSuccess = bankAttempt as BankTransferSuccess;
+
+    attachLedgerToCall(bankSuccess.callId, {
+      ledger_id: ins[0].id,
+      amount_cents: amt,
+      balance_after_cents: Number(ins[0].balance_after_cents),
+      sources: [
+        {
+          basLabel: '1A',
+          amount_cents: Math.abs(amt),
+          reference: rpt.payload_sha256,
+          channel: 'EFT/BPAY',
+          description: 'Simulated ATO release',
+        },
+      ],
+    });
+
     await client.query('COMMIT');
 
     return res.json({
@@ -81,6 +118,10 @@ export async function payAtoRelease(req: Request, res: Response) {
       transfer_uuid,
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
+      bank_transfer_reference: bankSuccess.provider_receipt_id,
+      bank_receipt_hash: bankSuccess.bank_receipt_hash,
+      receipt_signature: bankSuccess.receipt_signature,
+      adapter_call_id: bankSuccess.callId,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
