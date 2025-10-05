@@ -1,0 +1,47 @@
+{
+  "versions": [
+    {
+      "id": "PAYGW-weekly-2024-07-01",
+      "tax_type": "PAYGW",
+      "period": "weekly",
+      "method": "formula_progressive",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "rounding": "HALF_UP",
+      "source": "seed",
+      "loaded_at": "2024-07-01T00:00:00Z",
+      "scales": [
+        {
+          "code": "TFT",
+          "tax_free_threshold": true,
+          "stsl": false,
+          "brackets": [
+            { "up_to": 359.0, "a": 0.0, "b": 0.0, "fixed": 0.0 },
+            { "up_to": 438.0, "a": 0.19, "b": 68.0, "fixed": 0.0 },
+            { "up_to": 548.0, "a": 0.234, "b": 87.82, "fixed": 0.0 },
+            { "up_to": 721.0, "a": 0.347, "b": 148.5, "fixed": 0.0 },
+            { "up_to": 865.0, "a": 0.345, "b": 147.0, "fixed": 0.0 },
+            { "up_to": 999999.0, "a": 0.39, "b": 183.0, "fixed": 0.0 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GST-standard-2010-07-01",
+      "tax_type": "GST",
+      "period": "per_line",
+      "method": "flat_rate",
+      "effective_from": "2010-07-01",
+      "effective_to": null,
+      "rounding": "HALF_UP",
+      "source": "seed",
+      "loaded_at": "2010-07-01T00:00:00Z",
+      "scales": [
+        {
+          "code": "STANDARD",
+          "rate": 0.10
+        }
+      ]
+    }
+  ]
+}
