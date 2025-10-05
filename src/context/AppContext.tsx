@@ -1,27 +1,18 @@
-import React, { createContext, useState } from "react";
-import { mockPayroll, mockSales, mockBasHistory } from "../utils/mockData";
-import { BASHistory } from "../types/tax";
+import { createContext, useContext, useEffect, useState } from "react";
+import { getBalance } from "../api/client";
 
-export const AppContext = createContext<any>(null);
+type AppState = { abn: string; periodId?: number; balance?: number };
+const Ctx = createContext<AppState>({ abn: "11122233344", periodId: 1 });
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [vaultBalance, setVaultBalance] = useState(10000);
-  const [businessBalance, setBusinessBalance] = useState(50000);
-  const [payroll, setPayroll] = useState(mockPayroll);
-  const [sales, setSales] = useState(mockSales);
-  const [basHistory, setBasHistory] = useState<BASHistory[]>(mockBasHistory);
-  const [auditLog, setAuditLog] = useState<any[]>([]);
+  const [s, setS] = useState<AppState>({ abn: "11122233344", periodId: 1 });
 
-  return (
-    <AppContext.Provider value={{
-      vaultBalance, setVaultBalance,
-      businessBalance, setBusinessBalance,
-      payroll, setPayroll,
-      sales, setSales,
-      basHistory, setBasHistory,
-      auditLog, setAuditLog,
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
+  useEffect(() => {
+    getBalance(s.abn)
+      .then((b) => setS((x) => ({ ...x, balance: b.balance })))
+      .catch(() => void 0);
+  }, [s.abn]);
+
+  return <Ctx.Provider value={s}>{children}</Ctx.Provider>;
 }
+export const useApp = () => useContext(Ctx);
