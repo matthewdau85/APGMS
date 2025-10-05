@@ -4,6 +4,7 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
+        "test": "tsx --test tests/node/evidence.test.ts",
         "lint": "echo lint root"
     },
     "version": "0.1.0",
