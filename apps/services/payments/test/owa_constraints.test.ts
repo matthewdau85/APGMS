@@ -5,11 +5,11 @@ test("OWA deposit-only constraint", async () => {
   const c = await pool.connect();
   try {
     await c.query("BEGIN");
-    await c.query("INSERT INTO owa_ledger (abn,tax_type,period_id,amount_cents) VALUES ($1,$2,$3,$4)",
+    await c.query("INSERT INTO owa_ledger (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) VALUES ($1,$2,$3,gen_random_uuid(),$4,$4,'test:credit',NULL,'credit-hash')",
       ["111", "PAYGW", "2025-09", 1000]);
     await expect(c.query(
-      "INSERT INTO owa_ledger (abn,tax_type,period_id,amount_cents) VALUES ($1,$2,$3,$4)",
-      ["111", "PAYGW", "2025-09", -500]
+      "INSERT INTO owa_ledger (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) VALUES ($1,$2,$3,gen_random_uuid(),$4,$5,'test:debit',NULL,'debit-hash')",
+      ["111", "PAYGW", "2025-09", -500, 500]
     )).rejects.toThrow();
   } finally {
     await c.query("ROLLBACK");
