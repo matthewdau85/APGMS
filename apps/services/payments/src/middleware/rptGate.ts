@@ -43,7 +43,20 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
     const ok = await kms.verify(payload, sig);
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    let payloadJson: any = null;
+    try {
+      payloadJson = JSON.parse(r.payload_c14n);
+    } catch {
+      payloadJson = null;
+    }
+
+    (req as any).rpt = {
+      rpt_id: r.rpt_id,
+      nonce: r.nonce,
+      payload_sha256: r.payload_sha256,
+      payload: payloadJson,
+      kid: r.kid,
+    };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });

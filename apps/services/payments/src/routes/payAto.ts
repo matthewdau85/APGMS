@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { finalizePayoutRelease, reservePayoutRelease } from '../recon/index.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -54,15 +55,44 @@ export async function payAtoRelease(req: Request, res: Response) {
     const newBal = lastBal + amt;
 
     const release_uuid = genUUID();
+    const rptId = Number(rpt.rpt_id);
+    if (!Number.isFinite(rptId)) {
+      throw new Error('INVALID_RPT_ID');
+    }
+    const payload = rpt.payload || {};
+    const reference = String(payload.reference || req.body?.reference || `RPT-${rptId || 'UNK'}`).trim();
+    const expectedAmount = Number(payload.amount_cents);
+
+    if (Number.isFinite(expectedAmount) && Math.abs(expectedAmount) !== Math.abs(amt)) {
+      throw new Error('AMOUNT_MISMATCH');
+    }
+
+    try {
+      await reservePayoutRelease(client, {
+        release_uuid,
+        rpt_id: rptId,
+        abn,
+        taxType,
+        periodId,
+        amount_cents: Math.abs(amt),
+        reference,
+      });
+    } catch (err: any) {
+      if (err?.code === '23505') {
+        throw new Error('RPT_ALREADY_RELEASED');
+      }
+      throw err;
+    }
 
     const insert = `
       INSERT INTO owa_ledger
         (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
-      RETURNING id, transfer_uuid, balance_after_cents
+         rpt_verified, release_uuid, bank_receipt_id, created_at)
+      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, $8, now())
+      RETURNING id, transfer_uuid, balance_after_cents, bank_receipt_id
     `;
     const transfer_uuid = genUUID();
+    const bank_receipt_id = `mock-bank:${release_uuid.slice(0,12)}`;
     const { rows: ins } = await client.query(insert, [
       abn,
       taxType,
@@ -71,7 +101,14 @@ export async function payAtoRelease(req: Request, res: Response) {
       amt,
       newBal,
       release_uuid,
+      bank_receipt_id,
     ]);
+
+    await finalizePayoutRelease(client, {
+      release_uuid,
+      ledger_entry_id: ins[0].id,
+      bank_receipt_id,
+    });
 
     await client.query('COMMIT');
 
@@ -80,12 +117,22 @@ export async function payAtoRelease(req: Request, res: Response) {
       ledger_id: ins[0].id,
       transfer_uuid,
       release_uuid,
+      bank_receipt_id,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
     // common failures: unique single-release-per-period, allow-list, etc.
+    if (String(e?.message) === 'RPT_ALREADY_RELEASED') {
+      return res.status(409).json({ error: 'RPT_ALREADY_RELEASED' });
+    }
+    if (String(e?.message) === 'AMOUNT_MISMATCH') {
+      return res.status(409).json({ error: 'AMOUNT_MISMATCH' });
+    }
+    if (String(e?.message) === 'INVALID_RPT_ID') {
+      return res.status(400).json({ error: 'INVALID_RPT' });
+    }
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {
     client.release();
