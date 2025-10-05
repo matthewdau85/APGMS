@@ -1,7 +1,7 @@
-﻿import { issueRPT } from "../rpt/issuer";
+import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
-import { debit as paytoDebit } from "../payto/adapter";
+import { payto } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
 const pool = new Pool();
@@ -34,9 +34,16 @@ export async function payAto(req:any, res:any) {
 }
 
 export async function paytoSweep(req:any, res:any) {
-  const { abn, amount_cents, reference } = req.body;
-  const r = await paytoDebit(abn, amount_cents, reference);
-  return res.json(r);
+  const { mandateId, amountCents, amount_cents, ref, reference } = req.body ?? {};
+  if (!mandateId) return res.status(400).json({ error: "missing mandateId" });
+  const amt = amountCents ?? amount_cents;
+  if (amt === undefined) return res.status(400).json({ error: "missing amountCents" });
+  try {
+    const r = await payto.sweep(mandateId, Number(amt), String(ref ?? reference ?? ""));
+    return res.json(r);
+  } catch (e:any) {
+    return res.status(400).json({ error: e.message });
+  }
 }
 
 export async function settlementWebhook(req:any, res:any) {
