@@ -1,0 +1,47 @@
+name: Runbook
+description: Track authoring or updates to operational runbooks.
+title: "[Runbook] "
+labels:
+  - documentation
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Describe the service or procedure covered by the runbook.
+      placeholder: Include relevant background and goals.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List the requirements that define a complete and actionable runbook.
+      placeholder: |
+        - [ ] Covers detection triggers
+        - [ ] Provides on-call escalation path
+    validations:
+      required: true
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test Plan / Dry Run
+      description: Explain how the runbook was validated, including tabletop or production dry runs.
+      placeholder: Document rehearsals, feedback, or sign-offs.
+    validations:
+      required: true
+  - type: textarea
+    id: rollback_notes
+    attributes:
+      label: Rollback Notes
+      description: Outline how to revert to prior procedures if the new runbook introduces issues.
+      placeholder: Mention superseded docs and restoration steps.
+    validations:
+      required: true
+  - type: textarea
+    id: stakeholders
+    attributes:
+      label: Stakeholders & Approvals
+      description: Identify reviewers, approvers, and teams who must sign off.
+    validations:
+      required: false
