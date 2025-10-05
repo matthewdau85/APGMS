@@ -12,7 +12,7 @@ tax_events_processed = Counter(
 
 @app.get("/healthz")
 def healthz():
-    return {"status": "ok"}
+    return {"ok": True}
 
 # Prometheus metrics endpoint
 @app.get("/metrics")
@@ -50,14 +50,6 @@ TAX_REQS = Counter("tax_requests_total", "Total tax requests consumed")
 TAX_OUT = Counter("tax_results_total", "Total tax results produced")
 NATS_CONNECTED = Gauge("taxengine_nats_connected", "1 if connected to NATS else 0")
 CALC_LAT = Histogram("taxengine_calc_seconds", "Calculate latency")
-
-@app.get("/metrics")
-def metrics():
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-@app.get("/healthz")
-def healthz():
-    return {"ok": True, "started": _started.is_set()}
 
 @app.get("/readyz")
 def readyz():
@@ -116,28 +108,12 @@ async def shutdown():
 
 # --- BEGIN READINESS_METRICS (tax-engine) ---
 try:
-    from fastapi import Response, status
-    from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
     import asyncio
 
-    _ready_event = globals().get("_ready_event") or asyncio.Event()
-    _started_event = globals().get("_started_event") or asyncio.Event()
+    _ready_event = globals().get("_ready_event") or _ready
+    _started_event = globals().get("_started_event") or _started
     globals()["_ready_event"] = _ready_event
     globals()["_started_event"] = _started_event
-
-    @app.get("/metrics")
-    def _metrics():
-        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-    @app.get("/healthz")
-    def _healthz():
-        return {"ok": True, "started": _started_event.is_set()}
-
-    @app.get("/readyz")
-    def _readyz():
-        if _ready_event.is_set():
-            return {"ready": True}
-        return Response(content='{"ready": false}', media_type="application/json", status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 except Exception:
     pass
 # --- END READINESS_METRICS (tax-engine) ---
