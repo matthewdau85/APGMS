@@ -37,13 +37,29 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
       return res.status(403).json({ error: "Payload hash mismatch" });
     }
 
-    // Signature verify (signature is stored as base64 text in your seed)
-    const payload = Buffer.from(r.payload_c14n);
-    const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
-    if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
+    let signature: Buffer;
+    try {
+      signature = Buffer.from(r.signature, "base64url");
+    } catch {
+      return res.status(500).json({ error: "Stored signature is not valid base64url" });
+    }
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    try {
+      const payload = Buffer.from(r.payload_c14n, "utf-8");
+      const ok = await kms.verify(payload, signature, r.kid || r.key_id || undefined);
+      if (!ok) {
+        return res.status(403).json({ error: "RPT signature invalid for configured key" });
+      }
+    } catch (err: any) {
+      return res.status(502).json({ error: "KMS verification failed", detail: String(err?.message || err) });
+    }
+
+    (req as any).rpt = {
+      rpt_id: r.rpt_id,
+      nonce: r.nonce,
+      payload_sha256: r.payload_sha256,
+      kid: r.kid || r.key_id || null,
+    };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });

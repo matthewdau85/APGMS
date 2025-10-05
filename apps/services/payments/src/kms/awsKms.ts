@@ -1,29 +1,27 @@
-﻿import pg from "pg";
-import { KmsProvider } from "./kmsProvider";
-import { KMSClient, GetPublicKeyCommand, SignCommand } from "@aws-sdk/client-kms";
-import * as ed from "@noble/ed25519";
+import { KMSClient, VerifyCommand } from "@aws-sdk/client-kms";
+import { IKms } from "./IKms";
 
-export class AwsKmsProvider implements KmsProvider {
-  private client = new KMSClient({ region: process.env.AWS_REGION || "ap-southeast-2" });
+export class AwsKmsProvider implements IKms {
+  private readonly client: KMSClient;
+  private readonly defaultKeyId: string;
 
-  async getPublicKey(kid: string): Promise<Uint8Array> {
-    const out = await this.client.send(new GetPublicKeyCommand({ KeyId: kid }));
-    if (!out.PublicKey) throw new Error("No public key");
-    const raw = process.env.ED25519_PUB_RAW_BASE64;
-    if (!raw) throw new Error("Set ED25519_PUB_RAW_BASE64 when using AWS KMS");
-    return Buffer.from(raw, "base64");
+  constructor() {
+    this.client = new KMSClient({ region: process.env.AWS_REGION || "ap-southeast-2" });
+    this.defaultKeyId = process.env.AWS_KMS_KEY_ID || process.env.KMS_KEY_ID || "";
+    if (!this.defaultKeyId) {
+      throw new Error("Set AWS_KMS_KEY_ID or KMS_KEY_ID when using the AWS KMS backend");
+    }
   }
 
-  async sign(kid: string, message: Uint8Array): Promise<Uint8Array> {
-    const out = await this.client.send(new SignCommand({
-      KeyId: kid, Message: message, MessageType: "RAW", SigningAlgorithm: "EDDSA"
+  async verify(payload: Buffer, signature: Buffer, kid?: string): Promise<boolean> {
+    const keyId = kid || this.defaultKeyId;
+    const response = await this.client.send(new VerifyCommand({
+      KeyId: keyId,
+      Message: payload,
+      MessageType: "RAW",
+      Signature: signature,
+      SigningAlgorithm: "EDDSA",
     }));
-    if (!out.Signature) throw new Error("No signature from KMS");
-    return new Uint8Array(out.Signature as Buffer);
-  }
-
-  async verify(kid: string, message: Uint8Array, signature: Uint8Array): Promise<boolean> {
-    const pub = await this.getPublicKey(kid);
-    return await ed.verify(signature, message, pub);
+    return Boolean(response.SignatureValid);
   }
 }
