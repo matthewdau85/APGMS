@@ -89,3 +89,41 @@ For demonstration and prototyping only—real-world deployments require further 
 Contributing
 Pull requests are welcome!
 For major changes, please open an issue first to discuss what you’d like to change.
+
+Inbound Data Simulator
+----------------------
+Use the TypeScript simulator in `tools/simulate_inbound.ts` to fabricate point-of-sale and payroll activity for a target BAS period. The script samples from the app’s mock data and emits CSV payloads for GST/PAYGW credits plus a companion settlement feed that mirrors production split-pay settlements.
+
+1. Generate the CSV fixtures (run with `npx tsx` or `pnpm exec tsx`):
+
+   ```bash
+   npx tsx tools/simulate_inbound.ts \
+     --period 2025-10 \
+     --abn 53004085616 \
+     --hours 720 \
+     --pos-interval 1 \
+     --payroll-interval 168 \
+     --seed 42 \
+     --out samples/sim-2025-10
+   ```
+
+   The command above produces `*_GST_credits.csv`, `*_PAYGW_credits.csv`, and a matching `*_settlements.csv` in `samples/sim-2025-10/`. Pass `--help` to the script for all tunable knobs (GST/PAYGW rates, POS batch size, settlement lag, etc.).
+
+2. Seed the `periods` table once per `(abn, tax_type, period_id)` before replaying deposits:
+
+   ```bash
+   psql "$DATABASE_URL" -c "insert into periods (abn, tax_type, period_id) values ('53004085616','GST','2025-10') on conflict do nothing;"
+   psql "$DATABASE_URL" -c "insert into periods (abn, tax_type, period_id) values ('53004085616','PAYGW','2025-10') on conflict do nothing;"
+   ```
+
+3. Stream the synthetic credits into the one-way account ledger and post settlement deltas on a timer:
+
+   ```bash
+   node reconcile_worker.js \
+     samples/sim-2025-10/2025-10_PAYGW_credits.csv \
+     samples/sim-2025-10/2025-10_GST_credits.csv \
+     --settlement samples/sim-2025-10/2025-10_settlements.csv \
+     --watch=5s
+   ```
+
+   Press <kbd>Ctrl</kbd>+<kbd>C</kbd> to stop the watcher. Add `--loop` to keep recycling the credit queue or omit `--watch` to apply the CSVs once without delays. Use `--api-base` if the reconciliation API is not running on `http://127.0.0.1:3000`.
