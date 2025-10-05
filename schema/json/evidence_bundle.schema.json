@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EvidenceBundle",
+  "type": "object",
+  "required": [
+    "meta",
+    "period",
+    "rpt",
+    "bas_labels",
+    "anomaly_thresholds",
+    "owa_ledger_deltas",
+    "discrepancy_log"
+  ],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["generated_at", "abn", "taxType", "periodId"],
+      "properties": {
+        "generated_at": { "type": "string", "format": "date-time" },
+        "abn": { "type": "string" },
+        "taxType": { "type": "string", "enum": ["GST", "PAYGW"] },
+        "periodId": { "type": "string", "pattern": "^\\d{4}-\\d{2}$" }
+      },
+      "additionalProperties": false
+    },
+    "period": {
+      "type": "object",
+      "required": [
+        "state",
+        "accrued_cents",
+        "credited_to_owa_cents",
+        "final_liability_cents",
+        "merkle_root",
+        "running_balance_hash",
+        "anomaly_vector"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "OPEN",
+            "CLOSING",
+            "READY_RPT",
+            "RELEASED",
+            "BLOCKED_ANOMALY",
+            "BLOCKED_DISCREPANCY",
+            "FINALIZED"
+          ]
+        },
+        "accrued_cents": { "type": "integer" },
+        "credited_to_owa_cents": { "type": "integer" },
+        "final_liability_cents": { "type": "integer" },
+        "merkle_root": { "type": ["string", "null"] },
+        "running_balance_hash": { "type": ["string", "null"] },
+        "anomaly_vector": { "type": "object" },
+        "thresholds": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "rpt": {
+      "type": ["object", "null"],
+      "required": ["payload", "payload_c14n", "payload_sha256", "signature", "created_at"],
+      "properties": {
+        "payload": { "type": "object" },
+        "payload_c14n": { "type": ["string", "null"] },
+        "payload_sha256": { "type": ["string", "null"] },
+        "signature": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "bas_labels": {
+      "type": "object",
+      "properties": {
+        "W1": { "type": ["integer", "null"] },
+        "W2": { "type": ["integer", "null"] },
+        "1A": { "type": ["integer", "null"] },
+        "1B": { "type": ["integer", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "anomaly_thresholds": {
+      "type": "object"
+    },
+    "owa_ledger_deltas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "txn_id",
+          "component",
+          "amount_cents",
+          "balance_after_cents",
+          "settled_at",
+          "source"
+        ],
+        "properties": {
+          "txn_id": { "type": "string" },
+          "component": { "type": "string" },
+          "amount_cents": { "type": "integer" },
+          "balance_after_cents": { "type": "integer" },
+          "settled_at": { "type": "string", "format": "date-time" },
+          "source": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "discrepancy_log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["discrepancy_type", "detected_at"],
+        "properties": {
+          "discrepancy_type": { "type": "string" },
+          "observed_cents": { "type": ["integer", "null"] },
+          "expected_cents": { "type": ["integer", "null"] },
+          "explanation": { "type": ["string", "null"] },
+          "detected_at": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}
