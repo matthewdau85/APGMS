@@ -1,0 +1,12 @@
+{
+  "version": "2024-07",
+  "effective_from": "2024-07-01",
+  "codes": {
+    "GST": { "rate": 0.10, "mode": "exclusive", "description": "Standard taxable supply" },
+    "GST_INCLUSIVE": { "rate": 0.10, "mode": "inclusive", "description": "Tax amount included in price" },
+    "GST_FREE": { "rate": 0.0, "mode": "exclusive", "description": "GST-free supply" },
+    "EXEMPT": { "rate": 0.0, "mode": "exclusive", "description": "Input taxed / exempt" },
+    "ZERO_RATED": { "rate": 0.0, "mode": "exclusive", "description": "Zero-rated export" }
+  },
+  "rounding": "HALF_UP"
+}

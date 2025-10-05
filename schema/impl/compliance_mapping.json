@@ -1,0 +1,35 @@
+{
+  "version": "2024-10",
+  "compliance_mapping": [
+    {
+      "control": "CTRL_GATE_STATE_MACHINE",
+      "obligation": "Gate transitions enforce patent BAS issuance workflow",
+      "source": "Patent-APGMS"
+    },
+    {
+      "control": "CTRL_ONE_WAY_ACCOUNT_LOCK",
+      "obligation": "Protect designated one-way tax accounts before BAS remittance",
+      "source": "Patent-APGMS"
+    },
+    {
+      "control": "CTRL_RPT_DIGEST_SIGNING",
+      "obligation": "Generate and sign remittance preparation tokens before payment",
+      "source": "Patent-APGMS"
+    },
+    {
+      "control": "CTRL_AUDIT_HASH_CHAIN",
+      "obligation": "Maintain immutable audit hash chain for PAYGW and GST events",
+      "source": "Patent-APGMS"
+    },
+    {
+      "control": "CTRL_POS_PAYROLL_DIGEST",
+      "obligation": "Bind payroll and POS digests into patent evidence register",
+      "source": "Patent-APGMS"
+    },
+    {
+      "control": "CTRL_ANOMALY_BLOCK",
+      "obligation": "Score anomalies and block remittance per patent safeguard",
+      "source": "Patent-APGMS"
+    }
+  ]
+}
