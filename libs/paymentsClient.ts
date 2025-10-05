@@ -7,7 +7,7 @@ export type ReleaseArgs = Common & { amountCents: number };   // < 0
 const BASE =
   process.env.NEXT_PUBLIC_PAYMENTS_BASE_URL ||
   process.env.PAYMENTS_BASE_URL ||
-  "http://localhost:3001";
+  "http://localhost:8080/api/payments";
 
 async function handle(res: Response) {
   const text = await res.text();
