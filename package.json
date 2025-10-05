@@ -4,7 +4,9 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "test:api": "tsx --test tests/api/api-router.test.ts",
+        "api-router-check": "npm run test:api"
     },
     "version": "0.1.0",
     "name": "apgms",
