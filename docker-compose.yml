@@ -76,6 +76,8 @@ services:
   portal-api:
     build:
       context: ./portal-api
+    env_file:
+      - ops/deploy/active.env
     environment:
       NORMALIZER_URL: http://normalizer:8001
     ports:

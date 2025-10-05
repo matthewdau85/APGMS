@@ -1,0 +1,20 @@
+{
+  "blue": {
+    "ready": true,
+    "checks": {
+      "api": "ready",
+      "normalizer": "ready",
+      "reporting": "ready"
+    },
+    "lastUpdated": null
+  },
+  "green": {
+    "ready": false,
+    "checks": {
+      "api": "provisioning",
+      "normalizer": "provisioning",
+      "reporting": "provisioning"
+    },
+    "lastUpdated": null
+  }
+}
