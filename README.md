@@ -35,7 +35,13 @@ Run the Development Server
 
 npm start
 
-The app will start on http://localhost:3000
+The app will start on http://localhost:3000.
+
+### Payments service
+
+From `apps/services/payments`, run `pnpm dev` (or `npm run dev`) to launch the
+payments service locally. It listens on http://localhost:3001 by default, or on
+the port provided through the `PORT` environment variable.
 
 Build for Production
 
