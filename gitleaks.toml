@@ -1,0 +1,5 @@
+title = "apgms"
+[[rules]]
+description = "Generic API key"
+regex = '''(?i)(api[_-]?key|token)["']?\s*[:=]\s*["'][a-z0-9_\-]{16,}["']'''
+tags = ["apikey"]
