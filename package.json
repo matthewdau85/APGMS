@@ -4,7 +4,8 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "smoke": "ts-node --transpile-only scripts/smoke.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
