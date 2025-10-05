@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (amountCents <= 0) {
       return res.status(400).json({ error: "Deposit must be positive" });
     }
-    const data = await Payments.deposit({ abn, taxType, periodId, amountCents });
+    const data = await Payments.deposit({ abn, taxType, periodId, amountCents }, { req });
     return res.status(200).json(data);
   } catch (err: any) {
     return res.status(400).json({ error: err?.message || "Deposit failed" });

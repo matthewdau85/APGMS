@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     }
-    const data = await Payments.balance({ abn, taxType, periodId });
+    const data = await Payments.balance({ abn, taxType, periodId }, { req });
     return res.status(200).json(data);
   } catch (err: any) {
     return res.status(500).json({ error: err?.message || "Balance failed" });
