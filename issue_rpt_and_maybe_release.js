@@ -71,6 +71,9 @@ async function main() {
   }
 
   // Build payload
+  const nonce = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + 15*60*1000).toISOString();
+
   const payload = {
     entity_id: row.abn,
     period_id: row.period_id,
@@ -82,19 +85,42 @@ async function main() {
     thresholds,
     rail_id: "EFT",
     reference: ATO_PRN,
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(),  // 15 min
-    nonce: crypto.randomUUID()
+    expiry_ts: expiresAt,
+    expires_at: expiresAt,
+    nonce
   };
 
+  function canonicalize(obj) {
+    if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
+    if (Array.isArray(obj)) return '[' + obj.map(canonicalize).join(',') + ']';
+    const keys = Object.keys(obj).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalize(obj[k])).join(',') + '}';
+  }
+
   const enc = new _TextEncoder();
-  const msg = enc.encode(JSON.stringify(payload));
+  const payloadC14n = canonicalize(payload);
+  const msg = enc.encode(payloadC14n);
   const sig = nacl.sign.detached(msg, b64ToU8(RPT_ED25519_SECRET_BASE64));
   const signature = Buffer.from(sig).toString('base64');
+  const payloadSha256 = crypto.createHash('sha256').update(payloadC14n).digest('hex');
 
   // Insert RPT explicitly as JSON
   await client.query(
-    "insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values ($1,$2,$3,$4::jsonb,$5)",
-    [abn, taxType, periodId, JSON.stringify(payload), signature]
+    `insert into rpt_tokens(
+       abn,tax_type,period_id,payload,signature,status,
+       payload_c14n,payload_sha256,nonce,expires_at
+     ) values ($1,$2,$3,$4::jsonb,$5,'active',$6,$7,$8,$9)` ,
+    [
+      abn,
+      taxType,
+      periodId,
+      JSON.stringify(payload),
+      signature,
+      payloadC14n,
+      payloadSha256,
+      nonce,
+      expiresAt
+    ]
   );
   await client.query("update periods set state='READY_RPT' where id=$1", [row.id]);
 
