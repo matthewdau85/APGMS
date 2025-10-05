@@ -1,12 +1,14 @@
-﻿import React from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
 
-function App() {
-  return (
-    <div style={{padding:16,fontFamily:"system-ui"}}>
-      <h1>APGMS Console</h1>
-      <p>Status tiles and RPT widgets will appear here. (P40, P41, P42)</p>
-    </div>
-  );
+import { App } from "./App";
+import "./index.css";
+
+const container = document.getElementById("root");
+
+if (!container) {
+  throw new Error("Root element #root was not found in the document");
 }
-createRoot(document.getElementById("root")!).render(<App />);
+
+const root = createRoot(container);
+root.render(<App />);
