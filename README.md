@@ -29,17 +29,21 @@ cd apgms
 
 Install Dependencies
 
-npm install
+pnpm install
 
 Run the Development Server
 
-npm start
+pnpm --filter @apgms/console dev
 
 The app will start on http://localhost:3000
 
 Build for Production
 
-npm run build
+pnpm --filter @apgms/console build
+
+Testing
+
+pnpm --filter @apgms/console test
 
 Project Structure
 apgms/
