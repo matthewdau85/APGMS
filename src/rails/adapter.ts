@@ -2,6 +2,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { appendAudit } from "../audit/appendOnly";
 import { sha256Hex } from "../crypto/merkle";
+import { MoneyCents, expectMoneyCents, toCents, fromCents, formatDollars } from "../../libs/money";
 const pool = new Pool();
 
 /** Allow-list enforcement and PRN/CRN lookup */
@@ -15,7 +16,7 @@ export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", refere
 }
 
 /** Idempotent release with a stable transfer_uuid (simulate bank release) */
-export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: number, rail: "EFT"|"BPAY", reference: string) {
+export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: MoneyCents, rail: "EFT"|"BPAY", reference: string) {
   const transfer_uuid = uuidv4();
   try {
     await pool.query("insert into idempotency_keys(key,last_status) values(,)", [transfer_uuid, "INIT"]);
@@ -27,14 +28,29 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
   const { rows } = await pool.query(
     "select balance_after_cents, hash_after from owa_ledger where abn= and tax_type= and period_id= order by id desc limit 1",
     [abn, taxType, periodId]);
-  const prevBal = rows[0]?.balance_after_cents ?? 0;
+  const prevBalRaw = rows[0]?.balance_after_cents ?? 0;
+  const prevBal = expectMoneyCents(prevBalRaw, "balance_after_cents");
   const prevHash = rows[0]?.hash_after ?? "";
-  const newBal = prevBal - amountCents;
+  const debit = Math.abs(toCents(expectMoneyCents(amountCents, "amountCents")));
+  const newBal = toCents(prevBal) - debit;
+  const debitMoney = fromCents(debit);
   const hashAfter = sha256Hex(prevHash + bank_receipt_hash + String(newBal));
 
   await pool.query(
-    "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values (,,,,,,,,)",
-    [abn, taxType, periodId, transfer_uuid, -amountCents, newBal, bank_receipt_hash, prevHash, hashAfter]
+    "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,amount_value,entry_kind,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values (,,,,,,,,,,)",
+    [
+      abn,
+      taxType,
+      periodId,
+      transfer_uuid,
+      debit,
+      formatDollars(debitMoney),
+      "DEBIT",
+      newBal,
+      bank_receipt_hash,
+      prevHash,
+      hashAfter,
+    ]
   );
   await appendAudit("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
   await pool.query("update idempotency_keys set last_status= where key=", [transfer_uuid, "DONE"]);

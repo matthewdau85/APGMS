@@ -1,7 +1,9 @@
 // libs/paymentsClient.ts
+import { MoneyCents, expectMoneyCents } from "./money";
+
 type Common = { abn: string; taxType: string; periodId: string };
-export type DepositArgs = Common & { amountCents: number };   // > 0
-export type ReleaseArgs = Common & { amountCents: number };   // < 0
+export type DepositArgs = Common & { amountCents: MoneyCents };   // > 0
+export type ReleaseArgs = Common & { amountCents: MoneyCents };   // < 0
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
@@ -22,18 +24,20 @@ async function handle(res: Response) {
 
 export const Payments = {
   async deposit(args: DepositArgs) {
+    const body = { ...args, amountCents: expectMoneyCents(args.amountCents, "amountCents") };
     const res = await fetch(`${BASE}/deposit`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(args),
+      body: JSON.stringify(body),
     });
     return handle(res);
   },
   async payAto(args: ReleaseArgs) {
+    const body = { ...args, amountCents: expectMoneyCents(args.amountCents, "amountCents") };
     const res = await fetch(`${BASE}/payAto`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(args),
+      body: JSON.stringify(body),
     });
     return handle(res);
   },

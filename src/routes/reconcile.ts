@@ -4,12 +4,19 @@ import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
+import { MoneyCents, expectMoneyCents } from "../../libs/money";
 const pool = new Pool();
 
 export async function closeAndIssue(req:any, res:any) {
   const { abn, taxType, periodId, thresholds } = req.body;
   // TODO: set state -> CLOSING, compute final_liability_cents, merkle_root, running_balance_hash beforehand
-  const thr = thresholds || { epsilon_cents: 50, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
+  const thr = thresholds || {
+    epsilon_cents: 50,
+    variance_ratio: 0.25,
+    dup_rate: 0.01,
+    gap_minutes: 60,
+    delta_vs_baseline: 0.2,
+  };
   try {
     const rpt = await issueRPT(abn, taxType, periodId, thr);
     return res.json(rpt);
@@ -25,7 +32,8 @@ export async function payAto(req:any, res:any) {
   const payload = pr.rows[0].payload;
   try {
     await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
+    const releaseAmount: MoneyCents = expectMoneyCents(payload.amount_cents, "payload.amount_cents");
+    const r = await releasePayment(abn, taxType, periodId, releaseAmount, rail, payload.reference);
     await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
     return res.json(r);
   } catch (e:any) {
@@ -35,7 +43,8 @@ export async function payAto(req:any, res:any) {
 
 export async function paytoSweep(req:any, res:any) {
   const { abn, amount_cents, reference } = req.body;
-  const r = await paytoDebit(abn, amount_cents, reference);
+  const sweepAmount = expectMoneyCents(amount_cents, "amount_cents");
+  const r = await paytoDebit(abn, sweepAmount, reference);
   return res.json(r);
 }
 

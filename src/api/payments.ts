@@ -1,6 +1,7 @@
 // src/api/payments.ts
 import express from "express";
 import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { MoneyCents, expectMoneyCents, toCents } from "../../libs/money";
 
 export const paymentsApi = express.Router();
 
@@ -36,13 +37,19 @@ paymentsApi.get("/ledger", async (req, res) => {
 paymentsApi.post("/deposit", async (req, res) => {
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
-    if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
+    if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing fields" });
     }
-    if (amountCents <= 0) {
+    let amt: MoneyCents;
+    try {
+      amt = expectMoneyCents(amountCents, "amountCents");
+    } catch (err: any) {
+      return res.status(400).json({ error: err?.message || "Invalid amount" });
+    }
+    if (toCents(amt) <= 0) {
       return res.status(400).json({ error: "Deposit must be positive" });
     }
-    const data = await Payments.deposit({ abn, taxType, periodId, amountCents });
+    const data = await Payments.deposit({ abn, taxType, periodId, amountCents: amt });
     res.json(data);
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Deposit failed" });
@@ -53,13 +60,19 @@ paymentsApi.post("/deposit", async (req, res) => {
 paymentsApi.post("/release", async (req, res) => {
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
-    if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
+    if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing fields" });
     }
-    if (amountCents >= 0) {
+    let amt: MoneyCents;
+    try {
+      amt = expectMoneyCents(amountCents, "amountCents");
+    } catch (err: any) {
+      return res.status(400).json({ error: err?.message || "Invalid amount" });
+    }
+    if (toCents(amt) >= 0) {
       return res.status(400).json({ error: "Release must be negative" });
     }
-    const data = await Payments.payAto({ abn, taxType, periodId, amountCents });
+    const data = await Payments.payAto({ abn, taxType, periodId, amountCents: amt });
     res.json(data);
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Release failed" });
