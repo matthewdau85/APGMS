@@ -1,8 +1,22 @@
-﻿import { Pool } from "pg";
+import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import { appendAudit } from "../audit/appendOnly";
 import { sha256Hex } from "../crypto/merkle";
-const pool = new Pool();
+
+type QueryablePool = Pick<Pool, "query">;
+
+let pool: QueryablePool = new Pool();
+let auditFn: typeof appendAudit = appendAudit;
+
+export function __setRailsTestOverrides(overrides: { pool?: QueryablePool; audit?: typeof appendAudit }) {
+  if (overrides.pool) pool = overrides.pool;
+  if (overrides.audit) auditFn = overrides.audit;
+}
+
+export function __resetRailsTestOverrides() {
+  pool = new Pool();
+  auditFn = appendAudit;
+}
 
 /** Allow-list enforcement and PRN/CRN lookup */
 export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", reference: string) {
@@ -29,14 +43,15 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
     [abn, taxType, periodId]);
   const prevBal = rows[0]?.balance_after_cents ?? 0;
   const prevHash = rows[0]?.hash_after ?? "";
-  const newBal = prevBal - amountCents;
+  const delta = Math.abs(amountCents);
+  const newBal = prevBal - delta;
   const hashAfter = sha256Hex(prevHash + bank_receipt_hash + String(newBal));
 
   await pool.query(
     "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values (,,,,,,,,)",
-    [abn, taxType, periodId, transfer_uuid, -amountCents, newBal, bank_receipt_hash, prevHash, hashAfter]
+    [abn, taxType, periodId, transfer_uuid, -delta, newBal, bank_receipt_hash, prevHash, hashAfter]
   );
-  await appendAudit("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
+  await auditFn("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
   await pool.query("update idempotency_keys set last_status= where key=", [transfer_uuid, "DONE"]);
   return { transfer_uuid, bank_receipt_hash };
 }
