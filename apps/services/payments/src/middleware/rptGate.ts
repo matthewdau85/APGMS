@@ -2,9 +2,9 @@
 import { Request, Response, NextFunction } from "express";
 import pg from "pg"; const { Pool } = pg;
 import { sha256Hex } from "../utils/crypto";
-import { selectKms } from "../kms/kmsProvider";
+import { useKms } from "@core/providers/registry";
 
-const kms = selectKms();
+const kms = useKms();
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function rptGate(req: Request, res: Response, next: NextFunction) {
@@ -40,7 +40,7 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
     // Signature verify (signature is stored as base64 text in your seed)
     const payload = Buffer.from(r.payload_c14n);
     const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
+    const ok = await kms.verify({ payload, signature: sig });
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
     (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
