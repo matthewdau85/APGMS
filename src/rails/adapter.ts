@@ -1,8 +1,9 @@
-﻿import { Pool } from "pg";
 import { v4 as uuidv4 } from "uuid";
 import { appendAudit } from "../audit/appendOnly";
 import { sha256Hex } from "../crypto/merkle";
-const pool = new Pool();
+import { getPool } from "../db/pool";
+
+const pool = getPool();
 
 /** Allow-list enforcement and PRN/CRN lookup */
 export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", reference: string) {

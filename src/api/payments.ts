@@ -1,6 +1,7 @@
 // src/api/payments.ts
 import express from "express";
 import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { router as depositRouter } from "../routes/deposit";
 
 export const paymentsApi = express.Router();
 
@@ -33,21 +34,7 @@ paymentsApi.get("/ledger", async (req, res) => {
 });
 
 // POST /api/deposit
-paymentsApi.post("/deposit", async (req, res) => {
-  try {
-    const { abn, taxType, periodId, amountCents } = req.body || {};
-    if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
-      return res.status(400).json({ error: "Missing fields" });
-    }
-    if (amountCents <= 0) {
-      return res.status(400).json({ error: "Deposit must be positive" });
-    }
-    const data = await Payments.deposit({ abn, taxType, periodId, amountCents });
-    res.json(data);
-  } catch (err: any) {
-    res.status(400).json({ error: err?.message || "Deposit failed" });
-  }
-});
+paymentsApi.use("/deposit", depositRouter);
 
 // POST /api/release  (calls payAto)
 paymentsApi.post("/release", async (req, res) => {
