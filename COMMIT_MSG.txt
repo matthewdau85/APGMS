@@ -1,0 +1,23 @@
+# Conventional Commits template
+#
+# Summary line format:
+# <type>[optional scope]: <concise summary>
+#
+# Body guidance:
+# - Wrap at 72 columns when practical.
+# - Explain the motivation and the approach.
+# - Reference issues or tickets in the footer as needed.
+#
+# Common types: feat, fix, chore, docs, refactor, test, build, ci, perf, style, revert.
+# Scope examples: normalizer, portal-api, infra.
+#
+# Example:
+# feat(normalizer): add deterministic golden fixtures
+#
+# Body (optional):
+# - detail 1
+# - detail 2
+#
+# Footer (optional):
+# BREAKING CHANGE: description
+# Closes: ABC-123

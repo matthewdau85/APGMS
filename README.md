@@ -37,6 +37,32 @@ npm start
 
 The app will start on http://localhost:3000
 
+## Developer tooling
+
+- `make dev-up` starts the full Docker stack using every available compose file in the repository.
+- `make dev-down` stops the stack and removes volumes so the database can be rebuilt cleanly.
+- `make dev-seed` runs `npm ci --ignore-scripts` and then executes `scripts/seed_rpt_local.mjs` to seed sample data.
+- `make dev-demo` executes the golden tests and opens the UI at <http://localhost:8080>.
+
+Windows users can run the matching PowerShell helpers instead:
+
+- `./Dev-Up.ps1`
+- `./Dev-Down.ps1`
+- `./Dev-Seed.ps1`
+- `./Dev-Demo.ps1`
+
+To enable the provided pre-commit hook (runs unit tests, golden tests, and blocks float literals), configure Git once:
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+The repository also ships with a Conventional Commits template. Opt-in with:
+
+```powershell
+git config commit.template COMMIT_MSG.txt
+```
+
 Build for Production
 
 npm run build
