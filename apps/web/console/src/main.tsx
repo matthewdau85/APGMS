@@ -1,12 +1,25 @@
-﻿import React from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import App from "./App";
+import { ToastProvider } from "./components";
 
-function App() {
-  return (
-    <div style={{padding:16,fontFamily:"system-ui"}}>
-      <h1>APGMS Console</h1>
-      <p>Status tiles and RPT widgets will appear here. (P40, P41, P42)</p>
-    </div>
-  );
+const queryClient = new QueryClient();
+
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Root element not found");
 }
-createRoot(document.getElementById("root")!).render(<App />);
+
+createRoot(rootElement).render(
+  <React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </React.StrictMode>,
+);
