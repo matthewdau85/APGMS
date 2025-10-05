@@ -4,7 +4,9 @@ venv/
 __pycache__/
 
 # Node / builds
-node_modules/
+**/node_modules/**
+!node_modules/prom-client/
+!node_modules/prom-client/**
 dist/
 .next/
 coverage/
