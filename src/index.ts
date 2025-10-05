@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { pendingAnomalies, saveOperatorNote } from "./routes/anomalies";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
@@ -24,6 +25,8 @@ app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);
+app.get("/api/anomalies/pending", pendingAnomalies);
+app.post("/api/anomalies/pending/:id/note", saveOperatorNote);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
