@@ -1,13 +1,13 @@
 ﻿// src/index.ts
 import express from "express";
-import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
-dotenv.config();
+import { env } from "./config/env";
+console.log(`[apgms] starting in ${env.NODE_ENV}, port=${env.PORT}`);
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -34,5 +34,5 @@ app.use("/api", api);
 // 404 fallback (must be last)
 app.use((_req, res) => res.status(404).send("Not found"));
 
-const port = Number(process.env.PORT) || 3000;
+const port = env.PORT;
 app.listen(port, () => console.log("APGMS server listening on", port));
