@@ -2,14 +2,21 @@
 export interface Thresholds { epsilon_cents: number; variance_ratio: number; dup_rate: number; gap_minutes: number; }
 
 export function nextState(current: PeriodState, evt: string): PeriodState {
-  const t = ${current}:;
-  switch (t) {
-    case "OPEN:CLOSE": return "CLOSING";
-    case "CLOSING:PASS": return "READY_RPT";
-    case "CLOSING:FAIL_DISCREPANCY": return "BLOCKED_DISCREPANCY";
-    case "CLOSING:FAIL_ANOMALY": return "BLOCKED_ANOMALY";
-    case "READY_RPT:RELEASED": return "RELEASED";
-    case "RELEASED:FINALIZE": return "FINALIZED";
-    default: return current;
-  }
+  const key = `${current}:${evt}`;
+  const transitions: Record<string, PeriodState> = {
+    "OPEN:CLOSE": "CLOSING",
+    "CLOSING:PASS": "READY_RPT",
+    "CLOSING:FAIL_DISCREPANCY": "BLOCKED_DISCREPANCY",
+    "CLOSING:FAIL_ANOMALY": "BLOCKED_ANOMALY",
+    "BLOCKED_DISCREPANCY:REMEDIATED": "CLOSING",
+    "BLOCKED_DISCREPANCY:MANUAL_OVERRIDE": "READY_RPT",
+    "BLOCKED_ANOMALY:REMEDIATED": "CLOSING",
+    "BLOCKED_ANOMALY:MANUAL_OVERRIDE": "READY_RPT",
+    "READY_RPT:RELEASE": "RELEASED",
+    "READY_RPT:RELEASED": "RELEASED",
+    "READY_RPT:REVOKE": "CLOSING",
+    "RELEASED:REVERSAL": "READY_RPT",
+    "RELEASED:FINALIZE": "FINALIZED",
+  };
+  return transitions[key] ?? current;
 }
