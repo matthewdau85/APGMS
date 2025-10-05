@@ -223,23 +223,14 @@ CREATE TABLE IF NOT EXISTS bas_gate_states (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_bas_gate_period ON bas_gate_states (period_id);
 
-CREATE TABLE IF NOT EXISTS owa_ledger (
-  id SERIAL PRIMARY KEY,
-  kind VARCHAR(10) NOT NULL CHECK (kind IN ('PAYGW','GST')),
-  credit_amount NUMERIC(18,2) NOT NULL,
-  source_ref VARCHAR(64),
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  audit_hash CHAR(64)
-);
+ALTER TABLE audit_log
+  ADD COLUMN IF NOT EXISTS category text,
+  ADD COLUMN IF NOT EXISTS message text;
 
-CREATE TABLE IF NOT EXISTS audit_log (
-  id BIGSERIAL PRIMARY KEY,
-  event_time TIMESTAMP NOT NULL DEFAULT NOW(),
-  category VARCHAR(32) NOT NULL, -- bas_gate, rpt, egress, security
-  message TEXT NOT NULL,
-  hash_prev CHAR(64),
-  hash_this CHAR(64)
-);
+ALTER TABLE owa_ledger
+  ADD COLUMN IF NOT EXISTS bank_receipt_hash text,
+  ADD COLUMN IF NOT EXISTS prev_hash text,
+  ADD COLUMN IF NOT EXISTS hash_after text;
 
 CREATE TABLE IF NOT EXISTS rpt_store (
   id BIGSERIAL PRIMARY KEY,
@@ -250,9 +241,10 @@ CREATE TABLE IF NOT EXISTS rpt_store (
 );
 
 -- Minimal guard view: no generic debit primitive
-CREATE VIEW owa_balance AS
-SELECT kind, COALESCE(SUM(credit_amount),0) AS balance
-FROM owa_ledger GROUP BY kind;
+CREATE OR REPLACE VIEW owa_balance AS
+SELECT tax_type AS kind,
+       COALESCE(SUM(amount_cents),0)::numeric / 100.0 AS balance
+FROM owa_ledger GROUP BY tax_type;
 
 -- Transition helper skeletons (fill with business rules in services)
 '@
@@ -328,6 +320,7 @@ $basMain = @'
 # apps/services/bas-gate/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import hashlib
 import os, psycopg2, json, time
 
 app = FastAPI(title="bas-gate")
@@ -355,16 +348,20 @@ def transition(req: TransitionReq):
     row = cur.fetchone()
     prev = row[0] if row else None
     payload = json.dumps({"period_id": req.period_id, "state": req.target_state, "ts": int(time.time())}, separators=(",",":"))
-    import libs.audit_chain.chain as ch
-    h = ch.link(prev, payload)
+    payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    h = hashlib.sha256(((prev or "") + payload_hash).encode("utf-8")).hexdigest()
     if row:
         cur.execute("UPDATE bas_gate_states SET state=%s, reason_code=%s, updated_at=NOW(), hash_prev=%s, hash_this=%s WHERE period_id=%s",
                     (req.target_state, req.reason_code, prev, h, req.period_id))
     else:
         cur.execute("INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
                     (req.period_id, req.target_state, req.reason_code, prev, h))
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('bas_gate',%s,%s,%s)",
-                (payload, prev, h))
+    cur.execute("SELECT terminal_hash FROM audit_log ORDER BY seq DESC LIMIT 1")
+    audit_prev = cur.fetchone()
+    prev_chain = audit_prev[0] if audit_prev else None
+    cur.execute("INSERT INTO audit_log(actor,action,category,message,payload_hash,prev_hash,terminal_hash) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                ("bas_gate", "transition", "bas_gate", payload, payload_hash, prev_chain,
+                 hashlib.sha256(((prev_chain or "") + payload_hash).encode("utf-8")).hexdigest()))
     conn.commit(); cur.close(); conn.close()
     return {"ok": True, "hash": h}
 '@
@@ -407,6 +404,7 @@ $bankMain = @'
 # apps/services/bank-egress/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import hashlib
 import os, psycopg2, json
 from libs.rpt.rpt import verify
 
@@ -435,8 +433,14 @@ def remit(req: EgressReq):
     if not row or row[0] != "RPT-Issued":
         raise HTTPException(409, "gate not in RPT-Issued")
     # Here you would call the real bank API via mTLS. For now, we just log.
-    payload = json.dumps({"period_id": req.period_id, "action": "remit"})
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('egress',%s,NULL,NULL)", (payload,))
+    payload = json.dumps({"period_id": req.period_id, "action": "remit"}, separators=(",",":"))
+    payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    cur.execute("SELECT terminal_hash FROM audit_log ORDER BY seq DESC LIMIT 1")
+    prev_row = cur.fetchone()
+    prev_hash = prev_row[0] if prev_row else None
+    terminal_hash = hashlib.sha256(((prev_hash or "") + payload_hash).encode("utf-8")).hexdigest()
+    cur.execute("INSERT INTO audit_log(actor,action,category,message,payload_hash,prev_hash,terminal_hash) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                ("bank-egress", "remit", "egress", payload, payload_hash, prev_hash, terminal_hash))
     cur.execute("UPDATE bas_gate_states SET state='Remitted', updated_at=NOW() WHERE period_id=%s", (req.period_id,))
     conn.commit(); cur.close(); conn.close()
     return {"ok": True}
@@ -466,8 +470,9 @@ def bundle(period_id: str):
     conn = db(); cur = conn.cursor()
     cur.execute("SELECT rpt_json, rpt_sig, issued_at FROM rpt_store WHERE period_id=%s ORDER BY issued_at DESC LIMIT 1", (period_id,))
     rpt = cur.fetchone()
-    cur.execute("SELECT event_time, category, message FROM audit_log WHERE message LIKE %s ORDER BY event_time", (f'%\"period_id\":\"{period_id}\"%',))
-    logs = [{"event_time": str(r[0]), "category": r[1], "message": r[2]}] if cur.rowcount else []
+    cur.execute("SELECT ts, COALESCE(category, action), COALESCE(message, '') FROM audit_log WHERE message LIKE %s ORDER BY ts",
+                (f'%\"period_id\":\"{period_id}\"%',))
+    logs = [{"event_time": str(r[0]), "category": r[1], "message": r[2]} for r in cur.fetchall()]
     cur.close(); conn.close()
     return {"period_id": period_id, "rpt": rpt[0] if rpt else None, "audit": logs}
 '@

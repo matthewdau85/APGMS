@@ -1,6 +1,7 @@
 ﻿# apps/services/bas-gate/main.py
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import hashlib
 import os, psycopg2, json, time
 
 app = FastAPI(title="bas-gate")
@@ -28,15 +29,28 @@ def transition(req: TransitionReq):
     row = cur.fetchone()
     prev = row[0] if row else None
     payload = json.dumps({"period_id": req.period_id, "state": req.target_state, "ts": int(time.time())}, separators=(",",":"))
-    import libs.audit_chain.chain as ch
-    h = ch.link(prev, payload)
+    payload_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    terminal_hash = hashlib.sha256(((prev or "") + payload_hash).encode("utf-8")).hexdigest()
     if row:
         cur.execute("UPDATE bas_gate_states SET state=%s, reason_code=%s, updated_at=NOW(), hash_prev=%s, hash_this=%s WHERE period_id=%s",
-                    (req.target_state, req.reason_code, prev, h, req.period_id))
+                    (req.target_state, req.reason_code, prev, terminal_hash, req.period_id))
     else:
         cur.execute("INSERT INTO bas_gate_states(period_id,state,reason_code,hash_prev,hash_this) VALUES (%s,%s,%s,%s,%s)",
-                    (req.period_id, req.target_state, req.reason_code, prev, h))
-    cur.execute("INSERT INTO audit_log(category,message,hash_prev,hash_this) VALUES ('bas_gate',%s,%s,%s)",
-                (payload, prev, h))
+                    (req.period_id, req.target_state, req.reason_code, prev, terminal_hash))
+    cur.execute("SELECT terminal_hash FROM audit_log ORDER BY seq DESC LIMIT 1")
+    audit_prev = cur.fetchone()
+    prev_chain = audit_prev[0] if audit_prev else None
+    cur.execute(
+        "INSERT INTO audit_log(actor,action,category,message,payload_hash,prev_hash,terminal_hash) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+        (
+            "bas_gate",
+            "transition",
+            "bas_gate",
+            payload,
+            payload_hash,
+            prev_chain,
+            hashlib.sha256(((prev_chain or "") + payload_hash).encode("utf-8")).hexdigest()
+        )
+    )
     conn.commit(); cur.close(); conn.close()
-    return {"ok": True, "hash": h}
+    return {"ok": True, "hash": terminal_hash}
