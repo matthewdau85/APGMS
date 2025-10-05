@@ -1,17 +1,20 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
+import React, { useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
 export default function Dashboard() {
-  const complianceStatus = {
+  const { discrepancyAlerts } = useContext(AppContext);
+  const complianceStatus = useMemo(() => ({
     lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
+    paymentsUpToDate: !(discrepancyAlerts && discrepancyAlerts.length),
     overallCompliance: 65,
     lastBAS: '29 May 2025',
     nextDue: '28 July 2025',
     outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+    outstandingAmounts: discrepancyAlerts || []
+  }), [discrepancyAlerts]);
+  const hasOutstandingPayments = complianceStatus.outstandingAmounts.length > 0;
 
   return (
     <div className="main-card">
@@ -87,8 +90,10 @@ export default function Dashboard() {
         {complianceStatus.outstandingLodgments.length > 0 && (
           <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
         )}
-        {complianceStatus.outstandingAmounts.length > 0 && (
-          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
+        {hasOutstandingPayments ? (
+          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join('; ')}</p>
+        ) : (
+          <p className="text-green-600">Outstanding Payments: None</p>
         )}
       </div>
 

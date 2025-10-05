@@ -11,6 +11,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [sales, setSales] = useState(mockSales);
   const [basHistory, setBasHistory] = useState<BASHistory[]>(mockBasHistory);
   const [auditLog, setAuditLog] = useState<any[]>([]);
+  const [discrepancyAlerts, setDiscrepancyAlerts] = useState<string[]>([]);
 
   return (
     <AppContext.Provider value={{
@@ -20,6 +21,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       sales, setSales,
       basHistory, setBasHistory,
       auditLog, setAuditLog,
+      discrepancyAlerts, setDiscrepancyAlerts,
     }}>
       {children}
     </AppContext.Provider>
