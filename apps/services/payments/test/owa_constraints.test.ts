@@ -1,5 +1,5 @@
-import { Pool } from "pg";
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+import { getPool, getPoolMetrics } from "../src/db/pool.js";
+const pool = getPool();
 
 test("OWA deposit-only constraint", async () => {
   const c = await pool.connect();
@@ -15,4 +15,9 @@ test("OWA deposit-only constraint", async () => {
     await c.query("ROLLBACK");
     c.release();
   }
+});
+
+afterAll(() => {
+  const metrics = getPoolMetrics();
+  expect(metrics.active).toBeLessThanOrEqual(metrics.max);
 });
