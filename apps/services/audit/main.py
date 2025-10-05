@@ -1,24 +1,42 @@
-﻿# apps/services/audit/main.py
-from fastapi import FastAPI
-import os, psycopg2, json
+from fastapi import FastAPI, APIRouter
+from pydantic import BaseModel
+from typing import List
+import asyncpg
+import os
 
 app = FastAPI(title="audit")
+router = APIRouter()
 
-def db():
-    return psycopg2.connect(
-        host=os.getenv("PGHOST","127.0.0.1"),
-        user=os.getenv("PGUSER","postgres"),
-        password=os.getenv("PGPASSWORD","postgres"),
-        dbname=os.getenv("PGDATABASE","postgres"),
-        port=int(os.getenv("PGPORT","5432"))
-    )
 
-@app.get("/audit/bundle/{period_id}")
-def bundle(period_id: str):
-    conn = db(); cur = conn.cursor()
-    cur.execute("SELECT rpt_json, rpt_sig, issued_at FROM rpt_store WHERE period_id=%s ORDER BY issued_at DESC LIMIT 1", (period_id,))
-    rpt = cur.fetchone()
-    cur.execute("SELECT event_time, category, message FROM audit_log WHERE message LIKE %s ORDER BY event_time", (f'%\"period_id\":\"{period_id}\"%',))
-    logs = [{"event_time": str(r[0]), "category": r[1], "message": r[2]}] if cur.rowcount else []
-    cur.close(); conn.close()
-    return {"period_id": period_id, "rpt": rpt[0] if rpt else None, "audit": logs}
+class AuditRow(BaseModel):
+    id: int
+    abn: str
+    period_id: int
+    event: str
+    payload: dict
+    hash: str
+    prev_hash: str
+    created_at: str
+
+
+@router.get("/audit/bundle/{period_id}", response_model=List[AuditRow])
+async def audit_bundle(period_id: int, abn: str):
+    conn = await asyncpg.connect(os.getenv("DATABASE_URL"))
+    try:
+        rows = await conn.fetch(
+            """
+          select id, abn, period_id, event, payload, hash, prev_hash,
+                 to_char(created_at,'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
+            from audit_events
+           where abn=$1 and period_id=$2
+           order by id asc
+        """,
+            abn,
+            period_id,
+        )
+        return [dict(r) for r in rows]
+    finally:
+        await conn.close()
+
+
+app.include_router(router)
