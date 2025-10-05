@@ -1,6 +1,7 @@
 // src/api/payments.ts
 import express from "express";
 import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { respondIfKillSwitch } from "../safety/killSwitch";
 
 export const paymentsApi = express.Router();
 
@@ -51,6 +52,7 @@ paymentsApi.post("/deposit", async (req, res) => {
 
 // POST /api/release  (calls payAto)
 paymentsApi.post("/release", async (req, res) => {
+  if (respondIfKillSwitch(res)) return;
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
     if (!abn || !taxType || !periodId || typeof amountCents !== "number") {

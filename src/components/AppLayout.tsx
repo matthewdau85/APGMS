@@ -14,8 +14,33 @@ const navLinks = [
 ];
 
 export default function AppLayout() {
+  const [killSwitch, setKillSwitch] = React.useState<{ enabled: boolean; reason: string | null } | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadCapabilities() {
+      try {
+        const res = await fetch("/health/capabilities");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!cancelled) setKillSwitch(data.killSwitch);
+      } catch {
+        if (!cancelled) setKillSwitch({ enabled: false, reason: null });
+      }
+    }
+    loadCapabilities();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <div>
+      {killSwitch?.enabled && (
+        <div className="kill-switch-banner" role="status" aria-live="polite">
+          <strong>Payouts paused:</strong> {killSwitch.reason || "See operations bulletin for details."}
+        </div>
+      )}
       <header className="app-header">
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
