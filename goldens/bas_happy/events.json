@@ -1,0 +1,54 @@
+{
+  "abn": "53004085616",
+  "period_id": "2025-09",
+  "events": [
+    {
+      "event_type": "payroll",
+      "period_id": "2025-09",
+      "dedupe_key": "pay-001",
+      "monotonic_seq": 1,
+      "gross_cents": 500000,
+      "withholding_cents": 95000,
+      "signed_at": "2025-09-07T05:02:00Z"
+    },
+    {
+      "event_type": "payroll",
+      "period_id": "2025-09",
+      "dedupe_key": "pay-002",
+      "monotonic_seq": 2,
+      "gross_cents": 420000,
+      "withholding_cents": 63000,
+      "signed_at": "2025-09-21T05:02:00Z"
+    },
+    {
+      "event_type": "pos",
+      "period_id": "2025-09",
+      "txn_id": "sale-100",
+      "monotonic_seq": 10,
+      "signed_at": "2025-09-03T01:12:00Z",
+      "lines": [
+        { "sku": "SKU-AAA", "qty": 10, "unit_price_cents": 5500, "discount_cents": 500, "tax_code": "GST" },
+        { "sku": "SKU-BBB", "qty": 2, "unit_price_cents": 12000, "tax_code": "GST_FREE" }
+      ]
+    },
+    {
+      "event_type": "pos",
+      "period_id": "2025-09",
+      "txn_id": "sale-101",
+      "monotonic_seq": 11,
+      "signed_at": "2025-09-14T04:05:00Z",
+      "lines": [
+        { "sku": "SKU-CCC", "qty": 5, "unit_price_cents": 8000, "tax_code": "GST" }
+      ]
+    },
+    {
+      "event_type": "bank",
+      "period_id": "2025-09",
+      "monotonic_seq": 30,
+      "signed_at": "2025-09-28T08:45:00Z",
+      "direction": "CREDIT",
+      "amount_cents": 118500,
+      "gst_credit_cents": 0
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "bas": {
+    "labels_cents": {
+      "1A": 9450,
+      "1B": 0,
+      "W1": 920000,
+      "W2": 158000
+    },
+    "period_id": "2025-09",
+    "totals": {
+      "gst_cents": 9450,
+      "paygw_cents": 158000
+    }
+  },
+  "rpt": {
+    "payload": {
+      "anomaly_score": 0.0,
+      "expires_at": 4102444800,
+      "gst_total": 94.5,
+      "nonce": "dc8180315117a3b7",
+      "paygw_total": 1580.0,
+      "period_id": "2025-09",
+      "source_digests": {
+        "bank": "4f9199921049f04246b746c9e5b1864b1208f92a27dc58c6a8d480b04894be9c",
+        "payroll": "53b58fb02ee4a6b74d1a32345d20579c84a714deba8fabf091e7e70f3863d2d8",
+        "pos": "1c5008c48b15876eab9c18065620403dd284ebd277d185a312c73d307c76683d"
+      }
+    },
+    "payload_sha256": "3e85768dac05856bc6e3483c71b911feebbddfc6d9f696657feed4a7d58f7e72",
+    "signature": "19effcf18a8c550d3d325382d30c6d31c1d3e14472529d1c320a89e3c1e27d2a"
+  }
+}
