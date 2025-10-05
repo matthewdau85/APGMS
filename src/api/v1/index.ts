@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { router as balanceRouter } from "../../routes/balance";
+import { router as reconcileRouter } from "../../routes/reconcile";
+import { router as evidenceRouter } from "../../routes/evidence";
+import { router as depositRouter } from "../../routes/deposit";
+export const v1 = Router();
+v1.use("/balance", balanceRouter);
+v1.use("/reconcile", reconcileRouter);
+v1.use("/evidence", evidenceRouter);
+v1.use("/deposit", depositRouter);
