@@ -2,6 +2,7 @@
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import dotenv from 'dotenv';
+import { applySafetyDefaults } from '../../../../libs/envDefaults.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = dirname(__filename);
@@ -10,3 +11,5 @@ const __dirname  = dirname(__filename);
 dotenv.config({ path: resolve(__dirname, '../../../../.env.local') });
 // then a local .env (optional)
 dotenv.config();
+// finally ensure repo safety defaults are populated when unset
+applySafetyDefaults();

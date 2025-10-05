@@ -1,6 +1,7 @@
 ﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
+import { applySafetyDefaults } from "../libs/envDefaults";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
@@ -8,6 +9,7 @@ import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
 dotenv.config();
+applySafetyDefaults();
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
