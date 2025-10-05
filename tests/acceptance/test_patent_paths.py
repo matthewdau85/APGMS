@@ -1,12 +1,31 @@
-﻿# tests/acceptance/test_patent_paths.py
-import json, time
+# tests/acceptance/test_patent_paths.py
+
+from app.rates.mock import MockRatesPort
+from app.rates.real import RealRatesPort
 from libs.rpt.rpt import build, verify
 
+
 def test_rpt_sign_verify():
-    rpt = build("2024Q4", 100.0, 200.0, {"payroll":"abc","pos":"def"}, 0.1, ttl_seconds=60)
+    mock_port = MockRatesPort()
+    real_port = RealRatesPort()
+    mock_version = mock_port.latest()
+    real_version = real_port.latest()
+    rpt = build(
+        "2024Q4",
+        100.0,
+        200.0,
+        {"payroll": "abc", "pos": "def"},
+        0.1,
+        {
+            mock_port.port_name: mock_port.evidence(mock_version),
+            real_port.port_name: real_port.evidence(real_version),
+        },
+        ttl_seconds=60,
+    )
     assert "signature" in rpt
-    payload = {k:v for k,v in rpt.items() if k!="signature"}
+    payload = {k: v for k, v in rpt.items() if k != "signature"}
     assert verify(payload, rpt["signature"])
+
 
 def test_recon_pass_example():
     # Fake math: equality within tolerance and anomaly ok

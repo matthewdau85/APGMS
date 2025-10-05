@@ -1,23 +1,51 @@
+from __future__ import annotations
+
+from decimal import Decimal, ROUND_HALF_UP, getcontext
 from typing import Literal
 
-GST_RATE = 0.10
+from .rates import RatesVersion
 
-def gst_line_tax(amount_cents: int, tax_code: Literal["GST","GST_FREE","EXEMPT","ZERO_RATED",""] = "GST") -> int:
+getcontext().prec = 28
+
+
+def gst_line_tax(
+    amount_cents: int,
+    rates: RatesVersion,
+    tax_code: Literal["GST", "GST_FREE", "EXEMPT", "ZERO_RATED", ""] = "GST",
+) -> int:
+    """Calculate GST for a line item using the supplied rates version."""
+
     if amount_cents <= 0:
         return 0
-    return round(amount_cents * GST_RATE) if (tax_code or "").upper() == "GST" else 0
+    if (tax_code or "").upper() != "GST":
+        return 0
+    tax = (Decimal(amount_cents) * rates.gst_rate).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    return int(tax)
 
-def paygw_weekly(gross_cents: int) -> int:
-    """
-    Progressive toy scale used by tests:
-      - 15% up to 80,000?
-      - 20% on the portion above 80,000?
-    """
+
+def paygw_weekly(gross_cents: int, rates: RatesVersion) -> int:
+    """Toy progressive PAYG-W calculator driven by the injected rates version."""
+
     if gross_cents <= 0:
         return 0
-    bracket = 80_000
-    if gross_cents <= bracket:
-        return round(gross_cents * 0.15)
-    base = round(bracket * 0.15)
-    excess = gross_cents - bracket
-    return base + round(excess * 0.20)
+
+    gross = Decimal(gross_cents)
+    total = Decimal("0")
+    previous_limit = Decimal("0")
+
+    for bracket in rates.paygw_brackets:
+        limit = Decimal(bracket.threshold_cents) if bracket.threshold_cents is not None else None
+        rate = bracket.rate
+
+        if limit is None or gross <= limit:
+            taxable = gross - previous_limit
+            if taxable > 0:
+                total += taxable * rate
+            break
+
+        taxable = limit - previous_limit
+        if taxable > 0:
+            total += taxable * rate
+        previous_limit = limit
+
+    return int(total.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
