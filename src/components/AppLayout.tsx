@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useContext } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import { AppContext } from "../context/AppContext";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -14,12 +15,22 @@ const navLinks = [
 ];
 
 export default function AppLayout() {
+  const ctx = useContext(AppContext);
+  const ratesLabel = ctx
+    ? `${ctx.ratesVersion.name} (eff. ${ctx.ratesVersion.effectiveFrom})`
+    : "Rates version unavailable";
+  const checksum = ctx?.ratesVersion.checksum;
+
   return (
     <div>
       <header className="app-header">
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
         <p>ATO-Compliant Tax Management System</p>
+        <div className="text-sm" style={{ marginTop: 8 }}>
+          <strong>Rates version:</strong> {ratesLabel}
+          {checksum ? <span style={{ marginLeft: 8, opacity: 0.8 }}>checksum {checksum.slice(0, 10)}…</span> : null}
+        </div>
         <nav style={{ marginTop: 16 }}>
           {navLinks.map((link) => (
             <NavLink
@@ -44,7 +55,6 @@ export default function AppLayout() {
         </nav>
       </header>
 
-      {/* 👇 This tells React Router where to render the child pages */}
       <main style={{ padding: 20 }}>
         <Outlet />
       </main>

@@ -2,7 +2,9 @@ import React, { useContext } from "react";
 import { AppContext } from "../context/AppContext";
 
 export default function AuditLog() {
-  const { auditLog } = useContext(AppContext);
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error("AppContext missing");
+  const { auditLog } = ctx;
 
   return (
     <div className="card">

@@ -35,3 +35,12 @@ export type PaymentPlanType = {
   startDate: Date;
   atoApproved: boolean;
 };
+
+export type RatesVersionSummary = {
+  id: string;
+  name: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  checksum?: string;
+  gstRateBasisPoints: number;
+};

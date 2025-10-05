@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { GstInput } from "../types/tax";
 import { calculateGst } from "../utils/gst";
+import { AppContext } from "../context/AppContext";
 
 export default function GstCalculator({ onResult }: { onResult: (liability: number) => void }) {
   const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false });
+  const ctx = useContext(AppContext);
 
   return (
     <div className="card">
@@ -13,6 +15,10 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
         <span style={{ color: "#444", fontSize: "0.97em" }}>
           Enter the sale amount and mark as exempt if GST does not apply.
         </span>
+      </p>
+      <p className="text-xs" style={{ color: "#555" }}>
+        Using GST rate {ctx ? `${(ctx.ratesVersion.gstRateBasisPoints / 100).toFixed(2)}%` : "--"}
+        {ctx ? ` (${ctx.ratesVersion.name})` : null}.
       </p>
       <label>
         Sale Amount (including GST):

@@ -1,18 +1,25 @@
 import pytest
-from app.tax_rules import gst_line_tax, paygw_weekly
+from app.tax_rules import calc_gst, calc_paygw, calc_penalty, DEFAULT_VERSION_ID
+
 
 @pytest.mark.parametrize("amount_cents, expected", [
     (0, 0),
-    (1000, 100),   # 10% GST
-    (999, 100),    # rounding check
+    (10_000, 1_000),
+    (10_005, 1_001),
 ])
-def test_gst(amount_cents, expected):
-    assert gst_line_tax(amount_cents, "GST") == expected
+def test_calc_gst(amount_cents, expected):
+    assert calc_gst(amount_cents, DEFAULT_VERSION_ID) == expected
 
-@pytest.mark.parametrize("gross, expected", [
-    (50_000, 7_500),     # 15% below bracket
-    (80_000, 12_000),    # top of bracket
-    (100_000, 16_000),   # 12,000 + 20% of 20,000
+
+@pytest.mark.parametrize("income, expected", [
+    (1_820_000, 0),
+    (4_500_000, 509_200),
+    (8_000_000, 1_646_700),
 ])
-def test_paygw(gross, expected):
-    assert paygw_weekly(gross) == expected
+def test_calc_paygw(income, expected):
+    assert calc_paygw(income, DEFAULT_VERSION_ID) == expected
+
+
+def test_calc_penalty_components():
+    penalty = calc_penalty(45, 100_000, DEFAULT_VERSION_ID)
+    assert penalty == 77_000

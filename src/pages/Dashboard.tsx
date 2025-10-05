@@ -1,8 +1,9 @@
-// src/pages/Dashboard.tsx
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
 export default function Dashboard() {
+  const ctx = useContext(AppContext);
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
@@ -20,6 +21,9 @@ export default function Dashboard() {
         <p className="text-sm opacity-90">
           Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
         </p>
+        <div className="mt-2 text-xs">
+          Rates version: {ctx ? `${ctx.ratesVersion.name} (${ctx.ratesVersion.effectiveFrom})` : 'loading…'}
+        </div>
         <div className="mt-4">
           <Link to="/wizard" className="bg-white text-[#00716b] font-semibold px-4 py-2 rounded shadow hover:bg-gray-100">
             Get Started
