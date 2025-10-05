@@ -1,15 +1,57 @@
-﻿export type PeriodState = "OPEN"|"CLOSING"|"READY_RPT"|"BLOCKED_DISCREPANCY"|"BLOCKED_ANOMALY"|"RELEASED"|"FINALIZED";
-export interface Thresholds { epsilon_cents: number; variance_ratio: number; dup_rate: number; gap_minutes: number; }
+export type PeriodState =
+  | "OPEN"
+  | "CLOSING"
+  | "READY_RPT"
+  | "BLOCKED_DISCREPANCY"
+  | "BLOCKED_ANOMALY"
+  | "RELEASED"
+  | "CLOSED_OK"
+  | "CLOSED_FAIL";
+
+export interface Thresholds {
+  epsilon_cents: number;
+  variance_ratio: number;
+  dup_rate: number;
+  gap_minutes: number;
+}
+
+const transitions: Record<PeriodState, Readonly<Record<string, PeriodState>>> = {
+  OPEN: { CLOSE: "CLOSING" },
+  CLOSING: {
+    PASS: "READY_RPT",
+    FAIL_DISCREPANCY: "BLOCKED_DISCREPANCY",
+    FAIL_ANOMALY: "BLOCKED_ANOMALY",
+  },
+  READY_RPT: {
+    RELEASE: "RELEASED",
+    ABORT: "CLOSED_FAIL",
+  },
+  BLOCKED_DISCREPANCY: {
+    CLOSE: "CLOSED_FAIL",
+  },
+  BLOCKED_ANOMALY: {
+    CLOSE: "CLOSED_FAIL",
+  },
+  RELEASED: {
+    FINALIZE_OK: "CLOSED_OK",
+    FINALIZE_FAIL: "CLOSED_FAIL",
+  },
+  CLOSED_OK: {},
+  CLOSED_FAIL: {},
+};
 
 export function nextState(current: PeriodState, evt: string): PeriodState {
-  const t = ${current}:;
-  switch (t) {
-    case "OPEN:CLOSE": return "CLOSING";
-    case "CLOSING:PASS": return "READY_RPT";
-    case "CLOSING:FAIL_DISCREPANCY": return "BLOCKED_DISCREPANCY";
-    case "CLOSING:FAIL_ANOMALY": return "BLOCKED_ANOMALY";
-    case "READY_RPT:RELEASED": return "RELEASED";
-    case "RELEASED:FINALIZE": return "FINALIZED";
-    default: return current;
+  const stateTransitions = transitions[current];
+
+  if (!stateTransitions) {
+    throw new Error(`UNKNOWN_STATE:${current}`);
   }
+
+  const next = stateTransitions[evt];
+
+  if (!next) {
+    throw new Error(`INVALID_TRANSITION:${current}:${evt}`);
+  }
+
+  return next;
 }
