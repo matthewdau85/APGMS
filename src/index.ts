@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
+import { complianceApi } from "./api/compliance";
 import { api } from "./api";                  // your existing API router(s)
 
 dotenv.config();
@@ -27,6 +28,7 @@ app.get("/api/evidence", evidence);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
+app.use("/api", complianceApi);
 
 // Existing API router(s) after
 app.use("/api", api);

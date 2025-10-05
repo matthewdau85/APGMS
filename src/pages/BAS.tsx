@@ -1,15 +1,37 @@
 import React from 'react';
+import { useCompliance } from '../context/ComplianceContext';
 
 export default function BAS() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65, // percentage from 0 to 100
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { data: complianceStatus, isLoading, isError, error } = useCompliance();
+
+  if (isLoading || !complianceStatus) {
+    return (
+      <div className="main-card">
+        <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
+        <p className="text-sm text-muted-foreground mb-4">
+          Lodge your BAS on time and accurately. Below is a summary of your current obligations.
+        </p>
+        <div className="bg-white border border-gray-200 p-4 rounded-xl shadow-sm text-center">
+          <p className="text-gray-600">Loading compliance data…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="main-card space-y-4">
+        <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
+        <p className="text-sm text-muted-foreground">
+          Lodge your BAS on time and accurately. Below is a summary of your current obligations.
+        </p>
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl shadow">
+          <p className="font-semibold">Unable to load BAS compliance.</p>
+          <p className="text-sm">{error?.message || 'Unknown error'}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="main-card">
