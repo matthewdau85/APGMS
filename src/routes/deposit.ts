@@ -1,6 +1,7 @@
-﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { Request, Response } from "express";
 import { randomUUID } from "node:crypto";
+import { pool } from "../db/pool";
+import { selectLatestLedgerBalance } from "../db/queries";
 
 export async function deposit(req: Request, res: Response) {
   try {
@@ -17,12 +18,7 @@ export async function deposit(req: Request, res: Response) {
     try {
       await client.query("BEGIN");
 
-      const { rows: last } = await client.query(
-        `SELECT balance_after_cents FROM owa_ledger
-         WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-         ORDER BY id DESC LIMIT 1`,
-        [abn, taxType, periodId]
-      );
+      const { rows: last } = await client.query(selectLatestLedgerBalance(abn, taxType, periodId));
       const prevBal = last[0]?.balance_after_cents ?? 0;
       const newBal = prevBal + amt;
 
@@ -31,7 +27,7 @@ export async function deposit(req: Request, res: Response) {
            (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
          VALUES ($1,$2,$3,$4,$5,$6,now())
          RETURNING id,transfer_uuid,balance_after_cents`,
-        [abn, taxType, periodId, randomUUID(), amt, newBal]
+        [abn, taxType, periodId, randomUUID(), amt, newBal],
       );
 
       await client.query("COMMIT");
@@ -39,16 +35,15 @@ export async function deposit(req: Request, res: Response) {
         ok: true,
         ledger_id: ins[0].id,
         transfer_uuid: ins[0].transfer_uuid,
-        balance_after_cents: ins[0].balance_after_cents
+        balance_after_cents: ins[0].balance_after_cents,
       });
-
-    } catch (e:any) {
+    } catch (e: any) {
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
     } finally {
       client.release();
     }
-  } catch (e:any) {
+  } catch (e: any) {
     return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
   }
 }

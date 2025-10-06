@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { pool } from "../../../src/db/pool";
+import { selectLatestLedgerBalance } from "../../../src/db/queries";
 import { randomUUID } from "node:crypto";
 
 export async function deposit(req: Request, res: Response) {
@@ -13,12 +14,7 @@ export async function deposit(req: Request, res: Response) {
     try {
       await client.query("BEGIN");
 
-      const { rows: last } = await client.query(
-        `SELECT balance_after_cents FROM owa_ledger
-         WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-         ORDER BY id DESC LIMIT 1`,
-        [abn, taxType, periodId]
-      );
+      const { rows: last } = await client.query(selectLatestLedgerBalance(abn, taxType, periodId));
       const prevBal = last[0]?.balance_after_cents ?? 0;
       const newBal = prevBal + amt;
 

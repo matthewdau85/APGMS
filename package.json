@@ -3,6 +3,7 @@
         "start": "node dist/index.js",
         "build": "echo build root",
         "typecheck": "echo typecheck root",
+        "test": "node --test --import tsx tests/queries.test.ts tests/idempotency.test.ts",
         "dev": "tsx src/index.ts",
         "lint": "echo lint root"
     },

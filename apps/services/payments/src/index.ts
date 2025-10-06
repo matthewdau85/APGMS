@@ -3,7 +3,7 @@ import 'dotenv/config';
 import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 
 import express from 'express';
-import pg from 'pg'; const { Pool } = pg;
+import { pool } from '../../../src/db/pool';
 
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
@@ -14,14 +14,8 @@ import { ledger } from './routes/ledger';
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
-// Prefer DATABASE_URL; else compose from PG* vars
-const connectionString =
-  process.env.DATABASE_URL ??
-  `postgres://${process.env.PGUSER || 'apgms'}:${encodeURIComponent(process.env.PGPASSWORD || '')}` +
-  `@${process.env.PGHOST || '127.0.0.1'}:${process.env.PGPORT || '5432'}/${process.env.PGDATABASE || 'apgms'}`;
-
-// Export pool for other modules
-export const pool = new Pool({ connectionString });
+// Export shared pool for other modules
+export { pool };
 
 const app = express();
 app.use(express.json());
