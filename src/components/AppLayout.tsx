@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import ModeBanner from "./ModeBanner";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -16,6 +17,7 @@ const navLinks = [
 export default function AppLayout() {
   return (
     <div>
+      <ModeBanner />
       <header className="app-header">
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
