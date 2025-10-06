@@ -1,0 +1,18 @@
+---
+slug: /help/rpt-tokens
+title: RPT (Real-time PAYGW Tokens)
+modes:
+  - web
+summary: Glossary entry explaining the Real-time PAYGW Token (RPT) integration.
+lastUpdated: 2025-10-06
+---
+
+Real-time PAYGW Tokens (RPT) authenticate secure exchange of withholding remittance totals with APGMS. Each token represents a daily PAYGW package signed with your AUSkey-equivalent certificate.
+
+### Lifecycle
+
+1. The payroll connector generates the token payload hourly.
+2. APGMS validates the signature against your registered AUSkey.
+3. When accepted, the PAYGW remittance queue updates immediately, allowing just-in-time BAS submissions.
+
+> Tip: Rotate RPT credentials on the same cadence as your AUSkey rotation policy. Use the **Integrations → Security** page to issue new client secrets.

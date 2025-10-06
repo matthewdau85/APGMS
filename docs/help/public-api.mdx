@@ -1,0 +1,17 @@
+---
+slug: /help/public-api
+title: Public API surface
+modes:
+  - api
+summary: Reference table of publicly supported REST endpoints exposed by APGMS.
+lastUpdated: 2025-10-06
+---
+
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| /api/payments/balance | GET | Returns the PAYGW or GST account balance for the requested BAS period. |
+| /api/payments/ledger | GET | Streams the transaction ledger for the requested BAS period. |
+| /api/payments/deposit | POST | Registers an incoming client deposit that increases the ATO payable balance. |
+| /api/payments/release | POST | Sends a PAYGW or GST release to the ATO when the amount is negative. |
+
+All public endpoints require an API key created from **Settings → API Access**.

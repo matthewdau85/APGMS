@@ -1,15 +1,19 @@
 {
     "scripts": {
         "start": "node dist/index.js",
-        "build": "echo build root",
+        "build": "pnpm docs:index && echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "docs:index": "tsx scripts/build-doc-index.ts",
+        "docs:lastUpdated": "tsx scripts/docs-last-updated.ts",
+        "docs:coverage": "tsx scripts/docs-coverage.ts",
+        "docs:links": "tsx scripts/docs-links.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
     "private": true,
-    "packageManager": "pnpm@9",
+    "packageManager": "pnpm@9.0.0",
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",

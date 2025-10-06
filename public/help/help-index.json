@@ -1,0 +1,34 @@
+{
+  "docs": [
+    {
+      "slug": "/help/dashboard-bas",
+      "title": "Understand the BAS dashboard",
+      "summary": "How to read BAS obligations, upcoming due dates, and compliance score in the dashboard.",
+      "modes": [
+        "web"
+      ],
+      "updatedAt": "2025-10-06",
+      "content": "## Overview\n\nThe Business Activity Statement (BAS) dashboard surfaces PAYGW and GST lodgment milestones alongside payment status in one consolidated view. Each card tracks:\n\n- **Lodgments** — upcoming or overdue forms for each quarter.\n- **Payments** — PAYGW and GST remittances that remain outstanding.\n- **Compliance score** — weighted indicator of lodging and paying on time.\n\n## Actions\n\nSelect **View BAS** to open the BAS workspace with prefilled activity statements. APGMS syncs your latest transactions nightly so the dashboard reflects the last reconciliation cutover."
+    },
+    {
+      "slug": "/help/public-api",
+      "title": "Public API surface",
+      "summary": "Reference table of publicly supported REST endpoints exposed by APGMS.",
+      "modes": [
+        "api"
+      ],
+      "updatedAt": "2025-10-06",
+      "content": "| Endpoint | Method | Description |\n| --- | --- | --- |\n| /api/payments/balance | GET | Returns the PAYGW or GST account balance for the requested BAS period. |\n| /api/payments/ledger | GET | Streams the transaction ledger for the requested BAS period. |\n| /api/payments/deposit | POST | Registers an incoming client deposit that increases the ATO payable balance. |\n| /api/payments/release | POST | Sends a PAYGW or GST release to the ATO when the amount is negative. |\n\nAll public endpoints require an API key created from **Settings → API Access**."
+    },
+    {
+      "slug": "/help/rpt-tokens",
+      "title": "RPT (Real-time PAYGW Tokens)",
+      "summary": "Glossary entry explaining the Real-time PAYGW Token (RPT) integration.",
+      "modes": [
+        "web"
+      ],
+      "updatedAt": "2025-10-06",
+      "content": "Real-time PAYGW Tokens (RPT) authenticate secure exchange of withholding remittance totals with APGMS. Each token represents a daily PAYGW package signed with your AUSkey-equivalent certificate.\n\n### Lifecycle\n\n1. The payroll connector generates the token payload hourly.\n2. APGMS validates the signature against your registered AUSkey.\n3. When accepted, the PAYGW remittance queue updates immediately, allowing just-in-time BAS submissions.\n\n> Tip: Rotate RPT credentials on the same cadence as your AUSkey rotation policy. Use the **Integrations → Security** page to issue new client secrets."
+    }
+  ]
+}
