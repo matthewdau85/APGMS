@@ -1,17 +1,43 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { api, type PeriodResponse } from "../api/client";
+
+const CURRENT_PERIOD_ID = "2025-Q2";
+
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 export default function Dashboard() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65,
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { data, isLoading, error } = useQuery<PeriodResponse>({
+    queryKey: ["period", CURRENT_PERIOD_ID],
+    queryFn: () => api<string, PeriodResponse>(`/api/v1/periods/${CURRENT_PERIOD_ID}`),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="main-card">
+        <p className="text-sm text-gray-500">Loading compliance summary…</p>
+      </div>
+    );
+  }
+
+  if (!data || error) {
+    const message = error instanceof Error ? error.message : "Unable to load period data";
+    return (
+      <div className="main-card">
+        <p className="text-sm text-red-600">Failed to load compliance data: {message}</p>
+      </div>
+    );
+  }
+
+  const complianceText =
+    data.complianceScore >= 90 ? "Excellent" : data.complianceScore >= 70 ? "Good" : "Needs attention";
 
   return (
     <div className="main-card">
@@ -30,16 +56,16 @@ export default function Dashboard() {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Lodgments</h2>
-          <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
+          <p className={data.lodgmentsUpToDate ? "text-green-600" : "text-red-600"}>
+            {data.lodgmentsUpToDate ? "Up to date ✅" : "Overdue ❌"}
           </p>
           <Link to="/bas" className="text-blue-600 text-sm underline">View BAS</Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Payments</h2>
-          <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
+          <p className={data.paymentsUpToDate ? "text-green-600" : "text-red-600"}>
+            {data.paymentsUpToDate ? "All paid ✅" : "Outstanding ❌"}
           </p>
           <Link to="/audit" className="text-blue-600 text-sm underline">View Audit</Link>
         </div>
@@ -59,7 +85,7 @@ export default function Dashboard() {
                 fill="none"
                 stroke="url(#grad)"
                 strokeWidth="2"
-                strokeDasharray={`${complianceStatus.overallCompliance}, 100`}
+                strokeDasharray={`${data.complianceScore}, 100`}
               />
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
@@ -68,27 +94,26 @@ export default function Dashboard() {
                   <stop offset="100%" stopColor="green" />
                 </linearGradient>
               </defs>
-              <text x="18" y="20.35" textAnchor="middle" fontSize="5">{complianceStatus.overallCompliance}%</text>
+              <text x="18" y="20.35" textAnchor="middle" fontSize="5">{data.complianceScore}%</text>
             </svg>
           </div>
-          <p className="text-sm mt-2 text-gray-600">
-            {complianceStatus.overallCompliance >= 90
-              ? 'Excellent'
-              : complianceStatus.overallCompliance >= 70
-              ? 'Good'
-              : 'Needs attention'}
-          </p>
+          <p className="text-sm mt-2 text-gray-600">{complianceText}</p>
         </div>
       </div>
 
       <div className="mt-6 text-sm text-gray-700">
-        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
-        <p>Next BAS due by <strong>{complianceStatus.nextDue}</strong>.</p>
-        {complianceStatus.outstandingLodgments.length > 0 && (
-          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
+        <p>
+          Last BAS lodged on <strong>{formatDate(data.lastBasLodgedAt)}</strong>.{' '}
+          <Link to="/bas" className="text-blue-600 underline">
+            Go to BAS
+          </Link>
+        </p>
+        <p>Next BAS due by <strong>{formatDate(data.nextDueAt)}</strong>.</p>
+        {data.outstandingLodgments.length > 0 && (
+          <p className="text-red-600">Outstanding Lodgments: {data.outstandingLodgments.join(', ')}</p>
         )}
-        {complianceStatus.outstandingAmounts.length > 0 && (
-          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
+        {data.outstandingAmounts.length > 0 && (
+          <p className="text-red-600">Outstanding Payments: {data.outstandingAmounts.join(', ')}</p>
         )}
       </div>
 

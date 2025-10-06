@@ -1,0 +1,6 @@
+{
+  "name": "@tanstack/react-query",
+  "version": "5.66.0",
+  "main": "index.js",
+  "types": "index.d.ts"
+}
