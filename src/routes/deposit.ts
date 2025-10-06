@@ -1,5 +1,5 @@
-﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { Request, Response } from "express";
+import { pool } from "../db/pool";
 import { randomUUID } from "node:crypto";
 
 export async function deposit(req: Request, res: Response) {
@@ -24,7 +24,7 @@ export async function deposit(req: Request, res: Response) {
         [abn, taxType, periodId]
       );
       const prevBal = last[0]?.balance_after_cents ?? 0;
-      const newBal = prevBal + amt;
+      const newBal = Number(prevBal) + amt;
 
       const { rows: ins } = await client.query(
         `INSERT INTO owa_ledger
@@ -39,16 +39,16 @@ export async function deposit(req: Request, res: Response) {
         ok: true,
         ledger_id: ins[0].id,
         transfer_uuid: ins[0].transfer_uuid,
-        balance_after_cents: ins[0].balance_after_cents
+        balance_after_cents: Number(ins[0].balance_after_cents)
       });
 
-    } catch (e:any) {
+    } catch (e: any) {
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
     } finally {
       client.release();
     }
-  } catch (e:any) {
+  } catch (e: any) {
     return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
   }
 }
