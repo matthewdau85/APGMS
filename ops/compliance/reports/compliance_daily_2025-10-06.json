@@ -1,0 +1,20 @@
+{
+  "generated_at": "2025-10-06T10:21:31.385Z",
+  "mfa_stepups_7d": 57,
+  "dual_approvals_7d": 36,
+  "dlq_count": 1,
+  "mean_replay_latency_ms": 410,
+  "last_ir_dr_date": "2025-09-12",
+  "last_pentest_date": "2025-08-22",
+  "access_review_status": "Current – completed 2025-09-30 (tracked via https://github.com/apgms/security/issues/88)",
+  "checks": {
+    "access_review_current": true,
+    "ir_dr_recent": true,
+    "pentest_report_present": true,
+    "metrics_snapshot": "/workspace/APGMS/ops/compliance/reports/metrics_2025-10-06T10-21-31-383Z.prom",
+    "access_review_issue": "https://github.com/apgms/security/issues/88",
+    "ir_dr_evidence": "https://github.com/apgms/ops/issues/42",
+    "pentest_vendor": "Red Granite Security"
+  },
+  "metrics_sample": "# HELP apgms_mfa_stepup_success_total Count of MFA step-up successes\n# TYPE apgms_mfa_stepup_success_total counter\napgms_mfa_stepup_success_total 77\n# HELP apgms_dual_approval_total Approvals requiring dual control\n# TYPE apgms_dual_approval_total counter\napgms_dual_approval_total 47\n# HELP apgms_dlq_visible_messages Dead letter queue backlog size\n# TYPE apgms_dlq_visible_messages gauge\napgms_dlq_visible_messages 1\n# HELP apgms_dlq_replay_latency_seconds Mean replay latency in seconds\n# TYPE apgms_dlq_replay_latency_seconds gauge\napgms_dlq_replay_latency_seconds 0.41\n# HELP apgms_last_ir_dr_timestamp_seconds Last IR/DR drill completion unix seconds\n# TYPE apgms_last_ir_dr_timestamp_seconds gauge\napgms_last_ir_dr_timestamp_seconds 1.7252232e+09\n# HELP apgms_last_pentest_timestamp_seconds Last pentest completion unix seconds\n# TYPE apgms_last_pentest_timestamp_seconds gauge\napgms_last_pentest_timestamp_seconds 1.7231152e+09\n"
+}

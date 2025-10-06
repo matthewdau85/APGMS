@@ -2,6 +2,18 @@ APGMS (Automated PAYGW & GST Management System)
 APGMS is an open-source web application that automates the calculation, securing, and remittance of PAYGW (Pay As You Go Withholding) and GST (Goods and Services Tax) obligations for Australian businesses at BAS (Business Activity Statement) lodgment.
 It integrates with payroll and point-of-sale systems, leverages designated one-way accounts for secure tax fund management, and provides compliance alerts and audit-ready reporting.
 
+## Prototype vs Real Evidence
+
+| Capability | Prototype (this repo) | Real Practice Signal |
+| --- | --- | --- |
+| MFA & Dual Control | Sample data seeded in `ops/compliance/practice_log.json`. | `/ops/compliance/proofs` → `mfa_stepups_7d`, `dual_approvals_7d`; refreshed by `compliance:daily`. |
+| IR / DR Drills | Runbooks documented in [`docs/dsp`](./docs/dsp). | Proof endpoint `last_ir_dr_date` + compliance artifact `compliance_daily_*.json`. |
+| Access Reviews | Checklist documented in [`docs/dsp/access_review_checklist.md`](./docs/dsp/access_review_checklist.md). | `/ops/compliance/proofs` → `access_review_status` with GitHub issue link. |
+| Vulnerability Testing | Workflow describes pentest cadence. | Pentest PDF shipped with compliance artifact (`ops/compliance/pentest/latest_pentest.pdf`). |
+| SLO Telemetry | Targets described in [`docs/dsp/slo_targets.md`](./docs/dsp/slo_targets.md). | Metrics snapshot exported by `compliance:daily` (`ops/compliance/reports/metrics_*.prom`). |
+
+Reviewers can browse the [DSP operational evidence hub](./docs/dsp/README.md) for full context and validation steps.
+
 Features
 Automated PAYGW & GST Calculations:
 Real-time calculation engines for PAYGW and GST, based on payroll and POS data.
