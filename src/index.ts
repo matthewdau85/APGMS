@@ -6,6 +6,11 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { renderMetrics } from "./metrics";
+import { publishPoolMetrics } from "./metrics/pool";
+import { getPoolStats, getPoolMax } from "./db/pool";
+import { publishReleaseQueueMetrics } from "./queues/releaseQueue";
+import { refreshDlqDepthMetric } from "./dlq/releaseDlq";
 
 dotenv.config();
 
@@ -17,6 +22,13 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.get("/metrics", async (_req, res) => {
+  publishPoolMetrics(getPoolStats(), getPoolMax());
+  publishReleaseQueueMetrics();
+  await refreshDlqDepthMetric();
+  res.type("text/plain").send(renderMetrics());
+});
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
