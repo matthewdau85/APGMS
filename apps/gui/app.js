@@ -1,6 +1,7 @@
 (() => {
   const cfg = window.GUI_CONFIG || {};
   const base = (cfg.baseUrl || "/api").replace(/\/+$/, "");
+  const mlBase = (cfg.mlBaseUrl || base).replace(/\/+$/, "");
   const $ = (sel, root=document) => root.querySelector(sel);
 
   const routes = ["home","connections","transactions","tax-bas","help","settings"];
@@ -12,6 +13,15 @@
     if (!r.ok) throw new Error(String(r.status));
     const ct = r.headers.get("content-type") || "";
     return ct.includes("application/json") ? r.json() : r.text();
+  }
+
+  async function mlApi(path, init={}) {
+    const r = await fetch(mlBase + path, { headers: { "Content-Type":"application/json" }, ...init });
+    if (!r.ok) {
+      const msg = await r.text();
+      throw new Error(msg || String(r.status));
+    }
+    return r.json();
   }
 
   const View = {
@@ -94,14 +104,31 @@
     transactions(){
       return `
         ${this.nav('transactions')}
-        <div class="card">
-          <h3>Transactions</h3>
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <input id="q" placeholder="Search description or ref" />
-            <select id="filterSource"><option value="">All sources</option></select>
-            <button class="btn" id="btnRefresh">Refresh</button>
+        <div class="grid" style="grid-template-columns:2fr 1fr; margin-top:12px">
+          <div class="card">
+            <h3>Transactions</h3>
+            <div style="display:flex; gap:8px; margin-bottom:8px">
+              <input id="q" placeholder="Search description or ref" />
+              <select id="filterSource"><option value="">All sources</option></select>
+              <button class="btn" id="btnRefresh">Refresh</button>
+            </div>
+            <table id="txTable"><thead><tr><th>Date</th><th>Source</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead><tbody></tbody></table>
           </div>
-          <table id="txTable"><thead><tr><th>Date</th><th>Source</th><th>Description</th><th>Amount</th><th>Category</th></tr></thead><tbody></tbody></table>
+          <div class="card" id="mlAssistCard">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+              <h3 style="margin:0">ML Assisted Matching</h3>
+              <span class="badge badge-advisory" aria-label="Advisory only">Advisory</span>
+            </div>
+            <p class="muted" style="margin:8px 0 12px">Suggestions require operator confirmation before any action.</p>
+            <div class="muted" style="margin-bottom:6px">Confidence: <span id="mlConfidence">-</span></div>
+            <pre id="mlAssistOutput" style="margin:0 0 12px;max-height:180px;overflow:auto">No suggestions yet.</pre>
+            <div style="display:flex; flex-wrap:wrap; gap:8px">
+              <button class="btn" id="btnMlRefresh">Get suggestions</button>
+              <button class="btn" id="btnMlAccept" disabled>Confirm match</button>
+              <button class="btn" id="btnMlOverride" disabled>Override</button>
+            </div>
+            <div id="mlDecisionMsg" class="muted" style="margin-top:8px"></div>
+          </div>
         </div>
       `;
     },
@@ -215,6 +242,8 @@
     }
 
     if (view==='transactions') {
+      let currentSuggestion = null;
+
       async function load() {
         const q = $('#q').value, src = $('#filterSource').value;
         const data = await api(`/transactions?q=${encodeURIComponent(q||'')}&source=${encodeURIComponent(src||'')}`);
@@ -227,8 +256,74 @@
         const sel = $('#filterSource'); sel.innerHTML = '<option value="">All sources</option>';
         data.sources.forEach(s=>{ const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
       }
-      $('#btnRefresh').onclick = load;
+
+      async function runAssist() {
+        const out = $('#mlAssistOutput');
+        const confidence = $('#mlConfidence');
+        const acceptBtn = $('#btnMlAccept');
+        const overrideBtn = $('#btnMlOverride');
+        const msg = $('#mlDecisionMsg');
+        acceptBtn.disabled = true;
+        overrideBtn.disabled = true;
+        msg.textContent = '';
+        out.textContent = 'Requesting advisory match...';
+        try {
+          const payload = {
+            context_id: 'demo-context',
+            bank_lines: [
+              { line_id: 'bank-1', posted_at: new Date().toISOString(), amount: 245.72, description: 'Supplier payment' },
+              { line_id: 'bank-2', posted_at: new Date().toISOString(), amount: 110.00, description: 'Office supplies' }
+            ],
+            ledger_entries: [
+              { entry_id: 'ledger-1001', booked_at: new Date().toISOString(), amount: 245.72, account_code: '200-AP', memo: 'Payable match' },
+              { entry_id: 'ledger-1002', booked_at: new Date().toISOString(), amount: 109.95, account_code: '620-Office', memo: 'Stationery' }
+            ]
+          };
+          const result = await mlApi('/recon/match', { method: 'POST', body: JSON.stringify(payload) });
+          currentSuggestion = result;
+          confidence.textContent = typeof result.confidence === 'number' ? `${Math.round(result.confidence * 100)}%` : 'N/A';
+          out.textContent = JSON.stringify(result.suggestion.matches, null, 2);
+          acceptBtn.disabled = false;
+          overrideBtn.disabled = false;
+        } catch (e) {
+          currentSuggestion = null;
+          confidence.textContent = '-';
+          out.textContent = 'Failed: ' + e.message;
+        }
+      }
+
+      async function recordDecision(decision) {
+        if (!currentSuggestion?.suggestion?.request_hash) {
+          return;
+        }
+        const msg = $('#mlDecisionMsg');
+        msg.textContent = 'Recording decision...';
+        try {
+          await api('/ml/decisions', {
+            method: 'POST',
+            body: JSON.stringify({
+              endpoint: '/ml/recon/match',
+              request_hash: currentSuggestion.suggestion.request_hash,
+              response: currentSuggestion,
+              user_decision: decision,
+              decided_by: cfg.operator || 'operator'
+            })
+          });
+          msg.textContent = decision === 'accept' ? 'Decision logged: accepted advisory suggestion.' : 'Decision logged: override recorded.';
+          $('#btnMlAccept').disabled = true;
+          $('#btnMlOverride').disabled = true;
+        } catch (e) {
+          msg.textContent = 'Failed to log decision: ' + e.message;
+        }
+      }
+
+      $('#btnRefresh').onclick = () => { load(); };
+      $('#btnMlRefresh').onclick = () => { runAssist(); };
+      $('#btnMlAccept').onclick = () => recordDecision('accept');
+      $('#btnMlOverride').onclick = () => recordDecision('override');
+
       load();
+      runAssist();
     }
 
     if (view==='tax-bas') {

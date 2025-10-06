@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apgms.local/ml-assist/bank_line.json",
+  "title": "BankLine",
+  "type": "object",
+  "required": ["line_id", "posted_at", "amount"],
+  "properties": {
+    "line_id": {
+      "type": "string",
+      "description": "Unique identifier for the bank transaction"
+    },
+    "posted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the transaction posted"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Signed transaction amount"
+    },
+    "description": {
+      "type": "string",
+      "description": "Free-form bank description"
+    }
+  },
+  "additionalProperties": false
+}

@@ -16,3 +16,6 @@ table{ width:100%; border-collapse:collapse }
 th,td{ padding:8px; border-bottom:1px solid var(--border) }
 .kbd{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px }
 .footer{ margin-top:24px; color:var(--muted) }
+.badge{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:11px; letter-spacing:0.04em; text-transform:uppercase; font-weight:600 }
+.badge-advisory{ background:rgba(234,179,8,0.16); color:#854d0e; border:1px solid rgba(234,179,8,0.4) }
+.muted{ color:var(--muted) }
