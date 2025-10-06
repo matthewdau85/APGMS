@@ -1,16 +1,16 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
     overallCompliance: 65,
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
+    lastBAS: "29 May 2025",
+    nextDue: "28 July 2025",
+    outstandingLodgments: ["Q4 FY23-24"],
+    outstandingAmounts: ["$1,200 PAYGW", "$400 GST"],
   };
 
   return (
@@ -22,26 +22,47 @@ export default function Dashboard() {
         </p>
         <div className="mt-4">
           <Link to="/wizard" className="bg-white text-[#00716b] font-semibold px-4 py-2 rounded shadow hover:bg-gray-100">
-            Get Started
+            Launch guided workflows
           </Link>
         </div>
       </div>
 
+      <section className="wizard-cta-grid">
+        <article className="wizard-cta-card">
+          <h2>Close → RPT → Release</h2>
+          <p>Preflight, reconcile and lodge with evidence in one guided flow.</p>
+          <Link className="button" to="/wizard?flow=close-release">
+            Start closing period
+          </Link>
+        </article>
+        <article className="wizard-cta-card">
+          <h2>STP & POS ingestion</h2>
+          <p>Generate secrets, copy webhook URLs and fire off a green-check test.</p>
+          <Link className="button" to="/wizard?flow=connector-setup">
+            Configure connectors
+          </Link>
+        </article>
+      </section>
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Lodgments</h2>
-          <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
+          <p className={complianceStatus.lodgmentsUpToDate ? "text-green-600" : "text-red-600"}>
+            {complianceStatus.lodgmentsUpToDate ? "Up to date ✅" : "Overdue ❌"}
           </p>
-          <Link to="/bas" className="text-blue-600 text-sm underline">View BAS</Link>
+          <Link to="/bas" className="text-blue-600 text-sm underline">
+            View BAS
+          </Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Payments</h2>
-          <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
+          <p className={complianceStatus.paymentsUpToDate ? "text-green-600" : "text-red-600"}>
+            {complianceStatus.paymentsUpToDate ? "All paid ✅" : "Outstanding ❌"}
           </p>
-          <Link to="/audit" className="text-blue-600 text-sm underline">View Audit</Link>
+          <Link to="/audit" className="text-blue-600 text-sm underline">
+            View Audit
+          </Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow text-center">
@@ -68,27 +89,31 @@ export default function Dashboard() {
                   <stop offset="100%" stopColor="green" />
                 </linearGradient>
               </defs>
-              <text x="18" y="20.35" textAnchor="middle" fontSize="5">{complianceStatus.overallCompliance}%</text>
+              <text x="18" y="20.35" textAnchor="middle" fontSize="5">
+                {complianceStatus.overallCompliance}%
+              </text>
             </svg>
           </div>
           <p className="text-sm mt-2 text-gray-600">
             {complianceStatus.overallCompliance >= 90
-              ? 'Excellent'
+              ? "Excellent"
               : complianceStatus.overallCompliance >= 70
-              ? 'Good'
-              : 'Needs attention'}
+              ? "Good"
+              : "Needs attention"}
           </p>
         </div>
       </div>
 
       <div className="mt-6 text-sm text-gray-700">
-        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
+        <p>
+          Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link>
+        </p>
         <p>Next BAS due by <strong>{complianceStatus.nextDue}</strong>.</p>
         {complianceStatus.outstandingLodgments.length > 0 && (
-          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
+          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(", ")}</p>
         )}
         {complianceStatus.outstandingAmounts.length > 0 && (
-          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
+          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(", ")}</p>
         )}
       </div>
 
