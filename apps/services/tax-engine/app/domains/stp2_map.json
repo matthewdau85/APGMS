@@ -1,0 +1,28 @@
+{
+  "REG": {
+    "description": "Ordinary time earnings",
+    "bas": { "W1": "gross", "W2": "withheld" },
+    "special_tags": []
+  },
+  "ALLOWANCE": {
+    "description": "Taxable allowance",
+    "bas": { "W1": "gross", "W2": "withheld" },
+    "special_tags": []
+  },
+  "BACKPAY": {
+    "description": "Back payments reported through STP",
+    "bas": { "W1": "gross", "W2": "withheld" },
+    "special_tags": ["back_payments"]
+  },
+  "ETP-R": {
+    "description": "Employment termination payment (type R)",
+    "bas": { "W1": null, "W2": "withheld" },
+    "special_tags": ["etp"]
+  },
+  "ETP-O": {
+    "description": "Employment termination payment (type O)",
+    "bas": { "W1": null, "W2": "withheld" },
+    "special_tags": ["etp"]
+  }
+}
+

@@ -25,13 +25,16 @@ def metrics():
 
 # --- BEGIN TAX_ENGINE_CORE_APP ---
 import asyncio
+import json
 import os
-from typing import Optional
+from typing import Optional, Any, Dict
 
 from fastapi import FastAPI, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
+
+from .domains.stp_bas import ReconciliationError, rollup_stp_to_bas
 
 try:
     app  # reuse if exists
@@ -85,8 +88,30 @@ async def _subscribe_and_run(nc: NATS):
         with CALC_LAT.time():
             TAX_REQS.inc()
             data = msg.data or b"{}"
-            # TODO: real calc -> publish real result
-            await nc.publish(SUBJECT_OUTPUT, data)
+            text = data.decode("utf-8", errors="ignore") if isinstance(data, (bytes, bytearray)) else str(data)
+            try:
+                payload: Any = json.loads(text) if text else {}
+            except json.JSONDecodeError:
+                payload = {"raw": text}
+            if not isinstance(payload, dict):
+                payload = {"raw": payload}
+
+            analysis: Dict[str, Any] = {}
+            if isinstance(payload.get("stp_events"), list) and payload.get("bas_totals"):
+                try:
+                    rollup = rollup_stp_to_bas(payload["stp_events"], payload["bas_totals"])
+                except ReconciliationError as exc:
+                    analysis["error"] = {"message": str(exc), "reconciliation": exc.reconciliation}
+                except Exception as exc:  # pragma: no cover - defensive guard
+                    analysis["error"] = {"message": str(exc)}
+                else:
+                    analysis.update({k: rollup[k] for k in ("bas_labels", "recon_inputs", "special_events")})
+                    if "reconciliation" in rollup:
+                        analysis["reconciliation"] = rollup["reconciliation"]
+            if analysis:
+                payload["stp_analysis"] = analysis
+
+            await nc.publish(SUBJECT_OUTPUT, json.dumps(payload).encode("utf-8"))
             TAX_OUT.inc()
     await nc.subscribe(SUBJECT_INPUT, cb=_on_msg)
     _ready.set()
