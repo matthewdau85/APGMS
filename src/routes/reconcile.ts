@@ -48,5 +48,7 @@ export async function settlementWebhook(req:any, res:any) {
 
 export async function evidence(req:any, res:any) {
   const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
+  const bundle = await buildEvidenceBundle(abn, taxType, periodId);
+  res.setHeader("x-payload-sha256", bundle.meta.payload_sha256);
+  res.type("application/json").send(bundle.canonical_json);
 }
