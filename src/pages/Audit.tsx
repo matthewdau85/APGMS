@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import HelpTip from '../components/HelpTip';
 
 export default function Audit() {
   const [logs] = useState([
@@ -13,7 +14,10 @@ export default function Audit() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Compliance & Audit</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Compliance & Audit</h1>
+        <HelpTip tag="reconciliation" label="Audit help" />
+      </div>
       <p className="text-sm text-muted-foreground">
         Track every action in your PAYGW and GST account for compliance.
       </p>

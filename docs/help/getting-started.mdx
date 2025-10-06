@@ -1,0 +1,24 @@
+---
+title: "Getting started with APGMS"
+modes:
+  - onboarding
+  - dashboard
+  - compliance
+tags:
+  - setup
+  - wizard
+  - "buffer accounts"
+  - "api:GET /health"
+  - "api:GET /dashboard/yesterday"
+  - "api:GET /metrics"
+lastUpdated: "2025-10-06T00:27:34.229Z"
+---
+
+Welcome to **APGMS**. New organisations should walk through the setup wizard to capture legal identifiers, link bank accounts, and configure the PAYGW and GST buffers before any liabilities accrue.
+
+1. Visit the **Dashboard** and confirm your next BAS due date.
+2. Launch the **Setup Wizard** to enter your ABN, trading details, and payroll providers.
+3. Link operating and buffer accounts so automated transfers can keep withheld taxes quarantined.
+4. Use the wizard's confirmation step to review compliance status and confirm everything is ready.
+
+> The `/health`, `/dashboard/yesterday`, and `/metrics` endpoints provide quick status checks for monitoring and should return 200 when the platform is ready.

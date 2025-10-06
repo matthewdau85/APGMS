@@ -131,6 +131,7 @@ label {
 .mb-1 { margin-bottom: 8px; }
 .mb-2 { margin-bottom: 16px; }
 .mb-3 { margin-bottom: 24px; }
+.ml-auto { margin-left: auto; }
 
 /* Button Styles */
 .button {
@@ -196,4 +197,200 @@ th {
   background: #f1f6fa;
   font-weight: 600;
   color: #00205b;
+}
+
+/* Help Drawer */
+.help-trigger {
+  margin-top: 16px;
+  background: #ffffff;
+  color: #00205b;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+.help-trigger:hover {
+  background: #00a99d;
+  border-color: #00a99d;
+  color: #fff;
+}
+
+.help-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 2000;
+}
+
+.help-drawer {
+  width: min(420px, 92vw);
+  background: #ffffff;
+  height: 100%;
+  overflow-y: auto;
+  box-shadow: -2px 0 16px rgba(0, 32, 91, 0.18);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.help-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.help-drawer__header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.help-drawer__header p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  color: #4f5d78;
+}
+
+.help-close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #4f5d78;
+}
+
+.help-close:hover {
+  color: #00205b;
+}
+
+.help-search {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.help-search input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #c9d2e2;
+  font-size: 0.95rem;
+}
+
+.help-clear {
+  border: none;
+  background: transparent;
+  color: #00716b;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.help-filter-section h3,
+.help-whats-new h3,
+.help-results h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  color: #00205b;
+}
+
+.help-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.help-chip {
+  border: 1px solid #d4dde9;
+  background: #f3f6fc;
+  color: #00205b;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+
+.help-chip.active,
+.help-chip:hover {
+  background: #00716b;
+  border-color: #00716b;
+  color: #ffffff;
+}
+
+.help-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: rgba(0, 113, 107, 0.12);
+  color: #005d54;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.help-tip__icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #00716b;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+}
+
+.help-tip:hover {
+  background: rgba(0, 113, 107, 0.2);
+}
+
+.help-card {
+  border: 1px solid #e2e7f0;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #ffffff;
+}
+
+.help-card__date {
+  font-size: 0.75rem;
+  color: #6c7a92;
+}
+
+.help-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.help-card footer a {
+  color: #00716b;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.help-card footer a:hover {
+  text-decoration: underline;
+}
+
+.help-empty {
+  color: #6c7a92;
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .help-drawer {
+    width: 100%;
+  }
 }

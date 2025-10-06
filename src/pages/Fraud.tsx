@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import HelpTip from "../components/HelpTip";
 
 export default function Fraud() {
   const [alerts] = useState([
@@ -7,7 +8,10 @@ export default function Fraud() {
   ]);
   return (
     <div className="main-card">
-      <h1 style={{ color: "#00716b", fontWeight: 700, fontSize: 30, marginBottom: 28 }}>Fraud Detection</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ color: "#00716b", fontWeight: 700, fontSize: 30, marginBottom: 28 }}>Fraud Detection</h1>
+        <HelpTip tag="settlements" label="Fraud tips" />
+      </div>
       <h3>Alerts</h3>
       <ul>
         {alerts.map((row, i) => (

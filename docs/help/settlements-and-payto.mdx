@@ -1,0 +1,23 @@
+---
+title: "Settlement ingestion and PayTo sweeps"
+modes:
+  - operations
+  - banking
+  - automation
+tags:
+  - settlements
+  - payto
+  - reconciliation
+  - "api:POST /api/payto/sweep"
+  - "api:POST /api/settlement/webhook"
+  - "api:GET /api/evidence"
+lastUpdated: "2025-10-06T00:27:34.289Z"
+---
+
+Automate inbound settlement handling and evidence capture:
+
+- Use `/api/payto/sweep` when a PayTo agreement needs to sweep excess balances back to your operating account.
+- `/api/settlement/webhook` ingests settlement CSV payloads from banking partners and returns the number of rows processed.
+- `/api/evidence` composes the compliance bundle (including RPT tokens and reconciliation data) for downstream archiving.
+
+Settlement webhooks should be protected with signing middleware and replay protection to satisfy ATO audit expectations.

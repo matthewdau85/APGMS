@@ -1,0 +1,23 @@
+---
+title: "Monitoring status and compliance posture"
+modes:
+  - monitoring
+  - compliance
+  - engineering
+tags:
+  - monitoring
+  - status
+  - "api inventory"
+  - "api:GET /readyz"
+  - "api:GET /ato/status"
+  - "api:GET /openapi.json"
+lastUpdated: "2025-10-06T00:27:34.261Z"
+---
+
+Set up dashboards and alerts so issues are surfaced before deadlines:
+
+- `/readyz` is the liveness probe for the portal API, returning the server timestamp when healthy.
+- `/ato/status` tracks the connectivity state with the ATO digital services gateway.
+- `/openapi.json` exposes the merged contract for the public API surface; watch for drift after deploys.
+
+Combine these probes with `/metrics` from the main service to create a single source of truth for observability.

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import HelpTip from "../components/HelpTip";
 
 const tabs = [
   "Business Profile",
@@ -24,7 +25,7 @@ export default function Settings() {
 
   return (
     <div className="settings-card">
-      <div className="tabs-row">
+      <div className="tabs-row" style={{ alignItems: "center" }}>
         {tabs.map(tab => (
           <div
             key={tab}
@@ -35,6 +36,7 @@ export default function Settings() {
             {tab}
           </div>
         ))}
+        <HelpTip mode="onboarding" tag="integrations" label="Settings help" className="ml-auto" />
       </div>
 
       <div style={{ marginTop: 30 }}>

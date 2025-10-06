@@ -1,0 +1,27 @@
+---
+title: "Managing integrations and data feeds"
+modes:
+  - integrations
+  - automation
+  - onboarding
+tags:
+  - integrations
+  - connections
+  - payroll
+  - "api:GET /connections"
+  - "api:POST /connections/start"
+  - "api:DELETE /connections/{conn_id}"
+  - "api:GET /transactions"
+  - "api:POST /settings"
+lastUpdated: "2025-10-06T00:27:34.245Z"
+---
+
+Link payroll, POS, and banking providers so APGMS can automate compliance:
+
+- `/connections` lists active authorisations and can be polled to confirm the state after onboarding.
+- Initiate new OAuth-style handshakes with `/connections/start` and direct users to the returned URL.
+- Remove stale credentials with `/connections/{conn_id}` to enforce least-privilege access.
+- `/transactions` surfaces harmonised transactional feeds that drive GST and PAYGW calculations.
+- `/settings` persists security controls like retention windows and PII masking toggles.
+
+Ensure each provider connection is subject to multi-factor authentication and rotate secrets on a set cadence.
