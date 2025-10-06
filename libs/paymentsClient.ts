@@ -1,7 +1,12 @@
 // libs/paymentsClient.ts
 type Common = { abn: string; taxType: string; periodId: string };
 export type DepositArgs = Common & { amountCents: number };   // > 0
-export type ReleaseArgs = Common & { amountCents: number };   // < 0
+export type ReleaseDestination = { rail: "EFT" | "BPAY"; bsb?: string; account?: string; bpayBiller?: string; crn?: string };
+export type ReleaseArgs = Common & {
+  amountCents: number;
+  destination: ReleaseDestination;
+  idempotencyKey?: string;
+};
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
@@ -29,11 +34,14 @@ export const Payments = {
     });
     return handle(res);
   },
-  async payAto(args: ReleaseArgs) {
-    const res = await fetch(`${BASE}/payAto`, {
+  async release(args: ReleaseArgs) {
+    const { idempotencyKey, ...payload } = args;
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+    const res = await fetch(`${BASE}/release`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(args),
+      headers,
+      body: JSON.stringify(payload),
     });
     return handle(res);
   },

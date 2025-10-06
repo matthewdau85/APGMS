@@ -9,10 +9,10 @@ export async function ledger(req: Request, res: Response) {
     }
 
     const q = `
-      SELECT id, amount_cents, balance_after_cents, rpt_verified, release_uuid, bank_receipt_id, created_at
-      FROM owa_ledger
-      WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-      ORDER BY id ASC
+      SELECT id, amount_cents, balance_after_cents, provider_ref, provider_paid_at, settlement_verified_at, created_at
+        FROM owa_ledger
+       WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+       ORDER BY id ASC
     `;
     const { rows } = await pool.query(q, [abn, taxType, periodId]);
     res.json({ abn, taxType, periodId, rows });
