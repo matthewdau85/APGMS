@@ -3,6 +3,7 @@ import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
+import { importReconciliationFile } from "../settlement/reconImport";
 import { Pool } from "pg";
 const pool = new Pool();
 
@@ -44,6 +45,19 @@ export async function settlementWebhook(req:any, res:any) {
   const rows = parseSettlementCSV(csvText);
   // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
   return res.json({ ingested: rows.length });
+}
+
+export async function settlementImport(req: any, res: any) {
+  const file = (req as any).file as { originalname?: string; fieldname?: string; buffer: Buffer } | undefined;
+  if (!file) {
+    return res.status(400).json({ error: "FILE_REQUIRED" });
+  }
+  try {
+    const result = await importReconciliationFile({ filename: file.originalname || file.fieldname || "upload", contents: file.buffer });
+    return res.json(result);
+  } catch (err: any) {
+    return res.status(400).json({ error: "IMPORT_FAILED", detail: String(err?.message || err) });
+  }
 }
 
 export async function evidence(req:any, res:any) {
