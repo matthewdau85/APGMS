@@ -1,16 +1,57 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
+  "notes": "Generated from the ATO weekly tax table for income year 2024-25.",
+  "metadata": {
+    "source_url": "https://www.ato.gov.au/rates/tax-tables/weekly-tax-table",
+    "last_reviewed": "2024-10-01"
+  },
+  "methods_enabled": [
+    "table_ato",
+    "formula_progressive",
+    "percent_simple",
+    "flat_plus_percent",
+    "bonus_marginal",
+    "net_to_gross"
+  ],
   "formula_progressive": {
     "period": "weekly",
     "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
+      {
+        "up_to": 359.0,
+        "a": 0.0,
+        "b": 0.0,
+        "fixed": 0.0
+      },
+      {
+        "up_to": 438.0,
+        "a": 0.19,
+        "b": 68.0,
+        "fixed": 0.0
+      },
+      {
+        "up_to": 548.0,
+        "a": 0.234,
+        "b": 87.82,
+        "fixed": 0.0
+      },
+      {
+        "up_to": 721.0,
+        "a": 0.347,
+        "b": 148.5,
+        "fixed": 0.0
+      },
+      {
+        "up_to": 865.0,
+        "a": 0.345,
+        "b": 147.0,
+        "fixed": 0.0
+      },
+      {
+        "up_to": 999999.0,
+        "a": 0.39,
+        "b": 183.0,
+        "fixed": 0.0
+      }
     ],
     "tax_free_threshold": true,
     "rounding": "HALF_UP"

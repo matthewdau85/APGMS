@@ -4,7 +4,10 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "rules:fetch": "python scripts/rules/fetch_ato.py",
+        "rules:hash": "tsx scripts/rules/compute_hashes.ts",
+        "rules:verify": "tsx scripts/rules/guard.ts"
     },
     "version": "0.1.0",
     "name": "apgms",

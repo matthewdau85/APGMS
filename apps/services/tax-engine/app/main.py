@@ -1,8 +1,52 @@
-﻿from __future__ import annotations
-from fastapi import FastAPI, Response
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Response
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
 app = FastAPI(title="APGMS Tax Engine")
+
+RULES_ROOT = Path(__file__).resolve().parent
+MANIFEST_PATH = RULES_ROOT / "rules_manifest.json"
+_manifest_cache: dict[str, tuple[int, dict[str, object]]] = {}
+
+
+def _load_manifest() -> dict[str, object]:
+    if not MANIFEST_PATH.exists():
+        raise HTTPException(status_code=503, detail="rules manifest unavailable")
+    stat = MANIFEST_PATH.stat()
+    cache_key = stat.st_mtime_ns
+    cached = _manifest_cache.get("manifest")
+    if not cached or cached[0] != cache_key:
+        try:
+            with MANIFEST_PATH.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=500, detail="rules manifest unreadable") from exc
+        _manifest_cache["manifest"] = (cache_key, data)
+        return data
+    return cached[1]
+
+
+@app.get("/rules/version")
+def rules_version():
+    manifest = _load_manifest()
+    files = manifest.get("files") or []
+    normalized = [
+        {
+            "name": entry.get("name"),
+            "sha256": entry.get("sha256"),
+            "last_reviewed": entry.get("last_reviewed"),
+            "source_url": entry.get("source_url"),
+        }
+        for entry in files
+    ]
+    return {
+        "rates_version": manifest.get("rates_version"),
+        "files": normalized,
+    }
 
 # Counter you can bump in your message handler
 tax_events_processed = Counter(
