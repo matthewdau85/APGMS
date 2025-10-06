@@ -19,7 +19,7 @@ Audit Trail & Reporting:
 Dashboard for real-time compliance monitoring and generating audit/compliance reports.
 
 Security:
-Placeholder for MFA and encryption; easy to extend for production environments.
+Hardened for DSP accreditation expectations with enforced MFA/step-up on high-risk actions, KMS-backed signing keys, structured audit trails, and opinionated change-management controls.
 
 Getting Started
 Clone the Repository
@@ -68,15 +68,25 @@ Expand the dashboard and reporting modules to integrate with external audit or g
 Security Notes
 This starter template includes mock implementations for banking and fraud detection.
 
-For production, implement:
+For production, extend with:
 
-Secure API integrations
+Secure API integrations aligned to the controls documented in `docs/compliance/ATO_DSP_Security_Posture.md`
 
-MFA (Multi-Factor Authentication)
+Hardware-backed or cloud-managed MFA authenticators for all console and API actors
 
-End-to-end encryption (e.g., AES-256)
+Mutual TLS termination at the edge with database-level encryption at rest (e.g., pgcrypto, cloud managed disks)
 
-Robust audit logs
+Immutable, tamper-evident audit log shipping to a WORM-compliant store
+
+### Security Configuration
+
+The hardened build expects the following environment variables:
+
+- `SESSION_CONTEXT_PUBLIC_KEY_BASE64` – 32-byte Ed25519 public key used to verify signed auth context headers from the IdP.
+- `RPT_KMS_BACKEND` – `aws`, `gcp`, or `local` to determine the managed KMS/HSM integration.
+- `RPT_KMS_KEY_ID` / `RPT_KMS_KEY_VERSION` – identifier of the active signing key version (per backend).
+- `AUDIT_LOG_DIR` / `AUDIT_LOG_PATH` – optional override for the tamper-evident audit log location (defaults to `./logs/audit.log`).
+- `AUDIT_CHAIN_SEED` – seed hash for log chain continuity during restarts (store in a secret manager).
 
 License
 Open source under the MIT License.

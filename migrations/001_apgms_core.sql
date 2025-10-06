@@ -39,7 +39,12 @@ create table if not exists rpt_tokens (
   tax_type text not null,
   period_id text not null,
   payload jsonb not null,
+  payload_c14n text,
+  payload_sha256 text,
   signature text not null,
+  key_id text,
+  expires_at timestamptz,
+  nonce text,
   status text not null default 'ISSUED',
   created_at timestamptz default now()
 );

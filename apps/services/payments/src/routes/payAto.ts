@@ -34,6 +34,7 @@ export async function payAtoRelease(req: Request, res: Response) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
 
+  const approval = req.approvalEvidence;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -82,6 +83,7 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      approval,
     });
   } catch (e: any) {
     await client.query('ROLLBACK');

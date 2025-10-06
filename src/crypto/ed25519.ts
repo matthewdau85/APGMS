@@ -1,21 +1,10 @@
-﻿import nacl from "tweetnacl";
-
-export interface RptPayload {
-  entity_id: string; period_id: string; tax_type: "PAYGW"|"GST";
-  amount_cents: number; merkle_root: string; running_balance_hash: string;
-  anomaly_vector: Record<string, number>; thresholds: Record<string, number>;
-  rail_id: "EFT"|"BPAY"|"PayTo"; reference: string; expiry_ts: string; nonce: string;
-}
-
-export function signRpt(payload: RptPayload, secretKey: Uint8Array): string {
-  const msg = new TextEncoder().encode(JSON.stringify(payload));
-  const sig = nacl.sign.detached(msg, secretKey);
-  return Buffer.from(sig).toString("base64url");
-}
+import nacl from "tweetnacl";
+import { canonicalizePayload, RptPayload } from "../../shared/security/rptKms.js";
 
 export function verifyRpt(payload: RptPayload, signatureB64: string, publicKey: Uint8Array): boolean {
-  const msg = new TextEncoder().encode(JSON.stringify(payload));
-  const sig = Buffer.from(signatureB64, "base64url");
+  const canonical = canonicalizePayload(payload);
+  const msg = new TextEncoder().encode(canonical);
+  const sig = Buffer.from(signatureB64, "base64");
   return nacl.sign.detached.verify(msg, sig, publicKey);
 }
 

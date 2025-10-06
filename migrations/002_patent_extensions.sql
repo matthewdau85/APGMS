@@ -19,7 +19,10 @@ CREATE INDEX IF NOT EXISTS owa_ledger_period_order_idx
 -- (B) RPT: canonical storage (you already added; keep for completeness)
 ALTER TABLE rpt_tokens
   ADD COLUMN IF NOT EXISTS payload_c14n   text,
-  ADD COLUMN IF NOT EXISTS payload_sha256 text;
+  ADD COLUMN IF NOT EXISTS payload_sha256 text,
+  ADD COLUMN IF NOT EXISTS key_id         text,
+  ADD COLUMN IF NOT EXISTS expires_at     timestamptz,
+  ADD COLUMN IF NOT EXISTS nonce          text;
 
 -- (C) State machine check (guardrails)
 DO $$
