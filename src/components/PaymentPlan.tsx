@@ -3,7 +3,9 @@ import { AppContext } from '../context/AppContext';
 import { PaymentPlanType } from '../types/tax';
 
 export default function PaymentPlanComponent() {
-  const { auditLog, setAuditLog } = useContext(AppContext);
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('AppContext missing');
+  const { auditLog, setAuditLog } = ctx;
   const [plan, setPlan] = useState<PaymentPlanType>({
     totalAmount: 0,
     installments: 1,

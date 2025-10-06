@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { PaygwInput } from "../types/tax";
 import { calculatePaygw } from "../utils/paygw";
+import { AppContext } from "../context/AppContext";
 
 export default function PaygwCalculator({ onResult }: { onResult: (liability: number) => void }) {
   const [form, setForm] = useState<PaygwInput>({
@@ -10,6 +11,7 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     period: "monthly",
     deductions: 0,
   });
+  const ctx = useContext(AppContext);
 
   return (
     <div className="card">
@@ -19,6 +21,10 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
         <span style={{ color: "#444", fontSize: "0.97em" }}>
           Fill out the payroll details for accurate PAYGW calculations.
         </span>
+      </p>
+      <p className="text-xs" style={{ color: "#555" }}>
+        Using ATO rates version <strong>{ctx?.ratesVersion.name}</strong>
+        {ctx ? ` (effective ${ctx.ratesVersion.effectiveFrom})` : null}.
       </p>
       <label>
         Employee Name:

@@ -2,7 +2,9 @@ import React, { useContext, useState } from "react";
 import { AppContext } from "../context/AppContext";
 
 export default function OneWayAccount() {
-  const { vaultBalance, setVaultBalance, businessBalance, setBusinessBalance, auditLog, setAuditLog } = useContext(AppContext);
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error("AppContext missing");
+  const { vaultBalance, setVaultBalance, businessBalance, setBusinessBalance, auditLog, setAuditLog } = ctx;
   const [amount, setAmount] = useState(0);
 
   const handleSecureFunds = () => {
