@@ -4,7 +4,9 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "generate:openapi": "tsx scripts/generate-openapi.ts",
+        "generate:types": "tsx scripts/generate-types.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
