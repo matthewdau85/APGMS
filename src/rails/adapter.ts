@@ -15,7 +15,15 @@ export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", refere
 }
 
 /** Idempotent release with a stable transfer_uuid (simulate bank release) */
-export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: number, rail: "EFT"|"BPAY", reference: string) {
+export async function releasePayment(
+  abn: string,
+  taxType: string,
+  periodId: string,
+  amountCents: number,
+  rail: "EFT" | "BPAY",
+  reference: string,
+  opts: { actor: string; requestId: string }
+) {
   const transfer_uuid = uuidv4();
   try {
     await pool.query("insert into idempotency_keys(key,last_status) values(,)", [transfer_uuid, "INIT"]);
@@ -36,7 +44,13 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
     "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values (,,,,,,,,)",
     [abn, taxType, periodId, transfer_uuid, -amountCents, newBal, bank_receipt_hash, prevHash, hashAfter]
   );
-  await appendAudit("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
+  await appendAudit({
+    actor: opts.actor,
+    action: "release",
+    target: `${abn}:${taxType}:${periodId}`,
+    payload: { amount_cents: amountCents, rail, reference, bank_receipt_hash },
+    requestId: opts.requestId,
+  });
   await pool.query("update idempotency_keys set last_status= where key=", [transfer_uuid, "DONE"]);
   return { transfer_uuid, bank_receipt_hash };
 }
