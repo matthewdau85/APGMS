@@ -1,0 +1,7 @@
+extends: existence
+message: "Use active voice."
+level: warning
+scope: sentence
+ignorecase: true
+tokens:
+  - '\b(?:am|is|are|was|were|be|been|being)\b[^.!?]*\bby\b'

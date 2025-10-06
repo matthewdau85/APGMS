@@ -1,0 +1,7 @@
+extends: existence
+message: "Prefer 'bank transfer' or wrap in <Gloss>."
+level: warning
+scope: text
+ignorecase: true
+tokens:
+  - '\begress\b'
