@@ -1,11 +1,10 @@
 // apps/services/payments/src/middleware/rptGate.ts
 import { Request, Response, NextFunction } from "express";
-import pg from "pg"; const { Pool } = pg;
 import { sha256Hex } from "../utils/crypto";
 import { selectKms } from "../kms/kmsProvider";
+import { pool } from "../db.js";
 
 const kms = selectKms();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function rptGate(req: Request, res: Response, next: NextFunction) {
   try {
@@ -14,36 +13,63 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
       return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     }
 
-    // Accept pending/active. Order by created_at so newest wins.
-    const q = `
-      SELECT id as rpt_id, payload_c14n, payload_sha256, signature, expires_at, status, nonce
-      FROM rpt_tokens
-      WHERE abn = $1 AND tax_type = $2 AND period_id = $3
-        AND status IN ('pending','active')
-      ORDER BY created_at DESC
-      LIMIT 1
-    `;
-    const { rows } = await pool.query(q, [abn, taxType, periodId]);
-    if (!rows.length) return res.status(403).json({ error: "No active RPT for period" });
+    const tokenRes = await pool.query(
+      `SELECT id as rpt_id, payload_c14n, payload_sha256, signature, payload, status
+         FROM rpt_tokens
+        WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+        ORDER BY id DESC
+        LIMIT 1`,
+      [abn, taxType, periodId]
+    );
+    if (!tokenRes.rowCount) {
+      return res.status(403).json({ error: "No active RPT for period" });
+    }
+    const token = tokenRes.rows[0];
+    if (token.status && !["active", "ISSUED"].includes(token.status)) {
+      return res.status(403).json({ error: "RPT not active" });
+    }
 
-    const r = rows[0];
-    if (r.expires_at && new Date() > new Date(r.expires_at)) {
+    const canonical = token.payload_c14n || JSON.stringify(token.payload ?? {});
+    const payload = JSON.parse(canonical);
+
+    if (payload.abn !== abn || payload.period_id !== periodId || payload.tax_type !== taxType) {
+      return res.status(403).json({ error: "RPT scope mismatch" });
+    }
+
+    if (payload.exp && Date.parse(payload.exp) < Date.now()) {
       return res.status(403).json({ error: "RPT expired" });
     }
 
-    // Hash check
-    const recomputed = sha256Hex(r.payload_c14n);
-    if (recomputed !== r.payload_sha256) {
+    const recomputed = sha256Hex(canonical);
+    if (recomputed !== token.payload_sha256) {
       return res.status(403).json({ error: "Payload hash mismatch" });
     }
 
-    // Signature verify (signature is stored as base64 text in your seed)
-    const payload = Buffer.from(r.payload_c14n);
-    const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
-    if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
+    const periodRes = await pool.query(
+      `SELECT rates_version FROM periods WHERE abn=$1 AND tax_type=$2 AND period_id=$3`,
+      [abn, taxType, periodId]
+    );
+    if (!periodRes.rowCount) {
+      return res.status(404).json({ error: "Period not found" });
+    }
+    const period = periodRes.rows[0];
+    if (payload.rates_version !== period.rates_version) {
+      return res.status(409).json({ error: "RATES_VERSION_MISMATCH" });
+    }
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    const payloadBuf = Buffer.from(canonical);
+    const sigBuf = Buffer.from(token.signature, "base64url");
+    const ok = await kms.verify(payloadBuf, sigBuf);
+    if (!ok) {
+      return res.status(403).json({ error: "RPT signature invalid" });
+    }
+
+    (req as any).rpt = {
+      rpt_id: token.rpt_id,
+      payload,
+      payload_sha256: token.payload_sha256,
+      signature: token.signature,
+    };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });
