@@ -1,0 +1,9 @@
+[
+  {
+    "id": "txn-1",
+    "postedAt": "2025-01-01T00:00:00.000Z",
+    "description": "Payment",
+    "amountCents": -12345,
+    "reference": "ABC123"
+  }
+]

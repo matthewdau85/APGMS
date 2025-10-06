@@ -89,3 +89,10 @@ For demonstration and prototyping only—real-world deployments require further 
 Contributing
 Pull requests are welcome!
 For major changes, please open an issue first to discuss what you’d like to change.
+
+## Provider architecture
+
+External integrations (bank egress, KMS, rates, identity, anomaly scoring, statements) are
+selected at runtime via the `PROVIDERS` configuration variable. See
+[docs/provider-architecture.md](docs/provider-architecture.md) for details on the provider
+registry, kill switches, shadow mode, and contract tests.
