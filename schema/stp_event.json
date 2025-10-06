@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apgms.example.com/schema/stp_event.json",
+  "title": "STP Payroll Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "employee_id_hash",
+    "period",
+    "gross",
+    "tax_withheld"
+  ],
+  "properties": {
+    "employee_id_hash": {
+      "type": "string",
+      "minLength": 6
+    },
+    "period": {
+      "type": "string",
+      "minLength": 4
+    },
+    "gross": {
+      "type": "number"
+    },
+    "tax_withheld": {
+      "type": "number"
+    },
+    "allowances": {
+      "type": "number",
+      "default": 0
+    },
+    "stsl_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    }
+  }
+}

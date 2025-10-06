@@ -1,0 +1,12 @@
+{
+  "rates_version": "2025.1",
+  "files": [
+    {
+      "name": "paygw_rates.csv",
+      "source_url": "https://apgms.example.com/rules/paygw_rates.csv",
+      "path": "samples/rules/paygw_rates.csv",
+      "effective_from": "2025-07-01",
+      "effective_to": "2026-06-30"
+    }
+  ]
+}
