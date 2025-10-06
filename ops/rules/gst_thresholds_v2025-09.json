@@ -1,0 +1,9 @@
+{
+  "thresholds": {
+    "dup_rate": 0.01,
+    "variance_ratio": 0.25,
+    "gap_minutes": 60,
+    "delta_vs_baseline": 0.2
+  },
+  "notes": "Demo thresholds for GST reconciliation checks"
+}

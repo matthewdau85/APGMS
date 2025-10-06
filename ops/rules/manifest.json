@@ -1,0 +1,17 @@
+{
+  "rates_version": "GST-RATES-2025-10",
+  "files": [
+    {
+      "name": "gst_rates_v2025-09.json",
+      "path": "gst_rates_v2025-09.json",
+      "source_url": "https://data.ato.gov.au/gst/rates/2025-09",
+      "sha256": "2bc7e8d7e531969eecd33fbd5ffc30ef0fb1834ff799186e9e5462e1b54b7a72"
+    },
+    {
+      "name": "gst_thresholds_v2025-09.json",
+      "path": "gst_thresholds_v2025-09.json",
+      "source_url": "https://data.ato.gov.au/gst/thresholds/2025-09",
+      "sha256": "10dc8133a8158e2bc10ab17e3aab4bbb95eb914c40c2cc0a01caf4d06b4a240d"
+    }
+  ]
+}
