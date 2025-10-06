@@ -1,5 +1,4 @@
 ﻿import { issueRPT } from "../rpt/issuer";
-import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
@@ -46,7 +45,3 @@ export async function settlementWebhook(req:any, res:any) {
   return res.json({ ingested: rows.length });
 }
 
-export async function evidence(req:any, res:any) {
-  const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
-}
