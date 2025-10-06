@@ -25,13 +25,16 @@ def metrics():
 
 # --- BEGIN TAX_ENGINE_CORE_APP ---
 import asyncio
+import logging
 import os
-from typing import Optional
+from datetime import datetime
+from typing import Optional, Union
 
 from fastapi import FastAPI, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
+from pydantic import BaseModel, Field, ValidationError
 
 try:
     app  # reuse if exists
@@ -45,6 +48,32 @@ SUBJECT_OUTPUT = os.getenv("SUBJECT_OUTPUT", "apgms.tax.v1")
 _nc: Optional[NATS] = None
 _started = asyncio.Event()
 _ready = asyncio.Event()
+
+logger = logging.getLogger("tax_engine.nats")
+
+class PayrollEvent(BaseModel):
+    abn: str = Field(min_length=1)
+    grossCents: int = Field(ge=0, strict=True)
+    paygCents: int = Field(ge=0, strict=True)
+    occurredAt: datetime
+
+    @classmethod
+    def parse(cls, raw: Union[bytes, bytearray, str]) -> "PayrollEvent":
+        if isinstance(raw, (bytes, bytearray)):
+            try:
+                raw = bytes(raw).decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise ValueError("payload is not valid UTF-8") from exc
+        if not raw:
+            raise ValueError("payload is empty")
+        if hasattr(cls, "model_validate_json"):
+            return cls.model_validate_json(raw)  # type: ignore[attr-defined]
+        return cls.parse_raw(raw)
+
+    def to_json_bytes(self) -> bytes:
+        if hasattr(self, "model_dump_json"):
+            return self.model_dump_json().encode("utf-8")  # type: ignore[attr-defined]
+        return self.json().encode("utf-8")
 
 TAX_REQS = Counter("tax_requests_total", "Total tax requests consumed")
 TAX_OUT = Counter("tax_results_total", "Total tax results produced")
@@ -82,11 +111,17 @@ async def _connect_nats_with_retry() -> NATS:
 
 async def _subscribe_and_run(nc: NATS):
     async def _on_msg(msg):
+        raw = msg.data or b""
+        try:
+            event = PayrollEvent.parse(raw)
+        except (ValidationError, ValueError) as exc:
+            subject = getattr(msg, "subject", SUBJECT_INPUT)
+            logger.error("Rejecting payroll event on %s: %s", subject, exc)
+            return
+
         with CALC_LAT.time():
             TAX_REQS.inc()
-            data = msg.data or b"{}"
-            # TODO: real calc -> publish real result
-            await nc.publish(SUBJECT_OUTPUT, data)
+            await nc.publish(SUBJECT_OUTPUT, event.to_json_bytes())
             TAX_OUT.inc()
     await nc.subscribe(SUBJECT_INPUT, cb=_on_msg)
     _ready.set()
