@@ -1,10 +1,15 @@
 {
     "scripts": {
         "start": "node dist/index.js",
-        "build": "echo build root",
+        "build": "npm run docs:lastUpdated && npm run docs:index && echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "docs:index": "tsx scripts/docs/buildIndex.ts",
+        "docs:lastUpdated": "tsx scripts/docs/lastUpdated.ts",
+        "docs:coverage": "tsx scripts/docs/openapiCoverage.ts",
+        "docs:links": "tsx scripts/docs/linkCheck.ts",
+        "openapi": "tsx scripts/openapi.ts"
     },
     "version": "0.1.0",
     "name": "apgms",

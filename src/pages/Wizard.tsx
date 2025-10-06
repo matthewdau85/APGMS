@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import HelpTip from "../components/HelpTip";
 
 const steps = [
   "Business Details",
@@ -13,7 +14,10 @@ export default function Wizard() {
 
   return (
     <div className="main-card">
-      <h1 style={{ color: "#00716b", fontWeight: 700, fontSize: 30, marginBottom: 28 }}>Setup Wizard</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={{ color: "#00716b", fontWeight: 700, fontSize: 30, marginBottom: 28 }}>Setup Wizard</h1>
+        <HelpTip mode="onboarding" tag="wizard" label="Wizard help" />
+      </div>
       <div style={{ marginBottom: 20 }}>
         <b>Step {step + 1} of {steps.length}: {steps[step]}</b>
       </div>

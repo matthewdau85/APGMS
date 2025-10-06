@@ -1,0 +1,279 @@
+{
+  "generatedAt": "2025-10-06T00:29:02.881Z",
+  "topics": [
+    {
+      "id": "support-links",
+      "slug": "support-links",
+      "title": "ATO resources and support",
+      "tags": [
+        "support",
+        "ato guidance",
+        "lodgment"
+      ],
+      "modes": [
+        "compliance",
+        "reference",
+        "onboarding"
+      ],
+      "lastUpdated": "2025-10-06T00:28:57.509Z",
+      "summary": "Here are key ATO references to keep handy:",
+      "body": "Here are key ATO references to keep handy: ATO PAYGW Guide ATO GST Information ATO BAS Portal ATO Super Obligations ATO Online Services Bookmark each link and review updates after budget announcements or legislative changes.",
+      "links": [
+        {
+          "href": "https://www.ato.gov.au/business/payg-withholding/",
+          "text": "ATO PAYGW Guide"
+        },
+        {
+          "href": "https://www.ato.gov.au/business/gst/",
+          "text": "ATO GST Information"
+        },
+        {
+          "href": "https://www.ato.gov.au/business/business-activity-statements-%28bas%29/",
+          "text": "ATO BAS Portal"
+        },
+        {
+          "href": "https://www.ato.gov.au/business/super-for-employers/",
+          "text": "ATO Super Obligations"
+        },
+        {
+          "href": "https://www.ato.gov.au/General/Online-services/",
+          "text": "ATO Online Services"
+        }
+      ]
+    },
+    {
+      "id": "getting-started",
+      "slug": "getting-started",
+      "title": "Getting started with APGMS",
+      "tags": [
+        "setup",
+        "wizard",
+        "buffer accounts",
+        "api:GET /health",
+        "api:GET /dashboard/yesterday",
+        "api:GET /metrics"
+      ],
+      "modes": [
+        "onboarding",
+        "dashboard",
+        "compliance"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.229Z",
+      "summary": "Welcome to APGMS. New organisations should walk through the setup wizard to capture legal identifiers, link bank accounts, and configure the PAYGW and GST buffers before any liabilities accrue.",
+      "body": "Welcome to APGMS. New organisations should walk through the setup wizard to capture legal identifiers, link bank accounts, and configure the PAYGW and GST buffers before any liabilities accrue. 1. Visit the Dashboard and confirm your next BAS due date. 2. Launch the Setup Wizard to enter your ABN, trading details, and payroll providers. 3. Link operating and buffer accounts so automated transfers can keep withheld taxes quarantined. 4. Use the wizard's confirmation step to review compliance status and confirm everything is ready. The /health, /dashboard/yesterday, and /metrics endpoints provide quick status checks for monitoring and should return 200 when the platform is ready.",
+      "links": []
+    },
+    {
+      "id": "integrations-and-connections",
+      "slug": "integrations-and-connections",
+      "title": "Managing integrations and data feeds",
+      "tags": [
+        "integrations",
+        "connections",
+        "payroll",
+        "api:GET /connections",
+        "api:POST /connections/start",
+        "api:DELETE /connections/{conn_id}",
+        "api:GET /transactions",
+        "api:POST /settings"
+      ],
+      "modes": [
+        "integrations",
+        "automation",
+        "onboarding"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.245Z",
+      "summary": "Link payroll, POS, and banking providers so APGMS can automate compliance:",
+      "body": "Link payroll, POS, and banking providers so APGMS can automate compliance: /connections lists active authorisations and can be polled to confirm the state after onboarding. Initiate new OAuth-style handshakes with /connections/start and direct users to the returned URL. Remove stale credentials with /connections/{conn_id} to enforce least-privilege access. /transactions surfaces harmonised transactional feeds that drive GST and PAYGW calculations. /settings persists security controls like retention windows and PII masking toggles. Ensure each provider connection is subject to multi-factor authentication and rotate secrets on a set cadence.",
+      "links": []
+    },
+    {
+      "id": "payments-and-releases",
+      "slug": "payments-and-releases",
+      "title": "Managing PAYGW and GST payments",
+      "tags": [
+        "payments",
+        "release",
+        "ato remittance",
+        "api:POST /api/pay",
+        "api:POST /api/release",
+        "api:POST /api/close-issue",
+        "api:GET /api/balance",
+        "api:GET /api/ledger",
+        "api:POST /api/deposit"
+      ],
+      "modes": [
+        "operations",
+        "compliance",
+        "finance"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.273Z",
+      "summary": "Keep PAYGW and GST liabilities in lockstep with payroll and sales activity:",
+      "body": "Keep PAYGW and GST liabilities in lockstep with payroll and sales activity: /api/balance surfaces the ledger balance for a given ABN, tax type, and period. /api/ledger returns full transaction history for audit trails. /api/deposit records incoming PAYGW or GST funds into the quarantined buffer. /api/pay and /api/release instruct the payments rail to remit funds to the ATO when a reporting period closes. /api/close-issue finalises the RPT token and captures the compliance evidence bundle for the period. Always double check the amountCents sign: deposits must be positive, releases must be negative to prevent accidental overdrafts.",
+      "links": []
+    },
+    {
+      "id": "monitoring-and-status",
+      "slug": "monitoring-and-status",
+      "title": "Monitoring status and compliance posture",
+      "tags": [
+        "monitoring",
+        "status",
+        "api inventory",
+        "api:GET /readyz",
+        "api:GET /ato/status",
+        "api:GET /openapi.json"
+      ],
+      "modes": [
+        "monitoring",
+        "compliance",
+        "engineering"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.261Z",
+      "summary": "Set up dashboards and alerts so issues are surfaced before deadlines:",
+      "body": "Set up dashboards and alerts so issues are surfaced before deadlines: /readyz is the liveness probe for the portal API, returning the server timestamp when healthy. /ato/status tracks the connectivity state with the ATO digital services gateway. /openapi.json exposes the merged contract for the public API surface; watch for drift after deploys. Combine these probes with /metrics from the main service to create a single source of truth for observability.",
+      "links": []
+    },
+    {
+      "id": "bas-operations",
+      "slug": "bas-operations",
+      "title": "Preparing and lodging your BAS",
+      "tags": [
+        "bas",
+        "validation",
+        "ato lodge",
+        "api:GET /bas/preview",
+        "api:POST /bas/validate",
+        "api:POST /bas/lodge",
+        "api:POST /normalize"
+      ],
+      "modes": [
+        "bas",
+        "compliance",
+        "reporting"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.205Z",
+      "summary": "Business Activity Statements can be rehearsed and submitted programmatically:",
+      "body": "Business Activity Statements can be rehearsed and submitted programmatically: Call /bas/preview to retrieve calculated PAYGW and GST totals for the current period. Validate a draft with /bas/validate before presenting it to officers for sign-off. /bas/lodge submits to the sandbox ATO gateway and echoes a success message when accepted. /normalize can be used to reshape source transactions so they align with your lodgment schema before posting. Record BAS confirmations in the audit log and attach the portal reference number to your reconciliation evidence bundle.",
+      "links": []
+    },
+    {
+      "id": "settlements-and-payto",
+      "slug": "settlements-and-payto",
+      "title": "Settlement ingestion and PayTo sweeps",
+      "tags": [
+        "settlements",
+        "payto",
+        "reconciliation",
+        "api:POST /api/payto/sweep",
+        "api:POST /api/settlement/webhook",
+        "api:GET /api/evidence"
+      ],
+      "modes": [
+        "operations",
+        "banking",
+        "automation"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.289Z",
+      "summary": "Automate inbound settlement handling and evidence capture:",
+      "body": "Automate inbound settlement handling and evidence capture: Use /api/payto/sweep when a PayTo agreement needs to sweep excess balances back to your operating account. /api/settlement/webhook ingests settlement CSV payloads from banking partners and returns the number of rows processed. /api/evidence composes the compliance bundle (including RPT tokens and reconciliation data) for downstream archiving. Settlement webhooks should be protected with signing middleware and replay protection to satisfy ATO audit expectations.",
+      "links": []
+    }
+  ],
+  "whatsNew": [
+    {
+      "id": "whats-new/2025-10-05",
+      "slug": "whats-new/2025-10-05",
+      "title": "Automated help drawer and API coverage checks",
+      "date": "2025-10-05",
+      "tags": [
+        "release-notes",
+        "docs",
+        "compliance"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.337Z",
+      "summary": "Contextual help now lives inside the app and the docs build validates API coverage.",
+      "body": "The help experience now surfaces contextual guidance from anywhere in the console. Each help card references the underlying API endpoints and the docs pipeline validates coverage for the merged OpenAPI spec.",
+      "links": []
+    },
+    {
+      "id": "whats-new/2025-09-15",
+      "slug": "whats-new/2025-09-15",
+      "title": "ATO connection watchdog",
+      "date": "2025-09-15",
+      "tags": [
+        "release-notes",
+        "monitoring"
+      ],
+      "lastUpdated": "2025-10-06T00:27:34.321Z",
+      "summary": "ATO link status now visible in dashboards and surfaced via the /ato/status API.",
+      "body": "A lightweight watchdog now polls /ato/status to track the upstream digital services gateway. Use the new monitoring card to alert operators when the connection drifts from \"Connected\".",
+      "links": []
+    }
+  ],
+  "tags": [
+    "api inventory",
+    "api:DELETE /connections/{conn_id}",
+    "api:GET /api/balance",
+    "api:GET /api/evidence",
+    "api:GET /api/ledger",
+    "api:GET /ato/status",
+    "api:GET /bas/preview",
+    "api:GET /connections",
+    "api:GET /dashboard/yesterday",
+    "api:GET /health",
+    "api:GET /metrics",
+    "api:GET /openapi.json",
+    "api:GET /readyz",
+    "api:GET /transactions",
+    "api:POST /api/close-issue",
+    "api:POST /api/deposit",
+    "api:POST /api/pay",
+    "api:POST /api/payto/sweep",
+    "api:POST /api/release",
+    "api:POST /api/settlement/webhook",
+    "api:POST /bas/lodge",
+    "api:POST /bas/validate",
+    "api:POST /connections/start",
+    "api:POST /normalize",
+    "api:POST /settings",
+    "ato guidance",
+    "ato lodge",
+    "ato remittance",
+    "bas",
+    "buffer accounts",
+    "compliance",
+    "connections",
+    "docs",
+    "integrations",
+    "lodgment",
+    "monitoring",
+    "payments",
+    "payroll",
+    "payto",
+    "reconciliation",
+    "release",
+    "release-notes",
+    "settlements",
+    "setup",
+    "status",
+    "support",
+    "validation",
+    "wizard"
+  ],
+  "modes": [
+    "automation",
+    "banking",
+    "bas",
+    "compliance",
+    "dashboard",
+    "engineering",
+    "finance",
+    "integrations",
+    "monitoring",
+    "onboarding",
+    "operations",
+    "reference",
+    "reporting"
+  ]
+}

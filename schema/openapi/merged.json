@@ -1,0 +1,258 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS merged API",
+    "version": "0.1.0",
+    "description": "Combined contract for APGMS operational and portal services"
+  },
+  "servers": [
+    {
+      "url": "https://api.apgms.local"
+    },
+    {
+      "url": "https://portal.apgms.local"
+    }
+  ],
+  "paths": {
+    "/api/balance": {
+      "get": {
+        "summary": "Fetch PAYGW or GST balance",
+        "responses": {
+          "200": {
+            "description": "Balance payload"
+          }
+        }
+      }
+    },
+    "/api/close-issue": {
+      "post": {
+        "summary": "Close reconciliation period and issue RPT token",
+        "responses": {
+          "200": {
+            "description": "Issue closed"
+          }
+        }
+      }
+    },
+    "/api/deposit": {
+      "post": {
+        "summary": "Record incoming deposit",
+        "responses": {
+          "200": {
+            "description": "Deposit recorded"
+          }
+        }
+      }
+    },
+    "/api/evidence": {
+      "get": {
+        "summary": "Retrieve compliance evidence bundle",
+        "responses": {
+          "200": {
+            "description": "Evidence returned"
+          }
+        }
+      }
+    },
+    "/api/ledger": {
+      "get": {
+        "summary": "Fetch ledger entries",
+        "responses": {
+          "200": {
+            "description": "Ledger entries"
+          }
+        }
+      }
+    },
+    "/api/pay": {
+      "post": {
+        "summary": "Trigger PAYGW payment to ATO",
+        "responses": {
+          "200": {
+            "description": "Payment accepted"
+          }
+        }
+      }
+    },
+    "/api/payto/sweep": {
+      "post": {
+        "summary": "Initiate PayTo sweep",
+        "responses": {
+          "200": {
+            "description": "Sweep triggered"
+          }
+        }
+      }
+    },
+    "/api/release": {
+      "post": {
+        "summary": "Release funds to ATO",
+        "responses": {
+          "200": {
+            "description": "Release processed"
+          }
+        }
+      }
+    },
+    "/api/settlement/webhook": {
+      "post": {
+        "summary": "Receive settlement CSV payload",
+        "responses": {
+          "200": {
+            "description": "Settlement ingested"
+          }
+        }
+      }
+    },
+    "/ato/status": {
+      "get": {
+        "summary": "Inspect upstream ATO connection",
+        "responses": {
+          "200": {
+            "description": "ATO status"
+          }
+        }
+      }
+    },
+    "/bas/lodge": {
+      "post": {
+        "summary": "Lodge BAS",
+        "responses": {
+          "200": {
+            "description": "Lodge response"
+          }
+        }
+      }
+    },
+    "/bas/preview": {
+      "get": {
+        "summary": "Preview BAS totals",
+        "responses": {
+          "200": {
+            "description": "Preview response"
+          }
+        }
+      }
+    },
+    "/bas/validate": {
+      "post": {
+        "summary": "Validate BAS draft",
+        "responses": {
+          "200": {
+            "description": "Validation outcome"
+          }
+        }
+      }
+    },
+    "/connections": {
+      "get": {
+        "summary": "List provider connections",
+        "responses": {
+          "200": {
+            "description": "Connections list"
+          }
+        }
+      }
+    },
+    "/connections/{conn_id}": {
+      "delete": {
+        "summary": "Delete provider connection",
+        "responses": {
+          "200": {
+            "description": "Connection removed"
+          }
+        }
+      }
+    },
+    "/connections/start": {
+      "post": {
+        "summary": "Start connection handshake",
+        "responses": {
+          "200": {
+            "description": "Handshake url"
+          }
+        }
+      }
+    },
+    "/dashboard/yesterday": {
+      "get": {
+        "summary": "Previous day dashboard snapshot",
+        "responses": {
+          "200": {
+            "description": "Snapshot returned"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Service health probe",
+        "responses": {
+          "200": {
+            "description": "Healthy"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics scrape",
+        "responses": {
+          "200": {
+            "description": "Metrics exposition"
+          }
+        }
+      }
+    },
+    "/normalize": {
+      "post": {
+        "summary": "Normalize inbound payloads",
+        "responses": {
+          "200": {
+            "description": "Normalization result"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "Expose portal OpenAPI contract",
+        "responses": {
+          "200": {
+            "description": "OpenAPI document"
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Portal liveness probe",
+        "responses": {
+          "200": {
+            "description": "Portal ready"
+          }
+        }
+      }
+    },
+    "/settings": {
+      "post": {
+        "summary": "Persist portal settings",
+        "responses": {
+          "200": {
+            "description": "Settings stored"
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "Search harmonised transactions",
+        "responses": {
+          "200": {
+            "description": "Transactions returned"
+          }
+        }
+      }
+    }
+  }
+}

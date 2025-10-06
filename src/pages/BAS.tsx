@@ -1,4 +1,5 @@
 import React from 'react';
+import HelpTip from '../components/HelpTip';
 
 export default function BAS() {
   const complianceStatus = {
@@ -13,7 +14,10 @@ export default function BAS() {
 
   return (
     <div className="main-card">
-      <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
+        <HelpTip mode="bas" label="BAS guidance" />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">
         Lodge your BAS on time and accurately. Below is a summary of your current obligations.
       </p>

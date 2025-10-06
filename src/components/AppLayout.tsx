@@ -1,6 +1,8 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import HelpDrawer from "./HelpDrawer";
+import { useHelp } from "../help/useHelp";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -14,6 +16,8 @@ const navLinks = [
 ];
 
 export default function AppLayout() {
+  const { openDrawer } = useHelp();
+
   return (
     <div>
       <header className="app-header">
@@ -42,6 +46,9 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <button className="help-trigger" onClick={openDrawer}>
+          Need help?
+        </button>
       </header>
 
       {/* 👇 This tells React Router where to render the child pages */}
@@ -52,6 +59,7 @@ export default function AppLayout() {
       <footer className="app-footer">
         <p>© 2025 APGMS | Compliant with Income Tax Assessment Act 1997 & GST Act 1999</p>
       </footer>
+      <HelpDrawer />
     </div>
   );
 }

@@ -1,0 +1,28 @@
+---
+title: "Managing PAYGW and GST payments"
+modes:
+  - operations
+  - compliance
+  - finance
+tags:
+  - payments
+  - release
+  - "ato remittance"
+  - "api:POST /api/pay"
+  - "api:POST /api/release"
+  - "api:POST /api/close-issue"
+  - "api:GET /api/balance"
+  - "api:GET /api/ledger"
+  - "api:POST /api/deposit"
+lastUpdated: "2025-10-06T00:27:34.273Z"
+---
+
+Keep PAYGW and GST liabilities in lockstep with payroll and sales activity:
+
+- `/api/balance` surfaces the ledger balance for a given ABN, tax type, and period.
+- `/api/ledger` returns full transaction history for audit trails.
+- `/api/deposit` records incoming PAYGW or GST funds into the quarantined buffer.
+- `/api/pay` and `/api/release` instruct the payments rail to remit funds to the ATO when a reporting period closes.
+- `/api/close-issue` finalises the RPT token and captures the compliance evidence bundle for the period.
+
+Always double check the `amountCents` sign: deposits must be positive, releases must be negative to prevent accidental overdrafts.

@@ -1,6 +1,7 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import HelpTip from '../components/HelpTip';
 
 export default function Dashboard() {
   const complianceStatus = {
@@ -16,7 +17,10 @@ export default function Dashboard() {
   return (
     <div className="main-card">
       <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6">
-        <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
+          <HelpTip mode="dashboard" label="Dashboard help" />
+        </div>
         <p className="text-sm opacity-90">
           Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
         </p>

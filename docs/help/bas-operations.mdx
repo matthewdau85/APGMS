@@ -1,0 +1,25 @@
+---
+title: "Preparing and lodging your BAS"
+modes:
+  - bas
+  - compliance
+  - reporting
+tags:
+  - bas
+  - validation
+  - "ato lodge"
+  - "api:GET /bas/preview"
+  - "api:POST /bas/validate"
+  - "api:POST /bas/lodge"
+  - "api:POST /normalize"
+lastUpdated: "2025-10-06T00:27:34.205Z"
+---
+
+Business Activity Statements can be rehearsed and submitted programmatically:
+
+- Call `/bas/preview` to retrieve calculated PAYGW and GST totals for the current period.
+- Validate a draft with `/bas/validate` before presenting it to officers for sign-off.
+- `/bas/lodge` submits to the sandbox ATO gateway and echoes a success message when accepted.
+- `/normalize` can be used to reshape source transactions so they align with your lodgment schema before posting.
+
+Record BAS confirmations in the audit log and attach the portal reference number to your reconciliation evidence bundle.

@@ -1,0 +1,11 @@
+---
+title: "ATO connection watchdog"
+date: "2025-09-15"
+tags:
+  - "release-notes"
+  - monitoring
+summary: "ATO link status now visible in dashboards and surfaced via the /ato/status API."
+lastUpdated: "2025-10-06T00:27:34.321Z"
+---
+
+A lightweight watchdog now polls `/ato/status` to track the upstream digital services gateway. Use the new monitoring card to alert operators when the connection drifts from "Connected".
