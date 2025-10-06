@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "generated_at": "<<timestamp>>",
+    "abn": "12345678901",
+    "taxType": "GST",
+    "periodId": "2025-09"
+  },
+  "period": {
+    "state": "READY_RPT",
+    "accrued_cents": 150000,
+    "credited_to_owa_cents": 125000,
+    "final_liability_cents": 120000,
+    "merkle_root": "merkle-root",
+    "running_balance_hash": "balance-hash",
+    "anomaly_vector": {
+      "gap_minutes": 7,
+      "dup_rate": 0,
+      "variance_ratio": 0.12
+    },
+    "thresholds": {
+      "epsilon_cents": 50
+    }
+  },
+  "rpt": {
+    "payload": {
+      "amount_cents": 120000,
+      "reference": "REF123"
+    },
+    "payload_c14n": "{\"amount_cents\":120000}",
+    "payload_sha256": "hash123",
+    "signature": "sig",
+    "created_at": "2025-10-05T00:00:00.000Z"
+  },
+  "bas_labels": {
+    "W1": 200000,
+    "W2": 50000,
+    "1A": 18000,
+    "1B": 12000
+  },
+  "anomaly_thresholds": {
+    "epsilon_cents": 50,
+    "variance_ratio": 0.2,
+    "dup_rate": 0.01
+  },
+  "owa_ledger_deltas": [
+    {
+      "txn_id": "TXN-1",
+      "component": "GST",
+      "amount_cents": 1000,
+      "balance_after_cents": 1000,
+      "settled_at": "2025-09-30T10:00:00.000Z",
+      "source": "SETTLEMENT_WEBHOOK"
+    },
+    {
+      "txn_id": "TXN-1",
+      "component": "NET",
+      "amount_cents": 9000,
+      "balance_after_cents": 9000,
+      "settled_at": "2025-09-30T10:00:00.000Z",
+      "source": "SETTLEMENT_WEBHOOK"
+    },
+    {
+      "txn_id": "TXN-2",
+      "component": "GST",
+      "amount_cents": -1000,
+      "balance_after_cents": 0,
+      "settled_at": "2025-10-01T11:00:00.000Z",
+      "source": "SETTLEMENT_WEBHOOK"
+    }
+  ],
+  "discrepancy_log": [
+    {
+      "discrepancy_type": "UNMATCHED_SETTLEMENT",
+      "observed_cents": 1000,
+      "expected_cents": 0,
+      "explanation": "Manual investigation required",
+      "detected_at": "2025-10-01T12:00:00.000Z"
+    }
+  ]
+}
