@@ -25,6 +25,29 @@ export default function Help() {
         </ul>
       </div>
       <div className="bg-card p-4 rounded-xl shadow space-y-2">
+        <h2 className="text-lg font-semibold">Security Workflows</h2>
+        <ul className="list-disc pl-5 text-sm">
+          <li>
+            Enable MFA under <strong>Profile &gt; Security</strong> – scan the QR code from
+            <code> POST /auth/mfa/setup</code>, confirm with <code>/activate</code>, then use
+            <code>/challenge</code> for a step-up token.
+          </li>
+          <li>
+            Releases &amp; allow-list changes require <strong>mfa=true</strong> tokens. Obtain them via
+            the challenge flow before calling protected endpoints.
+          </li>
+          <li>
+            For high-value releases, route the request to two approvers who submit
+            <code> POST /api/approvals/releases</code>. The release will unblock once two distinct
+            approvals are on file.
+          </li>
+          <li>
+            Evidence exports, deposit posts, and receipt uploads automatically append to the
+            tamper-evident audit chain.
+          </li>
+        </ul>
+      </div>
+      <div className="bg-card p-4 rounded-xl shadow space-y-2">
         <h2 className="text-lg font-semibold">Support Links</h2>
         <ul className="list-disc pl-5 text-sm">
           <li><a className="text-blue-600" href="https://www.ato.gov.au/business/payg-withholding/">ATO PAYGW Guide</a></li>
