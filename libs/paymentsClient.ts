@@ -2,6 +2,10 @@
 type Common = { abn: string; taxType: string; periodId: string };
 export type DepositArgs = Common & { amountCents: number };   // > 0
 export type ReleaseArgs = Common & { amountCents: number };   // < 0
+export type ReleaseBankingArgs = Common & {
+  amountCents: number;
+  destination: { bsb: string; accountNumber: string; statementRef?: string };
+};
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
@@ -31,6 +35,14 @@ export const Payments = {
   },
   async payAto(args: ReleaseArgs) {
     const res = await fetch(`${BASE}/payAto`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(args),
+    });
+    return handle(res);
+  },
+  async release(args: ReleaseBankingArgs) {
+    const res = await fetch(`${BASE}/release`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(args),
