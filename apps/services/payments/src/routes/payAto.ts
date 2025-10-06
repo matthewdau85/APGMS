@@ -1,8 +1,7 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
-import { pool } from '../index.js';
+import { pool } from '../db.js';
 
 function genUUID() {
   return crypto.randomUUID();
