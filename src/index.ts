@@ -6,11 +6,18 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { ingestionRouter } from "./ingest/router";
+import { opsRouter } from "./routes/ops";
 
 dotenv.config();
 
 const app = express();
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({
+  limit: "2mb",
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf.toString("utf8");
+  },
+}));
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
@@ -28,8 +35,14 @@ app.get("/api/evidence", evidence);
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
 
+// Webhook ingestion endpoints
+app.use("/api/ingest", ingestionRouter);
+
 // Existing API router(s) after
 app.use("/api", api);
+
+// Operations endpoints (MFA-protected upstream)
+app.use("/ops", opsRouter);
 
 // 404 fallback (must be last)
 app.use((_req, res) => res.status(404).send("Not found"));
