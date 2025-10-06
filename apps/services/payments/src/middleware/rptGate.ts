@@ -1,11 +1,10 @@
 // apps/services/payments/src/middleware/rptGate.ts
 import { Request, Response, NextFunction } from "express";
-import pg from "pg"; const { Pool } = pg;
 import { sha256Hex } from "../utils/crypto";
 import { selectKms } from "../kms/kmsProvider";
+import { pool } from "../db/pool";
 
 const kms = selectKms();
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function rptGate(req: Request, res: Response, next: NextFunction) {
   try {

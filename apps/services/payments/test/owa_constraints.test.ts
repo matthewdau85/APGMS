@@ -1,5 +1,4 @@
-import { Pool } from "pg";
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+import { pool } from "../src/db/pool";
 
 test("OWA deposit-only constraint", async () => {
   const c = await pool.connect();
