@@ -1,7 +1,7 @@
 // src/App.tsx
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import AppLayout from "./components/AppLayout";
+import AppShell from "./ui/AppShell";
 
 import Dashboard from "./pages/Dashboard";
 import BAS from "./pages/BAS";
@@ -11,12 +11,14 @@ import Audit from "./pages/Audit";
 import Fraud from "./pages/Fraud";
 import Integrations from "./pages/Integrations";
 import Help from "./pages/Help";
+import Evidence from "./pages/Evidence";
+import Activity from "./pages/Activity";
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        <Route element={<AppLayout />}>
+        <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/bas" element={<BAS />} />
           <Route path="/settings" element={<Settings />} />
@@ -25,6 +27,8 @@ export default function App() {
           <Route path="/fraud" element={<Fraud />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/evidence" element={<Evidence />} />
+          <Route path="/activity" element={<Activity />} />
         </Route>
       </Routes>
     </Router>

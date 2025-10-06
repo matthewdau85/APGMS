@@ -1,100 +1,183 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
+import Page from "../ui/Page";
+import { colors, fontSizes, radii, shadows, spacing } from "../ui/tokens.css";
+
+export const meta = {
+  title: "Compliance dashboard",
+  helpSlug: "dashboard-overview",
+};
+
+const cardStyle: React.CSSProperties = {
+  background: colors.surface,
+  borderRadius: radii.lg,
+  boxShadow: shadows.soft,
+  padding: spacing.xl,
+  display: "flex",
+  flexDirection: "column",
+  gap: spacing.sm,
+};
 
 export default function Dashboard() {
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
     overallCompliance: 65,
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
+    lastBAS: "29 May 2025",
+    nextDue: "28 July 2025",
+    outstandingLodgments: ["Q4 FY23-24"],
+    outstandingAmounts: ["$1,200 PAYGW", "$400 GST"],
   };
 
   return (
-    <div className="main-card">
-      <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6">
-        <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
-        <p className="text-sm opacity-90">
-          Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
-        </p>
-        <div className="mt-4">
-          <Link to="/wizard" className="bg-white text-[#00716b] font-semibold px-4 py-2 rounded shadow hover:bg-gray-100">
-            Get Started
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-4 rounded-xl shadow space-y-2">
-          <h2 className="text-lg font-semibold">Lodgments</h2>
-          <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
+    <Page
+      meta={meta}
+      actions={
+        <Link
+          to="/wizard"
+          style={{
+            textDecoration: "none",
+            padding: `${spacing.sm} ${spacing.lg}`,
+            background: colors.accent,
+            color: colors.surface,
+            borderRadius: radii.md,
+            fontWeight: 600,
+          }}
+        >
+          Launch compliance wizard
+        </Link>
+      }
+    >
+      <section
+        style={{
+          display: "grid",
+          gap: spacing.xl,
+        }}
+      >
+        <div style={{ ...cardStyle, background: colors.accent, color: colors.surface }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: fontSizes.sm,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              opacity: 0.9,
+            }}
+          >
+            Welcome back
           </p>
-          <Link to="/bas" className="text-blue-600 text-sm underline">View BAS</Link>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl shadow space-y-2">
-          <h2 className="text-lg font-semibold">Payments</h2>
-          <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
+          <h2
+            style={{
+              margin: 0,
+              fontSize: fontSizes.xl,
+            }}
+          >
+            Automated PAYGW & GST compliance status
+          </h2>
+          <p style={{ margin: 0, fontSize: fontSizes.sm, opacity: 0.9 }}>
+            Stay on track with lodgments, payments and evidence collection. The activity feed highlights what needs attention.
           </p>
-          <Link to="/audit" className="text-blue-600 text-sm underline">View Audit</Link>
         </div>
 
-        <div className="bg-white p-4 rounded-xl shadow text-center">
-          <h2 className="text-lg font-semibold mb-2">Compliance Score</h2>
-          <div className="relative w-16 h-16 mx-auto">
-            <svg viewBox="0 0 36 36" className="w-full h-full">
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="#eee"
-                strokeWidth="2"
-              />
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831"
-                fill="none"
-                stroke="url(#grad)"
-                strokeWidth="2"
-                strokeDasharray={`${complianceStatus.overallCompliance}, 100`}
-              />
-              <defs>
-                <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="red" />
-                  <stop offset="50%" stopColor="yellow" />
-                  <stop offset="100%" stopColor="green" />
-                </linearGradient>
-              </defs>
-              <text x="18" y="20.35" textAnchor="middle" fontSize="5">{complianceStatus.overallCompliance}%</text>
-            </svg>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: spacing.lg,
+          }}
+        >
+          <div style={cardStyle}>
+            <h3 style={{ margin: 0, fontSize: fontSizes.lg, color: colors.textPrimary }}>
+              Lodgments
+            </h3>
+            <p style={{ margin: 0, color: complianceStatus.lodgmentsUpToDate ? colors.success : colors.danger }}>
+              {complianceStatus.lodgmentsUpToDate ? "Up to date" : "Overdue"}
+            </p>
+            <Link to="/bas" style={{ fontSize: fontSizes.sm, color: colors.accent }}>
+              View BAS schedule
+            </Link>
           </div>
-          <p className="text-sm mt-2 text-gray-600">
-            {complianceStatus.overallCompliance >= 90
-              ? 'Excellent'
-              : complianceStatus.overallCompliance >= 70
-              ? 'Good'
-              : 'Needs attention'}
-          </p>
+          <div style={cardStyle}>
+            <h3 style={{ margin: 0, fontSize: fontSizes.lg, color: colors.textPrimary }}>
+              Payments
+            </h3>
+            <p style={{ margin: 0, color: complianceStatus.paymentsUpToDate ? colors.success : colors.danger }}>
+              {complianceStatus.paymentsUpToDate ? "All paid" : "Outstanding"}
+            </p>
+            <Link to="/activity" style={{ fontSize: fontSizes.sm, color: colors.accent }}>
+              Review payment activity
+            </Link>
+          </div>
+          <div style={cardStyle}>
+            <h3 style={{ margin: 0, fontSize: fontSizes.lg }}>Compliance score</h3>
+            <p
+              style={{
+                margin: 0,
+                fontSize: fontSizes.xxl,
+                fontWeight: 600,
+                color: colors.accentStrong,
+              }}
+            >
+              {complianceStatus.overallCompliance}%
+            </p>
+            <p style={{ margin: 0, color: colors.textSecondary, fontSize: fontSizes.sm }}>
+              Trend: needs attention
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-6 text-sm text-gray-700">
-        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
-        <p>Next BAS due by <strong>{complianceStatus.nextDue}</strong>.</p>
-        {complianceStatus.outstandingLodgments.length > 0 && (
-          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
-        )}
-        {complianceStatus.outstandingAmounts.length > 0 && (
-          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
-        )}
-      </div>
-
-      <div className="mt-4 text-xs text-gray-500 italic">
-        Staying compliant helps avoid audits, reduce penalties, and increase access to ATO support programs.
-      </div>
-    </div>
+        <div
+          style={{
+            display: "grid",
+            gap: spacing.lg,
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          }}
+        >
+          <div style={cardStyle}>
+            <h3 style={{ margin: 0, fontSize: fontSizes.lg }}>Key dates</h3>
+            <p style={{ margin: 0, color: colors.textSecondary }}>
+              Last BAS lodged <strong>{complianceStatus.lastBAS}</strong>
+            </p>
+            <p style={{ margin: 0, color: colors.textSecondary }}>
+              Next BAS due <strong>{complianceStatus.nextDue}</strong>
+            </p>
+          </div>
+          <div style={cardStyle}>
+            <h3 style={{ margin: 0, fontSize: fontSizes.lg }}>Outstanding items</h3>
+            {complianceStatus.outstandingLodgments.length > 0 && (
+              <p style={{ margin: 0, color: colors.danger, fontSize: fontSizes.sm }}>
+                Lodgments: {complianceStatus.outstandingLodgments.join(", ")}
+              </p>
+            )}
+            {complianceStatus.outstandingAmounts.length > 0 && (
+              <p style={{ margin: 0, color: colors.danger, fontSize: fontSizes.sm }}>
+                Payments: {complianceStatus.outstandingAmounts.join(", ")}
+              </p>
+            )}
+          </div>
+          <div style={cardStyle}>
+            <h3 style={{ margin: 0, fontSize: fontSizes.lg }}>Quick links</h3>
+            <ul style={{ margin: 0, paddingLeft: "18px", color: colors.textSecondary, fontSize: fontSizes.sm }}>
+              <li>
+                <Link to="/evidence" style={{ color: colors.accent }}>
+                  Upload supporting evidence
+                </Link>
+              </li>
+              <li>
+                <Link to="/wizard" style={{ color: colors.accent }}>
+                  Automate PAYGW & GST transfers
+                </Link>
+              </li>
+              <li>
+                <Link to="/settings" style={{ color: colors.accent }}>
+                  Update business profile
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </Page>
   );
 }

@@ -1,39 +1,71 @@
-import React from 'react';
+import React from "react";
+import Page from "../ui/Page";
+import { colors, fontSizes, radii, shadows, spacing } from "../ui/tokens.css";
+
+export const meta = {
+  title: "Help & guidance",
+  helpSlug: "help",
+};
+
+const cardStyle: React.CSSProperties = {
+  background: colors.surface,
+  borderRadius: radii.lg,
+  boxShadow: shadows.soft,
+  padding: spacing.xl,
+  display: "flex",
+  flexDirection: "column",
+  gap: spacing.sm,
+};
 
 export default function Help() {
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Help & Guidance</h1>
-      <p className="text-sm text-muted-foreground">
-        Access support for PAYGW, GST, BAS and using this system.
-      </p>
-      <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">Getting Started</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li>Set up your buffer accounts and payment schedule in <strong>Settings</strong>.</li>
-          <li>Use the <strong>Wizard</strong> to define PAYGW and GST split rules.</li>
-          <li>Review <strong>Dashboard</strong> for current obligations and payment alerts.</li>
-          <li>Go to <strong>BAS</strong> to lodge your Business Activity Statement each quarter.</li>
-        </ul>
+    <Page meta={meta} breadcrumbs={[{ label: "Support" }, { label: "Help" }]}>
+      <div style={{ display: "grid", gap: spacing.xl }}>
+        <div style={cardStyle}>
+          <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Getting started</h2>
+          <ul style={{ margin: 0, paddingLeft: "20px", fontSize: fontSizes.sm, color: colors.textSecondary }}>
+            <li>Complete the setup wizard to align PAYGW and GST accounts.</li>
+            <li>Review the dashboard weekly for outstanding lodgments.</li>
+            <li>Capture evidence for invoices and payroll in the Evidence workspace.</li>
+          </ul>
+        </div>
+        <div style={cardStyle}>
+          <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>ATO compliance</h2>
+          <ul style={{ margin: 0, paddingLeft: "20px", fontSize: fontSizes.sm, color: colors.textSecondary }}>
+            <li>Maintain one-way accounts to protect withheld funds.</li>
+            <li>Use the audit log when responding to ATO reviews.</li>
+            <li>Stay ahead of BAS due dates with scheduled transfers.</li>
+          </ul>
+        </div>
+        <div style={cardStyle}>
+          <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Support links</h2>
+          <ul style={{ margin: 0, paddingLeft: "20px", fontSize: fontSizes.sm }}>
+            <li>
+              <a href="https://www.ato.gov.au/business/payg-withholding/" style={{ color: colors.accent }}>
+                ATO PAYGW guide
+              </a>
+            </li>
+            <li>
+              <a href="https://www.ato.gov.au/business/gst/" style={{ color: colors.accent }}>
+                ATO GST information
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://www.ato.gov.au/business/business-activity-statements-(bas)/"
+                style={{ color: colors.accent }}
+              >
+                ATO BAS portal
+              </a>
+            </li>
+            <li>
+              <a href="https://www.ato.gov.au/General/Online-services/" style={{ color: colors.accent }}>
+                ATO online services
+              </a>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">ATO Compliance</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li>Use one-way tax accounts to prevent accidental use of withheld/collected funds.</li>
-          <li>Audit trail with timestamped actions supports legal protection and evidence.</li>
-          <li>Helps avoid wind-up notices, director penalties, and late lodgment fines.</li>
-        </ul>
-      </div>
-      <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">Support Links</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/payg-withholding/">ATO PAYGW Guide</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/gst/">ATO GST Information</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/business-activity-statements-(bas)/">ATO BAS Portal</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/super-for-employers/">ATO Super Obligations</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/General/Online-services/">ATO Online Services</a></li>
-        </ul>
-      </div>
-    </div>
+    </Page>
   );
 }
