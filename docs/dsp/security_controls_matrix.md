@@ -1,0 +1,16 @@
+# Security Controls Matrix – DSP Focus Areas
+
+| Control Domain | Requirement | Current Implementation | Evidence & Monitoring | Gaps / Enhancements |
+| --- | --- | --- | --- | --- |
+| Multi-Factor Authentication (MFA) | Enforce MFA for all privileged and remote access to production systems. | SSO integrates with Azure AD; conditional access requires MFA for engineering and support staff. Emergency break-glass accounts stored in sealed envelope safe. | Azure AD sign-in reports; quarterly review of MFA enforcement; automated alert if MFA disabled. | Automate disabling of stale break-glass accounts and rotate credentials every 90 days. Document manual override procedure in IR runbook. |
+| Segregation of Duties (SoD) | Separate duties for development, deployment, and approval to reduce fraud risk. | CI/CD requires peer review and approval from non-authoring engineer. Production database access limited to platform team; finance team executes payment approvals via dual-control workflow. | GitHub branch protection logs; infrastructure IAM roles; payment approval audit logs retained 7 years. | Formalise SoD matrix and link to HR roles. Introduce automated alert when same user approves and deploys in a single change window. |
+| Key Management Service (KMS) | Protect encryption keys with hardware-backed modules and strict access controls. | AWS KMS CMKs manage encryption for databases, object storage, and secrets manager. Key policies restrict usage to application roles. Automatic rotation enabled annually. | AWS CloudTrail events and Security Hub findings; monthly key usage review by Security Lead. | Implement customer-managed key (CMK) access request workflow; document cryptographic architecture diagram in evidence pack. |
+| Logging & Monitoring | Capture security-relevant events, centralise logs, and retain for investigation. | CloudTrail, VPC Flow Logs, application audit trail, and database logs ingested into SIEM (Chronicle). Retention 400 days online, archive to cold storage for 7 years. | SIEM dashboards for authentication anomalies, payment exceptions, and admin actions. Weekly review by Security Operations duty officer. | Add automated integrity checks for log pipeline; integrate SIEM alerts with PagerDuty for on-call escalation. |
+| Incident Response (IR) | Detect, triage, and recover from incidents within defined SLAs, notifying regulators when required. | Incident response runbook defines severity levels, roles, communication templates, and 72-hour notification target. Security Lead owns process. | Runbook stored in Confluence with revision history. Quarterly tabletop exercises; post-incident reviews logged in Jira. | Establish incident metrics (MTTD/MTTR) dashboard. Align with disaster recovery test results and capture lessons learned tracker. |
+
+## Control Ownership & Review Cadence
+- **Security Lead:** MFA, logging & monitoring, incident response.
+- **Platform Lead:** SoD, KMS operations, access reviews.
+- **Privacy Officer:** Works with control owners to validate privacy implications and record residual risks.
+
+Controls are reviewed quarterly during the DSP compliance forum, with findings recorded in the risk register and tracked to closure.
