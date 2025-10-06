@@ -1,24 +1,30 @@
-export async function submitSTPReport(data: any): Promise<boolean> {
+import { withApiErrorToast } from "./apiClient";
+
+export const submitSTPReport = withApiErrorToast("STP submission", async (data: any) => {
   console.log("Submitting STP report to ATO:", data);
   return true;
-}
+});
 
-export async function signTransaction(amount: number, account: string): Promise<string> {
-  return `SIGNED-${amount}-${account}-${Date.now()}`;
-}
+export const signTransaction = withApiErrorToast(
+  "Transaction signing",
+  async (amount: number, account: string) => `SIGNED-${amount}-${account}-${Date.now()}`
+);
 
-export async function transferToOneWayAccount(amount: number, from: string, to: string): Promise<boolean> {
-  const signature = await signTransaction(amount, to);
-  console.log(`Transfer $${amount} from ${from} to ${to} [${signature}]`);
-  return true;
-}
+export const transferToOneWayAccount = withApiErrorToast(
+  "One-way transfer",
+  async (amount: number, from: string, to: string) => {
+    const signature = await signTransaction(amount, to);
+    console.log(`Transfer $${amount} from ${from} to ${to} [${signature}]`);
+    return true;
+  }
+);
 
-export async function verifyFunds(paygwDue: number, gstDue: number): Promise<boolean> {
+export const verifyFunds = withApiErrorToast("Fund verification", async (_paygwDue: number, _gstDue: number) => {
   // For mock: always return true
   return true;
-}
+});
 
-export async function initiateTransfer(paygwDue: number, gstDue: number): Promise<boolean> {
+export const initiateTransfer = withApiErrorToast("ATO transfer", async (_paygwDue: number, _gstDue: number) => {
   // For mock: always return true
   return true;
-}
+});
