@@ -1,4 +1,5 @@
 APGMS (Automated PAYGW & GST Management System)
+![Continuous Integration](https://img.shields.io/badge/CI-smoke%20%2B%20golden-4c1)
 APGMS is an open-source web application that automates the calculation, securing, and remittance of PAYGW (Pay As You Go Withholding) and GST (Goods and Services Tax) obligations for Australian businesses at BAS (Business Activity Statement) lodgment.
 It integrates with payroll and point-of-sale systems, leverages designated one-way accounts for secure tax fund management, and provides compliance alerts and audit-ready reporting.
 
@@ -14,6 +15,10 @@ Automates BAS-time fund transfers to the ATO, with pre-lodgment verification.
 
 Compliance & Alerts:
 Proactive alerts for discrepancies, insufficient funds, and upcoming deadlines.
+
+Operational Readiness:
+- `/ops/readiness` surfaces prototype versus production readiness scores along with the most recent guardrail checks.
+- `scripts/smoke.sim.ts` seeds a demo period, issues an RPT, performs the simulated release, ingests settlement CSV data, and fetches the evidence bundle in one flow.
 
 Audit Trail & Reporting:
 Dashboard for real-time compliance monitoring and generating audit/compliance reports.
@@ -83,6 +88,10 @@ Open source under the MIT License.
 
 Acknowledgments
 Inspired by the ATO Cash Flow Coaching Kit (https://github.com/cash-flow-coaching-kit/cash-flow-coaching-kit) structure.
+
+Continuous Integration
+- CI runs the smoke simulation (`pnpm tsx scripts/smoke.sim.ts`) and the RPT golden tests on every push to keep the badge above green.
+- Badges are published via Shields.io so downstream teams can monitor operational drift at a glance.
 
 For demonstration and prototyping only—real-world deployments require further security and legal review.
 
