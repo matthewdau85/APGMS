@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Payments } from "../../../libs/paymentsClient";
+import { MoneyCents, expectMoneyCents, toCents } from "../../../libs/money";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -8,13 +9,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
-    if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
+    if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing fields" });
     }
-    if (amountCents >= 0) {
+    let cents: MoneyCents;
+    try {
+      cents = expectMoneyCents(amountCents, "amountCents");
+    } catch (err: any) {
+      return res.status(400).json({ error: err?.message || "Invalid amount" });
+    }
+    if (toCents(cents) >= 0) {
       return res.status(400).json({ error: "Release must be negative" });
     }
-    const data = await Payments.payAto({ abn, taxType, periodId, amountCents });
+    const data = await Payments.payAto({ abn, taxType, periodId, amountCents: cents });
     return res.status(200).json(data);
   } catch (err: any) {
     return res.status(400).json({ error: err?.message || "Release failed" });

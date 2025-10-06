@@ -1,10 +1,11 @@
-﻿import nacl from "tweetnacl";
+import nacl from "tweetnacl";
+import { MoneyCents } from "../../libs/money";
 
 export interface RptPayload {
-  entity_id: string; period_id: string; tax_type: "PAYGW"|"GST";
-  amount_cents: number; merkle_root: string; running_balance_hash: string;
+  entity_id: string; period_id: string; tax_type: "PAYGW" | "GST";
+  amount_cents: MoneyCents; merkle_root: string; running_balance_hash: string;
   anomaly_vector: Record<string, number>; thresholds: Record<string, number>;
-  rail_id: "EFT"|"BPAY"|"PayTo"; reference: string; expiry_ts: string; nonce: string;
+  rail_id: "EFT" | "BPAY" | "PayTo"; reference: string; expiry_ts: string; nonce: string;
 }
 
 export function signRpt(payload: RptPayload, secretKey: Uint8Array): string {
