@@ -1,5 +1,15 @@
-export function calculatePenalties(daysLate: number, amountDue: number): number {
-  const basePenalty = amountDue * 0.05;
-  const dailyInterest = amountDue * 0.0002;
-  return basePenalty + (dailyInterest * daysLate);
+import { postJson } from "./taxEngineClient";
+
+type PenaltyResponse = { penalty: number };
+
+export async function calculatePenalties(daysLate: number, amountDue: number, annualRate?: number): Promise<number> {
+  const payload: Record<string, number> = {
+    daysLate,
+    amountDue,
+  };
+  if (annualRate !== undefined) {
+    payload.annualRate = annualRate;
+  }
+  const result = await postJson<PenaltyResponse>("/calculate/penalties", payload);
+  return result.penalty ?? 0;
 }

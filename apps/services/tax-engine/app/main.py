@@ -28,7 +28,7 @@ import asyncio
 import os
 from typing import Optional
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, HTTPException
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
@@ -147,10 +147,77 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
+from .tax_rules import gst_line_tax, penalty_general_interest, GIC_ANNUAL_RATE
 import os, json
+from functools import lru_cache
 
-TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+try:
+    TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+except AssertionError:
+    class _MissingTemplates:
+        def TemplateResponse(self, *_args, **_kwargs):  # pragma: no cover - executed only without jinja2
+            raise HTTPException(status_code=500, detail="jinja2 not installed")
+
+    TEMPLATES = _MissingTemplates()
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+
+@lru_cache()
+def _payg_rules():
+    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+def _resolve_rounding(value: float) -> float:
+    return round(value + 1e-8, 2)
+
+@app.post("/calculate/payg-w")
+def calculate_payg_w(payload: dict):
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid payload")
+
+    payg_payload = dict(payload.get("payg_w") or {})
+    gross = payload.get("gross") or payload.get("gross_income") or payload.get("grossIncome")
+    if gross is not None:
+        payg_payload.setdefault("gross", float(gross))
+    payg_payload.setdefault("method", "table_ato")
+    payg_payload.setdefault("period", payload.get("period") or "weekly")
+
+    rules = _payg_rules()
+    result = payg_w_mod.compute({"payg_w": payg_payload}, rules)
+
+    already_withheld = float(payload.get("tax_withheld") or payload.get("already_withheld") or payload.get("withheld") or 0.0)
+    deductions = float(payload.get("deductions") or 0.0)
+    liability = max(result["withholding"] - already_withheld - deductions, 0.0)
+
+    return {
+        "gross": _resolve_rounding(result["gross"]),
+        "withholding": _resolve_rounding(result["withholding"]),
+        "net": _resolve_rounding(result["net"]),
+        "liability": _resolve_rounding(liability),
+        "explain": result.get("explain", []),
+    }
+
+@app.post("/calculate/gst")
+def calculate_gst(payload: dict):
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    amount = float(payload.get("amount") or payload.get("saleAmount") or 0.0)
+    tax_code = payload.get("tax_code") or ("GST_FREE" if payload.get("exempt") else "GST")
+    amount_cents = int(round(amount * 100))
+    gst_cents = gst_line_tax(amount_cents, str(tax_code).upper())
+    return {"gst": _resolve_rounding(gst_cents / 100.0)}
+
+@app.post("/calculate/penalties")
+def calculate_penalties(payload: dict):
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Invalid payload")
+    amount = float(payload.get("amount") or payload.get("amount_due") or payload.get("amountDue") or 0.0)
+    days = int(payload.get("days") or payload.get("days_late") or payload.get("daysLate") or 0)
+    if payload.get("annual_rate") or payload.get("annualRate"):
+        rate = float(payload.get("annual_rate") or payload.get("annualRate"))
+        penalty = penalty_general_interest(amount, days, annual_rate=rate)
+    else:
+        penalty = penalty_general_interest(amount, days, annual_rate=GIC_ANNUAL_RATE)
+    return {"penalty": _resolve_rounding(penalty)}
 
 @app.get("/ui")
 def ui_index(request: Request):
