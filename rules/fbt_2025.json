@@ -1,0 +1,26 @@
+{
+  "year": "2025",
+  "period_start": "2024-04-01",
+  "period_end": "2025-03-31",
+  "gross_up_factors": {
+    "type1": 2.0802,
+    "type2": 1.8868
+  },
+  "thresholds": {
+    "rfba_minimum": 2000.0,
+    "ev_luxury_car_threshold": 89732.0,
+    "ev_zero_emissions_required": true
+  },
+  "car_benefit": {
+    "statutory_fraction": 0.2,
+    "days_in_year": 365,
+    "base_value_reduction_years": 4,
+    "maximum_reductions": 3
+  },
+  "ev_exemption": {
+    "enabled": true,
+    "first_applicable_year": "2024",
+    "lct_threshold": 89732.0,
+    "co2_threshold": 0.0
+  }
+}
