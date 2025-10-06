@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payments ledger request v1",
+  "type": "object",
+  "required": ["schema_version", "abn", "taxType", "periodId"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["v1", "v2"] },
+    "abn": { "type": "string", "minLength": 1 },
+    "taxType": { "type": "string", "minLength": 1 },
+    "periodId": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

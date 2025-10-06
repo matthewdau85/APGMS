@@ -25,7 +25,7 @@ export const Payments = {
     const res = await fetch(`${BASE}/deposit`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(args),
+      body: JSON.stringify({ schema_version: "v1", ...args }),
     });
     return handle(res);
   },
@@ -33,19 +33,21 @@ export const Payments = {
     const res = await fetch(`${BASE}/payAto`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(args),
+      body: JSON.stringify({ schema_version: "v1", ...args }),
     });
     return handle(res);
   },
   async balance(q: Common) {
     const u = new URL(`${BASE}/balance`);
     Object.entries(q).forEach(([k, v]) => u.searchParams.set(k, String(v)));
+    u.searchParams.set("schema_version", "v1");
     const res = await fetch(u);
     return handle(res);
   },
   async ledger(q: Common) {
     const u = new URL(`${BASE}/ledger`);
     Object.entries(q).forEach(([k, v]) => u.searchParams.set(k, String(v)));
+    u.searchParams.set("schema_version", "v1");
     const res = await fetch(u);
     return handle(res);
   },

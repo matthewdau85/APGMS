@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "apgms.tax event v1",
+  "type": "object",
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["v1", "v2"] },
+    "calculation_id": { "type": "string" },
+    "entity": { "type": "string" },
+    "period": { "type": "string" },
+    "result": { "type": "object" }
+  },
+  "additionalProperties": true
+}

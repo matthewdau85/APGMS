@@ -1,9 +1,16 @@
 import type { Request, Response } from "express";
 import { pool } from "../index.js";
+import { normalizeSchemaVersion } from "../utils/schemaVersion.js";
 
 export async function balance(req: Request, res: Response) {
   try {
-    const { abn, taxType, periodId } = req.query as Record<string, string>;
+    const { abn, taxType, periodId, schema_version } = req.query as Record<string, string>;
+    let schemaVersion: "v1" | "v2";
+    try {
+      schemaVersion = normalizeSchemaVersion(schema_version);
+    } catch (err: any) {
+      return res.status(400).json({ error: "Unsupported schema_version", detail: String(err?.message || err) });
+    }
     if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     }
@@ -19,6 +26,7 @@ export async function balance(req: Request, res: Response) {
     const row = rows[0] || { balance_cents: 0, has_release: false };
 
     res.json({
+      schema_version: schemaVersion,
       abn, taxType, periodId,
       balance_cents: Number(row.balance_cents),
       has_release: !!row.has_release

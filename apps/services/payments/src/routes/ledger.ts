@@ -1,9 +1,16 @@
 import type { Request, Response } from "express";
 import { pool } from "../index.js";
+import { normalizeSchemaVersion } from "../utils/schemaVersion.js";
 
 export async function ledger(req: Request, res: Response) {
   try {
-    const { abn, taxType, periodId } = req.query as Record<string, string>;
+    const { abn, taxType, periodId, schema_version } = req.query as Record<string, string>;
+    let schemaVersion: "v1" | "v2";
+    try {
+      schemaVersion = normalizeSchemaVersion(schema_version);
+    } catch (err: any) {
+      return res.status(400).json({ error: "Unsupported schema_version", detail: String(err?.message || err) });
+    }
     if (!abn || !taxType || !periodId) {
       return res.status(400).json({ error: "Missing abn/taxType/periodId" });
     }
@@ -15,7 +22,7 @@ export async function ledger(req: Request, res: Response) {
       ORDER BY id ASC
     `;
     const { rows } = await pool.query(q, [abn, taxType, periodId]);
-    res.json({ abn, taxType, periodId, rows });
+    res.json({ schema_version: schemaVersion, abn, taxType, periodId, rows });
   } catch (e: any) {
     res.status(500).json({ error: "ledger query failed", detail: String(e?.message || e) });
   }

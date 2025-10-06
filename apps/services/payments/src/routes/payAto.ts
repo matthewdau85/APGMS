@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
+import { normalizeSchemaVersion } from '../utils/schemaVersion.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -15,7 +16,13 @@ function genUUID() {
  * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
  */
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
+  const { abn, taxType, periodId, amountCents, schema_version } = req.body || {};
+  let schemaVersion: "v1" | "v2";
+  try {
+    schemaVersion = normalizeSchemaVersion(schema_version);
+  } catch (err: any) {
+    return res.status(400).json({ error: "Unsupported schema_version", detail: String(err?.message || err) });
+  }
   if (!abn || !taxType || !periodId) {
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
   }
@@ -76,6 +83,7 @@ export async function payAtoRelease(req: Request, res: Response) {
     await client.query('COMMIT');
 
     return res.json({
+      schema_version: schemaVersion,
       ok: true,
       ledger_id: ins[0].id,
       transfer_uuid,

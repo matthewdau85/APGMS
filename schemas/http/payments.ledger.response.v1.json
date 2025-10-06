@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payments ledger response v1",
+  "type": "object",
+  "required": ["schema_version", "abn", "taxType", "periodId", "rows"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["v1", "v2"] },
+    "abn": { "type": "string", "minLength": 1 },
+    "taxType": { "type": "string", "minLength": 1 },
+    "periodId": { "type": "string", "minLength": 1 },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "amount_cents", "balance_after_cents", "created_at"],
+        "properties": {
+          "id": { "type": "integer" },
+          "amount_cents": { "type": "integer" },
+          "balance_after_cents": { "type": "integer" },
+          "rpt_verified": { "type": ["boolean", "null"] },
+          "release_uuid": { "type": ["string", "null"] },
+          "bank_receipt_id": { "type": ["string", "null"] },
+          "created_at": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

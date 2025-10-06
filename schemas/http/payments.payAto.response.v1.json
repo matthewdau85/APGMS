@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Payments payAto response v1",
+  "type": "object",
+  "required": ["schema_version", "ok", "ledger_id", "transfer_uuid", "release_uuid", "balance_after_cents", "rpt_ref"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["v1", "v2"] },
+    "ok": { "type": "boolean" },
+    "ledger_id": { "type": "integer" },
+    "transfer_uuid": { "type": "string" },
+    "release_uuid": { "type": "string" },
+    "balance_after_cents": { "type": "integer" },
+    "rpt_ref": {
+      "type": "object",
+      "required": ["rpt_id", "kid", "payload_sha256"],
+      "properties": {
+        "rpt_id": { "type": "integer" },
+        "kid": { "type": "string" },
+        "payload_sha256": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

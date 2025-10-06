@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "apgms.normalized event v1",
+  "type": "object",
+  "required": ["schema_version", "event_type"],
+  "properties": {
+    "schema_version": { "type": "string", "enum": ["v1", "v2"] },
+    "event_type": { "type": "string", "minLength": 1 },
+    "payload": { "type": ["object", "array", "string", "number", "boolean", "null"] },
+    "source": { "type": "string" },
+    "received_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}
