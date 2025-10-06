@@ -1,0 +1,12 @@
+{
+  "version": "2024-07",
+  "standardRate": 0.1,
+  "reducedRates": {
+    "basicFood": 0,
+    "exportedGoods": 0,
+    "inputTaxed": 0
+  },
+  "registrationThreshold": 75000,
+  "cashAccountingThreshold": 1000000,
+  "rounding": "standard"
+}

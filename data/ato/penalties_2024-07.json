@@ -1,0 +1,15 @@
+{
+  "version": "2024-07",
+  "penaltyUnitAmount": 313,
+  "gracePeriodDays": 0,
+  "tiers": [
+    { "minDays": 1, "maxDays": 28, "units": 1 },
+    { "minDays": 29, "maxDays": 56, "units": 2 },
+    { "minDays": 57, "maxDays": 84, "units": 3 },
+    { "minDays": 85, "maxDays": null, "units": 5 }
+  ],
+  "interest": {
+    "rate": 0.07,
+    "rounding": "bankers"
+  }
+}
