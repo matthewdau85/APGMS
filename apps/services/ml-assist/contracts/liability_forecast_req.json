@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apgms.local/ml-assist/liability_forecast_req.json",
+  "title": "LiabilityForecastRequest",
+  "type": "object",
+  "required": ["entity_id", "forecast_periods", "historical_liability"],
+  "properties": {
+    "entity_id": {
+      "type": "string",
+      "description": "Business identifier"
+    },
+    "forecast_periods": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 12,
+      "description": "Number of future periods to forecast"
+    },
+    "historical_liability": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["period", "amount"],
+        "properties": {
+          "period": { "type": "string" },
+          "amount": { "type": "number" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

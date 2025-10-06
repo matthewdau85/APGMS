@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apgms.local/ml-assist/ledger_entry.json",
+  "title": "LedgerEntry",
+  "type": "object",
+  "required": ["entry_id", "booked_at", "amount", "account_code"],
+  "properties": {
+    "entry_id": {
+      "type": "string",
+      "description": "Unique ledger entry identifier"
+    },
+    "booked_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the ledger entry was booked"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Signed amount of the entry"
+    },
+    "account_code": {
+      "type": "string",
+      "description": "Chart of account code"
+    },
+    "memo": {
+      "type": "string",
+      "description": "Optional ledger memo or narration"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apgms.local/ml-assist/invoice_doc.json",
+  "title": "InvoiceDocument",
+  "type": "object",
+  "required": ["invoice_id", "line_items"],
+  "properties": {
+    "invoice_id": {
+      "type": "string",
+      "description": "Invoice identifier from source system"
+    },
+    "supplier_abn": {
+      "type": "string",
+      "description": "Supplier tax identifier (hashed downstream)"
+    },
+    "customer_id": {
+      "type": "string",
+      "description": "Customer identifier (hashed downstream)"
+    },
+    "supplier_name": {
+      "type": "string",
+      "description": "Supplier legal name (redacted on ingest)"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Customer legal name (redacted on ingest)"
+    },
+    "billing_address": {
+      "type": "string",
+      "description": "Billing address (redacted on ingest)"
+    },
+    "shipping_address": {
+      "type": "string",
+      "description": "Shipping address (redacted on ingest)"
+    },
+    "issue_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Invoice issue date"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Invoice due date"
+    },
+    "currency": {
+      "type": "string",
+      "default": "AUD"
+    },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description", "quantity", "unit_price"],
+        "properties": {
+          "description": { "type": "string" },
+          "quantity": { "type": "number", "minimum": 0 },
+          "unit_price": { "type": "number", "minimum": 0 },
+          "tax_code": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
