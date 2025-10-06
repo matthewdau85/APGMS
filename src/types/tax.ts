@@ -17,6 +17,7 @@ export type TaxReport = {
   totalPayable: number;
   discrepancies?: string[];
   complianceStatus: "OK" | "WARNING" | "ALERT";
+  periodId?: string;
 };
 
 export type BASHistory = {
