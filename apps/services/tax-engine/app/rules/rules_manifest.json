@@ -1,0 +1,53 @@
+{
+  "rates_version": "2024-07-01",
+  "files": [
+    {
+      "name": "payg_w_2024_25/weekly.json",
+      "sha256": "7c141f812992f4ab9aa5dcc13cc3270dd93677ec98ac70c5130bd451d36681b1",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/weekly-tax-table/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2024-07-01"
+    },
+    {
+      "name": "payg_w_2024_25/fortnightly.json",
+      "sha256": "a69626bbd4fde56414265da26370ded1cfcd990b4a4c072e2dece665c2335cc4",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/fortnightly-tax-table/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2024-07-01"
+    },
+    {
+      "name": "payg_w_2024_25/monthly.json",
+      "sha256": "153871a3a8a5453a4b0316c0a38106025f39becf8e947109052573cc4a6d4901",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/monthly-tax-table/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2024-07-01"
+    },
+    {
+      "name": "payg_w_flags.json",
+      "sha256": "acac95ea531334b9734b9e7d9ee09b7ae7c3eb3c959802b27152f5f067e55d98",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2024-07-01"
+    },
+    {
+      "name": "gst_core.json",
+      "sha256": "6b15720cda2f83ff500e27fb846ef9cb7de14668d3814b07c79f1b3f68ad1903",
+      "source_url": "https://www.ato.gov.au/Business/GST/",
+      "effective_from": "2000-07-01",
+      "effective_to": null,
+      "last_reviewed": "2024-07-01"
+    },
+    {
+      "name": "bas_labels.json",
+      "sha256": "5af5b080b2150766941031bf6cacab01c514cb779d1136a7ec8a783ea831b6bf",
+      "source_url": "https://www.ato.gov.au/Business/Business-activity-statements-(BAS)/",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "last_reviewed": "2024-07-01"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ export interface RptPayload {
   amount_cents: number; merkle_root: string; running_balance_hash: string;
   anomaly_vector: Record<string, number>; thresholds: Record<string, number>;
   rail_id: "EFT"|"BPAY"|"PayTo"; reference: string; expiry_ts: string; nonce: string;
+  rates_version?: string | null;
 }
 
 export function signRpt(payload: RptPayload, secretKey: Uint8Array): string {
