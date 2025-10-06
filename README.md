@@ -78,6 +78,13 @@ End-to-end encryption (e.g., AES-256)
 
 Robust audit logs
 
+Machine Learning Usage Constraints
+To remain compliant with regulatory and security requirements, do **not**:
+
+- Use ML to compute PAYGW, GST, penalties, or PAYGI obligations; these calculations must stay deterministic and rule-based.
+- Auto-post ML-generated outputs to the ledger, gates, or evidence repositories without a human confirming the action.
+- Store raw documents or personally identifiable information in ML systems beyond what is essential for feature engineering.
+
 License
 Open source under the MIT License.
 
