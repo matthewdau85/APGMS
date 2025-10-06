@@ -1,0 +1,123 @@
+name: Deploy Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - staging
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_STAGING_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install CDK dependencies
+        working-directory: infra/cdk
+        run: |
+          npm install -g aws-cdk
+          npm ci
+
+      - name: Synthesize infrastructure
+        working-directory: infra/cdk
+        run: |
+          npm run build
+          npx cdk synth
+
+      - name: Build container image
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION }}
+        run: |
+          ECR_URI=$(aws ecr describe-repositories --repository-names apgms-staging --query 'repositories[0].repositoryUri' --output text)
+          if [ -z "$ECR_URI" ] || [ "$ECR_URI" = "None" ]; then
+            echo "::error::Missing staging ECR repository. Run CDK deploy first."
+            exit 1
+          fi
+          echo "ECR_URI=$ECR_URI" >> $GITHUB_ENV
+          IMAGE_TAG=$(git rev-parse --short=12 $GITHUB_SHA)
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          aws ecr get-login-password | docker login --username AWS --password-stdin "$ECR_URI"
+          docker build -t "$ECR_URI:$IMAGE_TAG" -t "$ECR_URI:staging" .
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Security scan container
+        env:
+          ECR_URI: ${{ env.ECR_URI }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          npm install -g trivy
+          trivy image --no-progress "$ECR_URI:$IMAGE_TAG"
+
+      - name: IaC policy scan
+        run: |
+          npm install -g checkov
+          checkov -d infra
+
+      - name: Run tests
+        run: npm test
+
+      - name: Push container image
+        env:
+          ECR_URI: ${{ env.ECR_URI }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          docker push "$ECR_URI:$IMAGE_TAG"
+          docker push "$ECR_URI:staging"
+
+      - name: Deploy infrastructure
+        working-directory: infra/cdk
+        env:
+          CDK_CONTEXT_JSON: >-
+            {"account":"${{ secrets.AWS_ACCOUNT_ID }}","region":"${{ vars.AWS_REGION }}","repository":"${{ github.repository }}","branch":"${{ github.ref_name }}","connectionArn":"${{ secrets.AWS_CODESTAR_CONNECTION_ARN }}"}
+        run: |
+          npm run build
+          npx cdk deploy ApGmsStagingPipeline --require-approval never --context account=${{ secrets.AWS_ACCOUNT_ID }} --context region=${{ vars.AWS_REGION }} --context repository=${{ github.repository }} --context branch=${{ github.ref_name }} --context connectionArn=${{ secrets.AWS_CODESTAR_CONNECTION_ARN }}
+
+      - name: Force ECS rollout
+        run: |
+          CLUSTER=$(aws cloudformation describe-stacks --stack-name ApGmsStaging-StagingEnvironmentStack --query 'Stacks[0].Outputs[?OutputKey==`ClusterName`].OutputValue' --output text)
+          SERVICE=$(aws cloudformation describe-stacks --stack-name ApGmsStaging-StagingEnvironmentStack --query 'Stacks[0].Outputs[?OutputKey==`ServiceName`].OutputValue' --output text)
+          aws ecs update-service --cluster "$CLUSTER" --service "$SERVICE" --force-new-deployment
+
+      - name: Verify health
+        run: |
+          DISTRIBUTION=$(aws cloudformation describe-stacks --stack-name ApGmsStaging-StagingEnvironmentStack --query 'Stacks[0].Outputs[?OutputKey==`DistributionDomain`].OutputValue' --output text)
+          for i in $(seq 1 15); do
+            STATUS=$(curl -s -o /tmp/body -w '%{http_code}' "https://$DISTRIBUTION/healthz")
+            cat /tmp/body
+            if [ "$STATUS" = "200" ]; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Health check failed"
+          exit 1
+
+      - name: Emit deployment metric
+        run: |
+          aws cloudwatch put-metric-data --namespace "ApGms/Staging" --metric-name "PipelineDeployment" --value 1 --unit Count --dimensions ImageTag=$IMAGE_TAG
+
+      - name: Publish traces note
+        run: |
+          echo "X-Ray tracing enabled via task role policy. Ensure application emits segments."
