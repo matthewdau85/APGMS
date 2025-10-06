@@ -1,0 +1,94 @@
+{
+  "version": "1.0",
+  "generatedAt": "2025-10-06T13:00:45.547Z",
+  "prototypeScore": 8.33,
+  "realScore": 9.33,
+  "prototypeResults": [
+    {
+      "key": "rails_sim",
+      "ok": false,
+      "details": "/sim/rail ✗ fetch failed; /settlement/import ✗ fetch failed; offline fallback: matched 4/4 implementation keywords",
+      "points": 1,
+      "maxPoints": 2
+    },
+    {
+      "key": "evidence_v2",
+      "ok": true,
+      "details": "validated 2/2 evidence files",
+      "points": 2,
+      "maxPoints": 2
+    },
+    {
+      "key": "rules_correct",
+      "ok": false,
+      "details": "jest tests failed (code 127); npm warn Unknown env config \"http-proxy\". This will stop working in the next major version of npm. | sh: 1: jest: not found; RATES_VERSION marker found; manifest sha256 3f84b942723a…",
+      "points": 1.33,
+      "maxPoints": 2
+    },
+    {
+      "key": "security_thin",
+      "ok": true,
+      "details": "jwt: found; dual approval: found; mfa: found; roles: found",
+      "points": 1,
+      "maxPoints": 1
+    },
+    {
+      "key": "observability",
+      "ok": true,
+      "details": "health:✓, metrics:✓, request-id:✓",
+      "points": 1,
+      "maxPoints": 1
+    },
+    {
+      "key": "seed_smoke",
+      "ok": true,
+      "details": "seed script: present; smoke script: present",
+      "points": 1,
+      "maxPoints": 1
+    },
+    {
+      "key": "help_docs",
+      "ok": true,
+      "details": "help component: present; docs directory: present",
+      "points": 1,
+      "maxPoints": 1
+    }
+  ],
+  "realResults": [
+    {
+      "key": "kms_rpt",
+      "ok": false,
+      "details": "kms files: 5; rotation artifact: missing; kid keyword: found",
+      "points": 1.33,
+      "maxPoints": 2
+    },
+    {
+      "key": "sandbox_rail",
+      "ok": true,
+      "details": "mTLS:✓; sandbox:✓; receipts:✓",
+      "points": 2,
+      "maxPoints": 2
+    },
+    {
+      "key": "security_controls",
+      "ok": true,
+      "details": "MFA: found; dual approval: found; rate limit: found; security header: found",
+      "points": 2,
+      "maxPoints": 2
+    },
+    {
+      "key": "assurance",
+      "ok": true,
+      "details": "drift: found; vuln: found; incident: found; disaster: found",
+      "points": 2,
+      "maxPoints": 2
+    },
+    {
+      "key": "pilot_ops",
+      "ok": true,
+      "details": "SLO: found; DLQ: found; proofs: found; /proofs: found",
+      "points": 2,
+      "maxPoints": 2
+    }
+  ]
+}
