@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const tabs = [
   "Business Profile",
@@ -21,6 +21,55 @@ export default function Settings() {
     trading: "Example Vending",
     contact: "info@example.com"
   });
+  const [reconInputs, setReconInputs] = useState<any[]>([]);
+  const [gateStates, setGateStates] = useState<any[]>([]);
+  const [dlqEvents, setDlqEvents] = useState<any[]>([]);
+  const [loadingDlq, setLoadingDlq] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function refreshSimData() {
+    try {
+      const [inputsRes, gatesRes, dlqRes] = await Promise.all([
+        fetch("/api/sim/recon-inputs"),
+        fetch("/api/sim/gates"),
+        fetch("/api/sim/dlq"),
+      ]);
+      const [inputsJson, gatesJson, dlqJson] = await Promise.all([
+        inputsRes.json(),
+        gatesRes.json(),
+        dlqRes.json(),
+      ]);
+      setReconInputs(inputsJson.items || []);
+      setGateStates(gatesJson.gates || []);
+      setDlqEvents(dlqJson.events || []);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || "Unable to load simulation data");
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === "Advanced") {
+      refreshSimData();
+    }
+  }, [activeTab]);
+
+  async function retryDlq(id: string) {
+    try {
+      setLoadingDlq(true);
+      setError(null);
+      const res = await fetch(`/api/sim/dlq/${id}/retry`, { method: "POST" });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Retry failed");
+      }
+      await refreshSimData();
+    } catch (err: any) {
+      setError(err?.message || "Retry failed");
+    } finally {
+      setLoadingDlq(false);
+    }
+  }
 
   return (
     <div className="settings-card">
@@ -205,9 +254,110 @@ export default function Settings() {
           </div>
         )}
         {activeTab === "Advanced" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Export Data</h3>
-            <button className="button">Export as CSV</button>
+          <div style={{ maxWidth: 780, margin: "0 auto" }}>
+            <h3>Inbound Simulation & Recon</h3>
+            <p style={{ fontSize: 14, color: "#555", marginBottom: 16 }}>
+              Trigger inbound simulators via the CLI or <code>/api/sim</code> endpoints to populate reconciliation inputs.
+            </p>
+            {error && <div style={{ color: "#b00020", marginBottom: 12 }}>{error}</div>}
+            <section style={{ marginBottom: 24 }}>
+              <h4>Gate States</h4>
+              <table style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Key</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th>Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gateStates.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: "center", padding: 12 }}>No gate transitions yet.</td>
+                    </tr>
+                  )}
+                  {gateStates.map((gate: any) => (
+                    <tr key={gate.key}>
+                      <td>{gate.key}</td>
+                      <td style={{ color: gate.state === "RECON_OK" ? "#00716b" : "#b00020" }}>{gate.state}</td>
+                      <td>{gate.reason || ""}</td>
+                      <td>{new Date(gate.updatedAt || gate.receivedAt || Date.now()).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+            <section style={{ marginBottom: 24 }}>
+              <h4>Recon Inputs</h4>
+              <table style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Scenario</th>
+                    <th>Source</th>
+                    <th>Amount</th>
+                    <th>Delta</th>
+                    <th>Status</th>
+                    <th>Received</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reconInputs.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: "center", padding: 12 }}>No recon inputs yet.</td>
+                    </tr>
+                  )}
+                  {reconInputs.map((input: any) => (
+                    <tr key={input.id}>
+                      <td>{input.scenario}</td>
+                      <td>{input.source}</td>
+                      <td>${(input.amountCents / 100).toFixed(2)}</td>
+                      <td>{(input.deltaCents / 100).toFixed(2)}</td>
+                      <td style={{ color: input.status === "RECON_OK" ? "#00716b" : "#b00020" }}>{input.status}</td>
+                      <td>{new Date(input.receivedAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+            <section>
+              <h4>Dead Letter Queue</h4>
+              <table style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Source</th>
+                    <th>Reason</th>
+                    <th>Received</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dlqEvents.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>DLQ is empty 🎉</td>
+                    </tr>
+                  )}
+                  {dlqEvents.map((event: any) => (
+                    <tr key={event.id}>
+                      <td>{event.id.slice(0, 8)}…</td>
+                      <td>{event.source}</td>
+                      <td>{event.reason}</td>
+                      <td>{new Date(event.receivedAt).toLocaleString()}</td>
+                      <td>
+                        <button
+                          className="button"
+                          disabled={loadingDlq}
+                          onClick={() => retryDlq(event.id)}
+                        >
+                          Retry
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
           </div>
         )}
       </div>

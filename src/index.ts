@@ -6,6 +6,9 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { payrollWebhook } from "./adapters/payroll/WebhookPayroll";
+import { posWebhook } from "./adapters/pos/WebhookPOS";
+import { simApi } from "./api/sim";
 
 dotenv.config();
 
@@ -18,12 +21,17 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
+app.post("/webhooks/payroll", payrollWebhook);
+app.post("/webhooks/pos", posWebhook);
+
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
 app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);
+
+app.use("/api/sim", simApi);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
