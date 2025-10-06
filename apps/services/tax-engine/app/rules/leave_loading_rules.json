@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "financial_year": "2024-25",
+    "notes": "These settings illustrate common award treatments for annual leave loading.",
+    "source": "APGMS payroll knowledge base"
+  },
+  "default": {
+    "reference": "default",
+    "ote": true,
+    "payroll_tax": true,
+    "sg": null,
+    "note": "Default guidance – leave loading is treated as OTE and subject to payroll tax unless an award carve-out applies."
+  },
+  "rules": [
+    {
+      "reference": "award:modern:clerks:cl25",
+      "aliases": ["clerks-award", "ma000002-cl25"],
+      "ote": true,
+      "payroll_tax": true,
+      "note": "Clerks – Private Sector Award clause 25 treats the 17.5% loading as part of ordinary time earnings."
+    },
+    {
+      "reference": "award:legacy:non_ote",
+      "aliases": ["legacy-non-ote"],
+      "ote": false,
+      "payroll_tax": false,
+      "sg": false,
+      "note": "Legacy workplace agreement specifies the loading is an ex gratia payment."
+    },
+    {
+      "reference": "award:state:qld:sg-only",
+      "aliases": ["qld-state-award"],
+      "ote": false,
+      "payroll_tax": true,
+      "sg": true,
+      "note": "Queensland state instrument treats the loading as not OTE but super guarantee still applies."
+    }
+  ]
+}
