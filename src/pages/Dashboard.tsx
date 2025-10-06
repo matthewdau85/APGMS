@@ -13,6 +13,12 @@ export default function Dashboard() {
     outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
   };
 
+  const abn = '12345678901';
+  const periods = [
+    { id: '2025-09', taxType: 'GST', state: 'RELEASED', merkleRoot: 'merkle_demo_root' },
+    { id: '2025-06', taxType: 'PAYGW', state: 'READY_RPT', merkleRoot: 'pending_merkle' },
+  ];
+
   return (
     <div className="main-card">
       <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6">
@@ -79,6 +85,43 @@ export default function Dashboard() {
               : 'Needs attention'}
           </p>
         </div>
+      </div>
+
+      <div className="bg-white p-4 rounded-xl shadow mt-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Periods</h2>
+          <span className="text-xs text-gray-500">Ledger proofs & evidence bundles</span>
+        </div>
+        <table className="period-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Tax Type</th>
+              <th>Status</th>
+              <th>Merkle Root</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {periods.map((period) => (
+              <tr key={`${period.id}-${period.taxType}`}>
+                <td>{period.id}</td>
+                <td>{period.taxType}</td>
+                <td>
+                  <span className={`status-pill ${period.state.toLowerCase()}`}>
+                    {period.state}
+                  </span>
+                </td>
+                <td><code>{period.merkleRoot}</code></td>
+                <td className="actions">
+                  <Link to={`/periods/${period.id}?abn=${abn}&taxType=${period.taxType}`} className="text-blue-600 underline">
+                    View evidence
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="mt-6 text-sm text-gray-700">
