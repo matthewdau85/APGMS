@@ -1,0 +1,36 @@
+{
+  "id": "rules",
+  "name": "Rules Definition of Done",
+  "labels": ["area:rules"],
+  "rules_version": "2025-10-05",
+  "description": "Rule engine changes must refresh golden fixtures and bump the published rates version.",
+  "checks": [
+    {
+      "id": "golden-tests",
+      "description": "Golden regression tests are regenerated alongside rule updates.",
+      "patterns": [
+        "apps/services/payments/test/rpt.test.ts",
+        "apps/services/payments/test/allowlist.test.ts",
+        "apps/services/payments/test/owa_constraints.test.ts"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "rates-version",
+      "description": "RATES_VERSION is bumped whenever rate or rule logic changes.",
+      "patterns": ["docs/rates/RATES_VERSION"],
+      "onlyWhenChanged": [
+        "src/rpt/**",
+        "src/rails/**",
+        "src/recon/**",
+        "src/settlement/**"
+      ]
+    },
+    {
+      "id": "rates-artifacts",
+      "description": "Structured rate artifacts remain present in the repository.",
+      "patterns": ["schema/impl/APGMS_ImplSpec.schema.json"],
+      "match": "tracked"
+    }
+  ]
+}

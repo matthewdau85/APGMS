@@ -1,0 +1,40 @@
+{
+  "id": "prototype",
+  "name": "Prototype Definition of Done",
+  "labels": ["area:prototype"],
+  "rules_version": "2025-10-05",
+  "description": "Prototype iterations must update help coverage and prove the seed plus smoke flows remain healthy.",
+  "checks": [
+    {
+      "id": "help-coverage",
+      "description": "Help and surface documentation stay aligned with prototype changes.",
+      "patterns": [
+        "pages/**",
+        "docs/README.md",
+        "README.md"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "seed-updated",
+      "description": "Seed data and scripts remain valid for the scenario.",
+      "patterns": [
+        "seed_and_smoketest.ps1",
+        "seed_rpt.ts",
+        "setup_customer_gui.ps1"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "smoke-pass",
+      "description": "Smoke and acceptance suites are refreshed for prototype changes.",
+      "patterns": [
+        "tests/Phase1.Tests.ps1",
+        "tests/Phase2.Tests.ps1",
+        "tests/Phase3.Tests.ps1",
+        "tests/acceptance/**"
+      ],
+      "mode": "any"
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "security",
+  "name": "Security Definition of Done",
+  "labels": ["area:security"],
+  "rules_version": "2025-10-05",
+  "description": "Release mode requires MFA, JWT enforcement, hardened headers, structured logs, and dual approval.",
+  "checks": [
+    {
+      "id": "jwt-mfa",
+      "description": "JWT and MFA enforcement accompanies release mode changes.",
+      "patterns": [
+        "src/routes/reconcile.ts",
+        "src/middleware/**",
+        "src/api/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "security-headers",
+      "description": "Security headers and middleware remain updated.",
+      "patterns": [
+        "src/middleware/**",
+        "src/utils/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "logs",
+      "description": "Structured audit/security logs are updated for new flows.",
+      "patterns": ["src/audit/**"],
+      "mode": "any"
+    },
+    {
+      "id": "dual-approval",
+      "description": "Dual approval and operational runbooks are refreshed.",
+      "patterns": [
+        "src/scheduler/**",
+        "ops/**"
+      ],
+      "mode": "any"
+    }
+  ]
+}

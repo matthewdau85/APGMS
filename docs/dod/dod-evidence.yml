@@ -1,0 +1,53 @@
+{
+  "id": "evidence",
+  "name": "Evidence Definition of Done",
+  "labels": ["area:evidence"],
+  "rules_version": "2025-10-05",
+  "description": "Evidence bundles must hash rules, ingest settlement data, capture approvals, and document the narrative.",
+  "checks": [
+    {
+      "id": "rules-hash",
+      "description": "Update evidence hashing and payload structure when rules change.",
+      "patterns": [
+        "src/evidence/**",
+        "src/crypto/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "settlement",
+      "description": "Settlement ingestion must be maintained alongside evidence updates.",
+      "patterns": ["src/settlement/**"],
+      "mode": "any"
+    },
+    {
+      "id": "approvals",
+      "description": "Approval and audit artefacts accompany evidence changes.",
+      "patterns": [
+        "src/audit/**",
+        "src/scheduler/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "narrative",
+      "description": "Narrative documentation stays in sync with the evidence bundle.",
+      "patterns": [
+        "README.md",
+        "docs/README.md",
+        "pages/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "evidence-artifact",
+      "description": "Evidence bundle artefacts are refreshed when evidence code changes.",
+      "patterns": ["evidence_*.json"],
+      "onlyWhenChanged": [
+        "src/evidence/**",
+        "src/settlement/**",
+        "src/routes/reconcile.ts"
+      ]
+    }
+  ]
+}
