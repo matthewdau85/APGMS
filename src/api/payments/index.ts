@@ -8,6 +8,8 @@ import { ledger } from "../../../apps/services/payments/src/routes/ledger.js";
 import { deposit } from "../../../apps/services/payments/src/routes/deposit.js";
 import { rptGate } from "../../../apps/services/payments/src/middleware/rptGate.js";
 import { payAtoRelease } from "../../../apps/services/payments/src/routes/payAto.js";
+import { authenticate, requireRole } from "../../http/auth";
+import { requireRealModeMfa } from "../../security/guards";
 
 export const paymentsApi = Router();
 
@@ -17,4 +19,11 @@ paymentsApi.get("/ledger", ledger);
 
 // write
 paymentsApi.post("/deposit", deposit);
-paymentsApi.post("/release", rptGate, payAtoRelease);
+paymentsApi.post(
+  "/release",
+  authenticate,
+  requireRole("admin", "accountant"),
+  requireRealModeMfa,
+  rptGate,
+  payAtoRelease
+);
