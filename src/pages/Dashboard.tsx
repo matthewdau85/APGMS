@@ -1,8 +1,59 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Sparkline from '../components/Sparkline';
+import type { LiabilityForecastPoint } from '../types/forecast';
 
 export default function Dashboard() {
+  const [forecast, setForecast] = useState<LiabilityForecastPoint[]>([]);
+  const [loadingForecast, setLoadingForecast] = useState(true);
+  const [forecastError, setForecastError] = useState<string | null>(null);
+  const [advisoryPlanned, setAdvisoryPlanned] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadForecast() {
+      setLoadingForecast(true);
+      setForecastError(null);
+      try {
+        const response = await fetch('/ml/forecast/liability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ abn: '12345678901', periods_ahead: 3, include_intervals: true }),
+        });
+        if (!response.ok) {
+          throw new Error(`Forecast failed (${response.status})`);
+        }
+        const payload: LiabilityForecastPoint[] = await response.json();
+        if (!cancelled) {
+          setForecast(payload);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setForecastError(err?.message ?? 'Unable to load forecast');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingForecast(false);
+        }
+      }
+    }
+    loadForecast();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sparklineData = useMemo(
+    () =>
+      forecast.map((point) => ({
+        value: point.point,
+        upper: point.hi,
+        lower: point.lo,
+      })),
+    [forecast]
+  );
+
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
@@ -78,6 +129,50 @@ export default function Dashboard() {
               ? 'Good'
               : 'Needs attention'}
           </p>
+        </div>
+
+        <div className="bg-white p-4 rounded-xl shadow space-y-3 md:col-span-2 lg:col-span-3">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Short-term BAS liability forecast</h2>
+              <p className="text-xs uppercase tracking-wide text-amber-600 font-semibold">Advisory</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAdvisoryPlanned(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+            >
+              Plan sweep
+            </button>
+          </div>
+
+          {loadingForecast && <p className="text-sm text-gray-500">Loading forecast…</p>}
+          {forecastError && !loadingForecast && (
+            <p className="text-sm text-red-600">{forecastError}</p>
+          )}
+
+          {!loadingForecast && !forecastError && forecast.length > 0 && (
+            <div className="space-y-4">
+              <Sparkline data={sparklineData} />
+              <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+                {forecast.map((point) => (
+                  <div key={point.period} className="flex flex-col">
+                    <span className="text-xs uppercase tracking-wide text-gray-500">{point.period}</span>
+                    <span className="font-semibold">${point.point.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    {point.lo != null && point.hi != null && (
+                      <span className="text-xs text-gray-500">80% interval ${point.lo.toLocaleString(undefined, { maximumFractionDigits: 0 })} – ${point.hi.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {advisoryPlanned && (
+            <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md p-3">
+              Advisory sweep intent drafted. Treasury can schedule the transfer once actuals are confirmed.
+            </div>
+          )}
         </div>
       </div>
 

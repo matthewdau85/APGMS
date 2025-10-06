@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
-from typing import List, Dict, Any
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
 import time
+
+from forecasting import get_forecaster
 
 app = FastAPI(title="APGMS Portal API", version="0.1.0")
 
@@ -77,6 +79,71 @@ _settings = {"retentionMonths": 84, "piiMask": True}
 @app.post("/settings")
 def save_settings(s: Settings):
     _settings.update(s.dict()); return {"ok": True}
+
+class LiabilityForecastRequest(BaseModel):
+    abn: str
+    periods_ahead: int = Field(2, ge=1, le=6)
+    include_intervals: bool = True
+
+
+class LiabilityForecastResponse(BaseModel):
+    period: str
+    point: float
+    lo: Optional[float] = None
+    hi: Optional[float] = None
+    advisory: bool = True
+
+
+class LiabilityActual(BaseModel):
+    period: str
+    actual: float
+
+
+class LiabilityActualsRequest(BaseModel):
+    abn: str
+    actuals: List[LiabilityActual]
+
+
+@app.post("/ml/forecast/liability", response_model=List[LiabilityForecastResponse])
+def liability_forecast(req: LiabilityForecastRequest):
+    forecaster = get_forecaster()
+    try:
+        points = forecaster.forecast(
+            abn=req.abn,
+            periods_ahead=req.periods_ahead,
+            include_intervals=req.include_intervals,
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=404, detail=str(err)) from err
+    except Exception as err:  # pragma: no cover - defensive
+        raise HTTPException(status_code=500, detail=str(err)) from err
+
+    response = [
+        LiabilityForecastResponse(
+            period=pt.period,
+            point=pt.point,
+            lo=pt.lo if req.include_intervals else None,
+            hi=pt.hi if req.include_intervals else None,
+            advisory=True,
+        )
+        for pt in points
+    ]
+    return response
+
+
+@app.post("/ml/forecast/liability/actuals")
+def liability_actuals(req: LiabilityActualsRequest):
+    forecaster = get_forecaster()
+    entries = forecaster.log_actuals(
+        req.abn,
+        ({"period": item.period, "actual": item.actual} for item in req.actuals),
+    )
+    return {
+        "logged": len(entries),
+        "abs_pct_error_mean": sum(e.abs_pct_error for e in entries) / len(entries)
+        if entries
+        else 0.0,
+    }
 
 @app.get("/openapi.json")
 def openapi_proxy():
