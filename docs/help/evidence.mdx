@@ -1,0 +1,14 @@
+---
+title: "Evidence bundles"
+slug: "evidence"
+summary: "Download signed reconciliation evidence from the evidence endpoint."
+---
+
+# Evidence bundles
+
+Auditors and compliance reviewers consume the signed payload that proves the ledger matches external statements. Use
+`GET /api/evidence` with the ABN, tax type and period ID query parameters to download the ZIP archive of receipts, checksums and
+signature manifests.
+
+The endpoint enforces the same access control as the console. Rotate credentials that can reach `GET /api/evidence` in line with
+internal compliance policies and alert if a bundle is requested outside your normal cadence.

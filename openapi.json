@@ -1,0 +1,542 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS API",
+    "version": "0.1.0",
+    "description": "Programmatic surface area for APGMS payments, releases and evidence."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Service health",
+        "description": "Returns a lightweight heartbeat so orchestrators can confirm the core service is running.",
+        "tags": [
+          "Core"
+        ],
+        "x-public": true,
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pay": {
+      "post": {
+        "summary": "Submit an RPT-gated payment",
+        "description": "Releases funds via the reconciliation pipeline. Requires a valid RPT and idempotency key to guard double spends.",
+        "tags": [
+          "Releases"
+        ],
+        "x-public": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "releaseId": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request rejected"
+          }
+        }
+      }
+    },
+    "/api/close-issue": {
+      "post": {
+        "summary": "Close and issue next period",
+        "description": "Moves an accounting period to READY_RPT after closing tasks have been completed.",
+        "tags": [
+          "Periods"
+        ],
+        "x-public": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "abn": {
+                    "type": "string"
+                  },
+                  "taxType": {
+                    "$ref": "#/components/schemas/TaxType"
+                  },
+                  "periodId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "abn",
+                  "taxType",
+                  "periodId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Period closed"
+          },
+          "400": {
+            "description": "Invalid request"
+          }
+        }
+      }
+    },
+    "/api/payto/sweep": {
+      "post": {
+        "summary": "Initiate a PayTo sweep",
+        "description": "Creates a PayTo debit against the configured mandate to prefund upcoming releases.",
+        "tags": [
+          "PayTo"
+        ],
+        "x-public": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "abn": {
+                    "type": "string"
+                  },
+                  "amountCents": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "reference": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "abn",
+                  "amountCents",
+                  "reference"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sweep accepted"
+          },
+          "400": {
+            "description": "Sweep rejected"
+          }
+        }
+      }
+    },
+    "/api/settlement/webhook": {
+      "post": {
+        "summary": "Settlement status webhook",
+        "description": "Endpoint for banking rails to notify settlement outcomes for PayTo sweeps or releases.",
+        "tags": [
+          "PayTo"
+        ],
+        "x-public": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "eventType": {
+                    "type": "string"
+                  },
+                  "reference": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": [
+                  "eventType",
+                  "reference",
+                  "status",
+                  "occurredAt"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Webhook accepted"
+          },
+          "400": {
+            "description": "Invalid payload"
+          }
+        }
+      }
+    },
+    "/api/evidence": {
+      "get": {
+        "summary": "Download reconciliation evidence",
+        "description": "Exports the signed evidence bundle for auditors and compliance teams.",
+        "tags": [
+          "Evidence"
+        ],
+        "x-public": true,
+        "parameters": [
+          {
+            "in": "query",
+            "name": "abn",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "taxType",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TaxType"
+            }
+          },
+          {
+            "in": "query",
+            "name": "periodId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence bundle",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bundle not found"
+          }
+        }
+      }
+    },
+    "/api/balance": {
+      "get": {
+        "summary": "Current ledger balance",
+        "description": "Returns the rolling balance for a specific ABN, tax type and period.",
+        "tags": [
+          "Ledger"
+        ],
+        "x-public": true,
+        "parameters": [
+          {
+            "in": "query",
+            "name": "abn",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "taxType",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TaxType"
+            }
+          },
+          {
+            "in": "query",
+            "name": "periodId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "balanceCents": {
+                      "type": "integer"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/api/ledger": {
+      "get": {
+        "summary": "Full ledger history",
+        "description": "Returns the full ledger of credits and debits for a period.",
+        "tags": [
+          "Ledger"
+        ],
+        "x-public": true,
+        "parameters": [
+          {
+            "in": "query",
+            "name": "abn",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "taxType",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/TaxType"
+            }
+          },
+          {
+            "in": "query",
+            "name": "periodId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LedgerEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deposit": {
+      "post": {
+        "summary": "Record a deposit",
+        "description": "Credits funds into the one-way account ledger for a period.",
+        "tags": [
+          "Ledger"
+        ],
+        "x-public": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit recorded"
+          },
+          "400": {
+            "description": "Invalid deposit"
+          }
+        }
+      }
+    },
+    "/api/release": {
+      "post": {
+        "summary": "Release funds",
+        "description": "Releases funds downstream once RPT and risk checks have passed.",
+        "tags": [
+          "Releases"
+        ],
+        "x-public": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release accepted"
+          },
+          "400": {
+            "description": "Release rejected"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TaxType": {
+        "type": "string",
+        "enum": [
+          "PAYGW",
+          "GST"
+        ],
+        "description": "ATO tax type identifier"
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "transferUuid": {
+            "type": "string"
+          },
+          "amountCents": {
+            "type": "integer"
+          },
+          "balanceAfterCents": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "transferUuid",
+          "amountCents",
+          "balanceAfterCents",
+          "createdAt"
+        ],
+        "additionalProperties": true
+      },
+      "DepositRequest": {
+        "type": "object",
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "$ref": "#/components/schemas/TaxType"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "amountCents": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "amountCents"
+        ],
+        "additionalProperties": false
+      },
+      "ReleaseRequest": {
+        "type": "object",
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "$ref": "#/components/schemas/TaxType"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "amountCents": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "amountCents"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

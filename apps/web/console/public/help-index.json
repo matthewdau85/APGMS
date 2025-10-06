@@ -1,0 +1,79 @@
+{
+  "generatedAt": "2025-10-06T08:30:13.667Z",
+  "docs": [
+    {
+      "slug": "close-issue",
+      "title": "Close and issue",
+      "summary": "Transition a period into READY_RPT using the close-issue API.",
+      "headings": [
+        "Close and issue"
+      ],
+      "body": "# Close and issue\n\nWhen reconciliation tasks are done, advance the period to `READY_RPT` so an RPT can be minted.\n\nInvoke `POST /api/close-issue` with the ABN, tax type and period ID. The endpoint enforces that outstanding discrepancies have\nbeen resolved before it will update the state machine.\n\nOnce the call succeeds, proceed with RPT issuance and subsequent release activity.",
+      "plainText": "Close and issue When reconciliation tasks are done, advance the period to READYRPT so an RPT can be minted. Invoke POST /api/close-issue with the ABN, tax type and period ID. The endpoint enforces that outstanding discrepancies have been resolved before it will update the state machine. Once the call succeeds, proceed with RPT issuance and subsequent release activity."
+    },
+    {
+      "slug": "evidence",
+      "title": "Evidence bundles",
+      "summary": "Download signed reconciliation evidence from the evidence endpoint.",
+      "headings": [
+        "Evidence bundles"
+      ],
+      "body": "# Evidence bundles\n\nAuditors and compliance reviewers consume the signed payload that proves the ledger matches external statements. Use\n`GET /api/evidence` with the ABN, tax type and period ID query parameters to download the ZIP archive of receipts, checksums and\nsignature manifests.\n\nThe endpoint enforces the same access control as the console. Rotate credentials that can reach `GET /api/evidence` in line with\ninternal compliance policies and alert if a bundle is requested outside your normal cadence.",
+      "plainText": "Evidence bundles Auditors and compliance reviewers consume the signed payload that proves the ledger matches external statements. Use GET /api/evidence with the ABN, tax type and period ID query parameters to download the ZIP archive of receipts, checksums and signature manifests. The endpoint enforces the same access control as the console. Rotate credentials that can reach GET /api/evidence in line with internal compliance policies and alert if a bundle is requested outside your normal cadence."
+    },
+    {
+      "slug": "health",
+      "title": "Health monitoring",
+      "summary": "Probe the lightweight health endpoint from load balancers and schedulers.",
+      "headings": [
+        "Health monitoring"
+      ],
+      "body": "# Health monitoring\n\nExpose `GET /health` to load balancers and orchestration tools so they can drain traffic if the app becomes unhealthy. The\nendpoint returns `{ \"ok\": true }` when the service loop is running.\n\nCombine the health probe with checks on dependent services such as the database, message bus and release queue to catch partial\nfailures before they impact release operations.",
+      "plainText": "Health monitoring Expose GET /health to load balancers and orchestration tools so they can drain traffic if the app becomes unhealthy. The endpoint returns { \"ok\": true } when the service loop is running. Combine the health probe with checks on dependent services such as the database, message bus and release queue to catch partial failures before they impact release operations."
+    },
+    {
+      "slug": "ledger",
+      "title": "Ledger management",
+      "summary": "Monitor balances and append deposits to one-way accounts.",
+      "headings": [
+        "Ledger management"
+      ],
+      "body": "# Ledger management\n\nThe ledger tracks every inflow and outflow for a period.\n\n- Call `GET /api/balance` to return the latest running balance. The response includes the last update timestamp so you can spot\n  staleness.\n- Use `GET /api/ledger` for the full transaction list when reconciling statement exports.\n- Credit funds with `POST /api/deposit`. The request body enforces positive `amountCents` values to protect against accidental\n  reversals.\n\nDeposits and releases appear in chronological order and power the evidence bundle that `GET /api/evidence` exports.",
+      "plainText": "Ledger management The ledger tracks every inflow and outflow for a period. - Call GET /api/balance to return the latest running balance. The response includes the last update timestamp so you can spot staleness. - Use GET /api/ledger for the full transaction list when reconciling statement exports. - Credit funds with POST /api/deposit. The request body enforces positive amountCents values to protect against accidental reversals. Deposits and releases appear in chronological order and power the evidence bundle that GET /api/evidence exports."
+    },
+    {
+      "slug": "payto",
+      "title": "PayTo sweeps",
+      "summary": "Schedule and reconcile PayTo sweeps with the webhook callbacks.",
+      "headings": [
+        "PayTo sweeps",
+        "Kick off a sweep",
+        "Track settlement"
+      ],
+      "body": "# PayTo sweeps\n\nPayTo lets APGMS prefund outgoing disbursements from linked mandate accounts. The flow combines a proactive sweep with\nasynchronous settlement notifications.\n\n## Kick off a sweep\n\nSubmit `POST /api/payto/sweep` with the ABN, debit amount and reference that matches the mandate agreement. The service will\nreserve the PayTo window and respond immediately when the sweep request is accepted by the banking rail.\n\n## Track settlement\n\nBanking partners confirm the outcome by calling `POST /api/settlement/webhook`. The webhook payload references the same\n`sweep.reference`, along with the status and timestamp so you can reconcile the release window. Store the callback data alongside\nledger entries to keep the audit trail intact.",
+      "plainText": "PayTo sweeps PayTo lets APGMS prefund outgoing disbursements from linked mandate accounts. The flow combines a proactive sweep with asynchronous settlement notifications. Kick off a sweep Submit POST /api/payto/sweep with the ABN, debit amount and reference that matches the mandate agreement. The service will reserve the PayTo window and respond immediately when the sweep request is accepted by the banking rail. Track settlement Banking partners confirm the outcome by calling POST /api/settlement/webhook. The webhook payload references the same sweep.reference, along with the status and timestamp so you can reconcile the release window. Store the callback data alongside ledger entries to keep the audit trail intact."
+    },
+    {
+      "slug": "rpt",
+      "title": "Reconciliation Pass Tokens (RPT)",
+      "summary": "How RPT issuance gates outbound releases through /api/pay and /api/release.",
+      "headings": [
+        "Reconciliation Pass Tokens (RPT)",
+        "Operational sequence",
+        "Failure handling"
+      ],
+      "body": "# Reconciliation Pass Tokens (RPT)\n\nReconciliation Pass Tokens (RPTs) are the green-light artifacts that unlock outbound flows once a period has reconciled. An RPT\ncontains the ABN, tax type, period, and an Ed25519 signature that downstream services verify before moving funds.\n\n## Operational sequence\n\n1. Close the period after resolving anomalies with `POST /api/close-issue`. This transitions the ledger to `READY_RPT` so an RPT\n   can be issued.\n2. Issue the token via the console or automation. The signed payload is persisted alongside the ledger snapshot.\n3. Present that token when invoking `POST /api/pay` for the release service or `POST /api/release` for the payments proxy. Both\n   endpoints verify signature freshness and expiry before debiting the one-way account.\n\n## Failure handling\n\nIf the RPT has expired or is missing, the release endpoints return a `400` with an explanatory error. The recovery path is to\nre-issue a fresh RPT for the same period and retry the `POST /api/pay` or `POST /api/release` call.",
+      "plainText": "Reconciliation Pass Tokens (RPT) Reconciliation Pass Tokens (RPTs) are the green-light artifacts that unlock outbound flows once a period has reconciled. An RPT contains the ABN, tax type, period, and an Ed25519 signature that downstream services verify before moving funds. Operational sequence 1. Close the period after resolving anomalies with POST /api/close-issue. This transitions the ledger to READYRPT so an RPT can be issued. 2. Issue the token via the console or automation. The signed payload is persisted alongside the ledger snapshot. 3. Present that token when invoking POST /api/pay for the release service or POST /api/release for the payments proxy. Both endpoints verify signature freshness and expiry before debiting the one-way account. Failure handling If the RPT has expired or is missing, the release endpoints return a 400 with an explanatory error. The recovery path is to re-issue a fresh RPT for the same period and retry the POST /api/pay or POST /api/release call."
+    },
+    {
+      "slug": "releases",
+      "title": "Releases",
+      "summary": "How APGMS releases draw down one-way account balances after RPT verification.",
+      "headings": [
+        "Releases"
+      ],
+      "body": "# Releases\n\nReleases move funds from the one-way account to the beneficiary after controls have cleared.\n\n- Use `POST /api/pay` when orchestrating a release directly from the console workflow. Attach the RPT, idempotency key and\n  target account metadata.\n- Use `POST /api/release` when calling through the payments proxy for service-to-service automation. The payload matches the same\n  structure and still requires a valid RPT signature.\n\nBoth endpoints debit the ledger atomically and append a release entry that is reflected by `GET /api/balance` and `GET /api/ledger`.",
+      "plainText": "Releases Releases move funds from the one-way account to the beneficiary after controls have cleared. - Use POST /api/pay when orchestrating a release directly from the console workflow. Attach the RPT, idempotency key and target account metadata. - Use POST /api/release when calling through the payments proxy for service-to-service automation. The payload matches the same structure and still requires a valid RPT signature. Both endpoints debit the ledger atomically and append a release entry that is reflected by GET /api/balance and GET /api/ledger."
+    }
+  ]
+}

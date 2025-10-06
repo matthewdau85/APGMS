@@ -1,0 +1,13 @@
+---
+title: "Health monitoring"
+slug: "health"
+summary: "Probe the lightweight health endpoint from load balancers and schedulers."
+---
+
+# Health monitoring
+
+Expose `GET /health` to load balancers and orchestration tools so they can drain traffic if the app becomes unhealthy. The
+endpoint returns `{ "ok": true }` when the service loop is running.
+
+Combine the health probe with checks on dependent services such as the database, message bus and release queue to catch partial
+failures before they impact release operations.

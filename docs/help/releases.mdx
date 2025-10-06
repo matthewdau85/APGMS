@@ -1,0 +1,16 @@
+---
+title: "Releases"
+slug: "releases"
+summary: "How APGMS releases draw down one-way account balances after RPT verification."
+---
+
+# Releases
+
+Releases move funds from the one-way account to the beneficiary after controls have cleared.
+
+- Use `POST /api/pay` when orchestrating a release directly from the console workflow. Attach the RPT, idempotency key and
+  target account metadata.
+- Use `POST /api/release` when calling through the payments proxy for service-to-service automation. The payload matches the same
+  structure and still requires a valid RPT signature.
+
+Both endpoints debit the ledger atomically and append a release entry that is reflected by `GET /api/balance` and `GET /api/ledger`.
