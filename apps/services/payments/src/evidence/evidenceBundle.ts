@@ -1,12 +1,23 @@
-﻿import pg from "pg";
+import pg from "pg";
 const { PoolClient } = pg;
-import { canonicalJson, sha256Hex } from "../utils/crypto";
+import { canonicalJson, sha256Hex } from "../utils/crypto.js";
+
+type BankReceiptEvidence = {
+  receipt_id: number;
+  channel: string;
+  provider_ref: string;
+  dry_run: boolean;
+  shadow_only: boolean;
+  created_at: string;
+};
 
 type BuildParams = {
-  abn: string; taxType: string; periodId: string;
-  bankReceipts: Array<{provider: string; receipt_id: string}>;
-  atoReceipts: Array<{submission_id: string; receipt_id: string}>;
-  operatorOverrides: Array<{who: string; why: string; ts: string}>;
+  abn: string;
+  taxType: string;
+  periodId: string;
+  bankReceipts: BankReceiptEvidence[];
+  atoReceipts: Array<{ submission_id: string; receipt_id: string }>;
+  operatorOverrides: Array<{ who: string; why: string; ts: string }>;
   owaAfterHash: string;
 };
 
@@ -50,10 +61,21 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
     RETURNING bundle_id
   `;
   const vals = [
-    p.abn, p.taxType, p.periodId, payload_sha256, r.rpt_id, r.payload_c14n, r.signature,
-    canonicalJson(thresholds), canonicalJson(anomalies), canonicalJson(normalization),
-    balBefore, balAfter,
-    canonicalJson(p.bankReceipts), canonicalJson(p.atoReceipts), canonicalJson(p.operatorOverrides)
+    p.abn,
+    p.taxType,
+    p.periodId,
+    payload_sha256,
+    r.rpt_id,
+    r.payload_c14n,
+    r.signature,
+    canonicalJson(thresholds),
+    canonicalJson(anomalies),
+    canonicalJson(normalization),
+    balBefore,
+    balAfter,
+    canonicalJson(p.bankReceipts),
+    canonicalJson(p.atoReceipts),
+    canonicalJson(p.operatorOverrides),
   ];
   const out = await client.query(ins, vals);
   return out.rows[0].bundle_id as number;
