@@ -1,0 +1,6 @@
+{
+  "rate": 0.10,
+  "attribution": ["cash", "accrual"],
+  "rounding": "invoice_then_aggregate",
+  "notes": "Australian GST 2024-25"
+}

@@ -2,6 +2,7 @@
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
 import { exceeds } from "../anomaly/deterministic";
+import { getRatesVersion } from "../tax/ratesVersion";
 const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
 
@@ -27,6 +28,7 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     amount_cents: Number(row.final_liability_cents),
     merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
     anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
+    rates_version: getRatesVersion(),
     expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
   };
   const signature = signRpt(payload, new Uint8Array(secretKey));

@@ -26,12 +26,16 @@ def metrics():
 # --- BEGIN TAX_ENGINE_CORE_APP ---
 import asyncio
 import os
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, HTTPException
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
+
+from .engines import compute_gst as engine_compute_gst, compute_withholding as engine_compute_withholding
+from .domains.demo_data import PAYROLL_RUNS
+from .rules_manifest import get_bas_labels, get_manifest
 
 try:
     app  # reuse if exists
@@ -141,6 +145,70 @@ try:
 except Exception:
     pass
 # --- END READINESS_METRICS (tax-engine) ---
+
+def _aggregate_paygw(abn: str, period_id: str) -> Dict[str, int]:
+    runs = PAYROLL_RUNS.get((abn, period_id), [])
+    total_gross = 0
+    total_withheld = 0
+    for run in runs:
+        gross = int(run.get("gross_cents", 0))
+        total_gross += gross
+        payload = {
+            "gross": gross,
+            "period": run.get("period", "weekly"),
+            "scale": run.get("scale", "resident"),
+            "flags": run.get("flags", {"tax_free_threshold": True})
+        }
+        total_withheld += engine_compute_withholding(payload)
+    return {"gross_wages": total_gross, "withheld": total_withheld}
+
+
+@app.post("/paygw/withholding")
+def api_paygw_withholding(payload: Dict[str, Any]):
+    try:
+        cents = engine_compute_withholding(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"withholding_cents": cents}
+
+
+@app.post("/gst/summary")
+def api_gst_summary(payload: Dict[str, Any]):
+    try:
+        return engine_compute_gst(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/tax/{abn}/{period_id}/totals")
+def api_tax_totals(abn: str, period_id: str):
+    bas_labels = get_bas_labels()
+    manifest = get_manifest()
+
+    paygw_totals = _aggregate_paygw(abn, period_id)
+    gst_result = engine_compute_gst({"abn": abn, "periodId": period_id, "basis": "accrual"})
+
+    labels: Dict[str, int] = {}
+    paygw_map = bas_labels.get("paygw", {})
+    if paygw_map.get("gross_wages"):
+        labels[paygw_map["gross_wages"]] = paygw_totals["gross_wages"]
+    if paygw_map.get("withheld"):
+        labels[paygw_map["withheld"]] = paygw_totals["withheld"]
+
+    gst_map = bas_labels.get("gst", {})
+    for domain_key, label in gst_map.items():
+        if domain_key == "taxable_sales":
+            labels[label] = gst_result["labels"].get("G1", 0)
+        elif domain_key == "gst_free_sales":
+            labels[label] = gst_result["labels"].get("G10", 0)
+        elif domain_key == "input_taxed_purchases":
+            labels[label] = gst_result["labels"].get("G11", 0)
+        elif domain_key == "gst_on_sales":
+            labels[label] = gst_result["payable"].get("1A", 0)
+        elif domain_key == "gst_on_purchases":
+            labels[label] = gst_result["credits"].get("1B", 0)
+
+    return {"labels": labels, "rates_version": manifest.get("rates_version")}
 
 # --- BEGIN MINI_UI ---
 from fastapi import Request

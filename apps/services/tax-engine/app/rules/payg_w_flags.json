@@ -1,0 +1,30 @@
+{
+  "flags": {
+    "foreign_resident": {
+      "scale": "foreign_resident",
+      "table_overrides": {
+        "weekly": null,
+        "fortnightly": null,
+        "monthly": null
+      },
+      "multiplier": 1.0,
+      "notes": "Foreign resident schedules are TODO; defaulting to resident calculations until provided."
+    },
+    "working_holiday_maker": {
+      "scale": "whm",
+      "table_overrides": {
+        "weekly": null,
+        "fortnightly": null,
+        "monthly": null
+      },
+      "multiplier": 1.0,
+      "notes": "Working holiday maker rates supplied when rules are published."
+    },
+    "no_tfn": {
+      "scale": "resident",
+      "table_overrides": {},
+      "multiplier": 1.5,
+      "notes": "Apply 50% uplift to withholding when no TFN is quoted."
+    }
+  }
+}

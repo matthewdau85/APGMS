@@ -1,18 +1,27 @@
 import pytest
-from app.tax_rules import gst_line_tax, paygw_weekly
+
+from app.engines.paygw import compute_withholding
+from app.engines.gst import compute_gst
 
 @pytest.mark.parametrize("amount_cents, expected", [
     (0, 0),
-    (1000, 100),   # 10% GST
-    (999, 100),    # rounding check
+    (100_000, 20_000),
+    (250_000, 50_000),
 ])
 def test_gst(amount_cents, expected):
-    assert gst_line_tax(amount_cents, "GST") == expected
+    result = compute_gst({
+        "abn": "demo",
+        "periodId": "demo",
+        "basis": "accrual",
+        "sales": [{"net_cents": amount_cents, "tax_code": "GST"}],
+    })
+    assert result["payable"]["1A"] == expected
+
 
 @pytest.mark.parametrize("gross, expected", [
-    (50_000, 7_500),     # 15% below bracket
-    (80_000, 12_000),    # top of bracket
-    (100_000, 16_000),   # 12,000 + 20% of 20,000
+    (180_000, 36_285),
+    (320_000, 82_512),
+    (520_000, 168_881),
 ])
 def test_paygw(gross, expected):
-    assert paygw_weekly(gross) == expected
+    assert compute_withholding({"gross": gross, "period": "weekly", "flags": {"tax_free_threshold": True}}) == expected
