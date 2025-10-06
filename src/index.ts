@@ -26,7 +26,7 @@ app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
-app.use("/api", paymentsApi);
+app.use("/api/payments", paymentsApi);
 
 // Existing API router(s) after
 app.use("/api", api);

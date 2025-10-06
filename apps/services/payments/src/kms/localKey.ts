@@ -38,7 +38,7 @@ export class LocalKeyProvider implements IKms {
   private key: KeyObject;
   constructor() { this.key = loadPublicKey(); }
 
-  async verify(payload: Buffer, signature: Buffer): Promise<boolean> {
+  async verify(payload: Buffer, signature: Buffer, _kid?: string): Promise<boolean> {
     // Ed25519 => pass null algorithm and raw payload
     return cryptoVerify(null, payload, this.key, signature);
   }
