@@ -1,0 +1,98 @@
+{
+  "metadata": {
+    "financial_year": "2024-25",
+    "source": "APGMS benchmark pack v1",
+    "notes": "Illustrative rates aligned with published ATO benchmarks for cents per km and reasonable travel allowances"
+  },
+  "cents_per_km": {
+    "tiers": [
+      {
+        "tier": "car",
+        "description": "Standard car allowance for vehicles up to 1 tonne or 9 passengers",
+        "rate_cents": 85,
+        "max_km": 5000,
+        "stp_category": "CentsPerKilometre.Car"
+      },
+      {
+        "tier": "other_vehicle",
+        "description": "Motorcycle or non-standard vehicle rate",
+        "rate_cents": 45,
+        "max_km": 5000,
+        "stp_category": "CentsPerKilometre.Other"
+      }
+    ]
+  },
+  "benchmarks": {
+    "meal": [
+      {
+        "tier": "standard",
+        "description": "Overtime meal allowance benchmark",
+        "metro": true,
+        "remote": true,
+        "caps": {
+          "metro": 3200,
+          "remote": 3600
+        },
+        "stp_category": "OvertimeMeal"
+      },
+      {
+        "tier": "remote_worker",
+        "description": "Higher cap for remote operations or FIFO workers",
+        "metro": false,
+        "remote": true,
+        "caps": {
+          "remote": 4200
+        },
+        "stp_category": "OvertimeMeal"
+      }
+    ],
+    "travel": [
+      {
+        "tier": "standard",
+        "description": "Travel allowance daily benchmark for metro centres",
+        "metro": true,
+        "remote": true,
+        "caps": {
+          "metro": 18500,
+          "remote": 22000
+        },
+        "stp_category": "TravelAllowance"
+      },
+      {
+        "tier": "executive",
+        "description": "Executive or specialist tier for high cost travel",
+        "metro": true,
+        "remote": true,
+        "caps": {
+          "metro": 23500,
+          "remote": 26000
+        },
+        "stp_category": "TravelAllowance"
+      }
+    ],
+    "tool": [
+      {
+        "tier": "standard",
+        "description": "Tool allowance cap applicable across metro and remote",
+        "metro": true,
+        "remote": true,
+        "caps": {
+          "metro": 1500,
+          "remote": 1500
+        },
+        "stp_category": "ToolAllowance"
+      },
+      {
+        "tier": "specialised",
+        "description": "Higher cap where industrial instruments reference specialised equipment",
+        "metro": true,
+        "remote": true,
+        "caps": {
+          "metro": 2800,
+          "remote": 3200
+        },
+        "stp_category": "ToolAllowance"
+      }
+    ]
+  }
+}
