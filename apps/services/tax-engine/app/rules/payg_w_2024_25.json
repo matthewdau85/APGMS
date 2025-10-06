@@ -1,18 +1,56 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
-    ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
+  "effective_from": "2024-07-01",
+  "effective_to": "2025-06-30",
+  "rounding": "HALF_UP",
+  "periods": {
+    "weekly": {
+      "tax_free_threshold": [
+        { "min": 0, "max": 359, "type": "none" },
+        { "min": 359, "max": 438, "type": "linear", "rate": 0.19, "offset": 68.36 },
+        { "min": 438, "max": 548, "type": "linear", "rate": 0.234, "offset": 87.82 },
+        { "min": 548, "max": 721, "type": "linear", "rate": 0.347, "offset": 148.5 },
+        { "min": 721, "max": 865, "type": "linear", "rate": 0.345, "offset": 147 },
+        { "min": 865, "max": 999999, "type": "linear", "rate": 0.39, "offset": 183 }
+      ],
+      "no_tax_free_threshold": [
+        { "min": 0, "max": 88, "type": "linear", "rate": 0.19, "offset": 0 },
+        { "min": 88, "max": 371, "type": "linear", "rate": 0.29, "offset": 8.43 },
+        { "min": 371, "max": 782, "type": "linear", "rate": 0.32, "offset": 17.79 },
+        { "min": 782, "max": 999999, "type": "linear", "rate": 0.37, "offset": 56.21 }
+      ]
+    },
+    "fortnightly": {
+      "tax_free_threshold": [
+        { "min": 0, "max": 718, "type": "none" },
+        { "min": 718, "max": 876, "type": "linear", "rate": 0.19, "offset": 136.72 },
+        { "min": 876, "max": 1096, "type": "linear", "rate": 0.234, "offset": 175.64 },
+        { "min": 1096, "max": 1442, "type": "linear", "rate": 0.347, "offset": 297 },
+        { "min": 1442, "max": 1730, "type": "linear", "rate": 0.345, "offset": 294 },
+        { "min": 1730, "max": 999999, "type": "linear", "rate": 0.39, "offset": 366 }
+      ],
+      "no_tax_free_threshold": [
+        { "min": 0, "max": 176, "type": "linear", "rate": 0.19, "offset": 0 },
+        { "min": 176, "max": 742, "type": "linear", "rate": 0.29, "offset": 16.86 },
+        { "min": 742, "max": 1564, "type": "linear", "rate": 0.32, "offset": 35.58 },
+        { "min": 1564, "max": 999999, "type": "linear", "rate": 0.37, "offset": 112.42 }
+      ]
+    },
+    "monthly": {
+      "tax_free_threshold": [
+        { "min": 0, "max": 1550, "type": "none" },
+        { "min": 1550, "max": 1895, "type": "linear", "rate": 0.19, "offset": 295.95 },
+        { "min": 1895, "max": 2370, "type": "linear", "rate": 0.234, "offset": 380.1 },
+        { "min": 2370, "max": 3120, "type": "linear", "rate": 0.347, "offset": 642.5 },
+        { "min": 3120, "max": 3700, "type": "linear", "rate": 0.345, "offset": 635.4 },
+        { "min": 3700, "max": 999999, "type": "linear", "rate": 0.39, "offset": 794.7 }
+      ],
+      "no_tax_free_threshold": [
+        { "min": 0, "max": 370, "type": "linear", "rate": 0.19, "offset": 0 },
+        { "min": 370, "max": 1560, "type": "linear", "rate": 0.29, "offset": 35.7 },
+        { "min": 1560, "max": 3280, "type": "linear", "rate": 0.32, "offset": 75.6 },
+        { "min": 3280, "max": 999999, "type": "linear", "rate": 0.37, "offset": 239.4 }
+      ]
+    }
   }
 }
