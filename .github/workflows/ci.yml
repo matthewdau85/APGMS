@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: apgms
+          POSTGRES_USER: apgms
+          POSTGRES_PASSWORD: apgms
+        options: >-
+          --health-cmd "pg_isready -U apgms -d apgms"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://apgms:apgms@localhost:5432/apgms
+      PGHOST: localhost
+      PGUSER: apgms
+      PGPASSWORD: apgms
+      PGDATABASE: apgms
+      OTEL_SDK_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install --prefix apps/services/payments
+
+      - name: Generate OpenAPI & check drift
+        run: npm run openapi:check
+
+      - name: Run database migrations
+        run: npm run migrate
+
+      - name: Run tests
+        run: npm test
+
+      - name: Seed database
+        run: npm run seed
+
+      - name: Smoke tests
+        run: npm run smoke
+
+      - name: Rules version guard
+        run: npm run check:rules

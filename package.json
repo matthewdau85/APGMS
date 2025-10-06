@@ -4,7 +4,14 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "test": "npm --prefix apps/services/payments test",
+        "migrate": "tsx scripts/migrate.ts",
+        "seed": "tsx scripts/seed-demo.ts",
+        "smoke": "tsx scripts/smoke.ts",
+        "openapi:generate": "tsx scripts/generate-openapi.ts",
+        "openapi:check": "npm run openapi:generate && git diff --exit-code openapi.json src/api/types.ts",
+        "check:rules": "tsx scripts/check-rules-version.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
@@ -13,15 +20,24 @@
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
+        "@types/supertest": "^6.0.3",
+        "supertest": "^7.0.0",
         "ts-node": "^10.9.2",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3"
     },
     "dependencies": {
+        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/auto-instrumentations-node": "^0.54.1",
+        "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
+        "@opentelemetry/resources": "^1.15.2",
+        "@opentelemetry/sdk-node": "^0.54.1",
+        "@opentelemetry/semantic-conventions": "^1.24.1",
         "csv-parse": "^6.1.0",
         "dotenv": "^17.2.3",
         "express": "^5.1.0",
         "pg": "^8.16.3",
+        "prom-client": "^15.1.3",
         "tweetnacl": "^1.0.3",
         "uuid": "^13.0.0"
     }
