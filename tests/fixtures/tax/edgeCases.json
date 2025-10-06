@@ -1,0 +1,93 @@
+{
+  "meta": {
+    "ratesVersion": "2024-07"
+  },
+  "paygw": [
+    {
+      "scenario": "threshold-zero-withholding",
+      "frequency": "weekly",
+      "grossIncome": 350,
+      "taxWithheld": 0,
+      "deductions": 0,
+      "expected": 0
+    },
+    {
+      "scenario": "offset-transition",
+      "frequency": "weekly",
+      "grossIncome": 700,
+      "taxWithheld": 0,
+      "deductions": 0,
+      "expected": 56.5
+    },
+    {
+      "scenario": "bankers-rounding",
+      "frequency": "weekly",
+      "grossIncome": 700.17,
+      "taxWithheld": 0,
+      "deductions": 0,
+      "expected": 56.56
+    },
+    {
+      "scenario": "medicare-phase-in",
+      "frequency": "weekly",
+      "grossIncome": 950,
+      "taxWithheld": 0,
+      "deductions": 0,
+      "expected": 141.75
+    },
+    {
+      "scenario": "medicare-full-rate",
+      "frequency": "weekly",
+      "grossIncome": 1300,
+      "taxWithheld": 100,
+      "deductions": 50,
+      "expected": 127.5
+    },
+    {
+      "scenario": "monthly-aggregation",
+      "frequency": "monthly",
+      "grossIncome": 4000,
+      "taxWithheld": 0,
+      "deductions": 0,
+      "expected": 567
+    }
+  ],
+  "gst": [
+    {
+      "scenario": "standard-rate",
+      "saleAmount": 1000,
+      "expected": 100
+    },
+    {
+      "scenario": "rounding-check",
+      "saleAmount": 999,
+      "expected": 99.9
+    },
+    {
+      "scenario": "exempt-supply",
+      "saleAmount": 1200,
+      "exempt": true,
+      "expected": 0
+    }
+  ],
+  "penalties": [
+    {
+      "scenario": "tier-one",
+      "daysLate": 10,
+      "amountDue": 5000,
+      "expected": 322.59
+    },
+    {
+      "scenario": "tier-three",
+      "daysLate": 60,
+      "amountDue": 5000,
+      "expected": 996.53
+    },
+    {
+      "scenario": "tier-four",
+      "daysLate": 100,
+      "amountDue": 5000,
+      "expected": 1660.89
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "version": "2024-07",
+  "frequencies": {
+    "weekly": {
+      "rounding": "bankers",
+      "medicareLevy": {
+        "lowerThreshold": 900,
+        "upperThreshold": 1200,
+        "fullRate": 0.02,
+        "phaseInRate": 0.08
+      },
+      "brackets": [
+        { "min": 0, "max": 350, "base": 0, "rate": 0, "offset": 0 },
+        { "min": 350, "max": 700, "base": 0, "rate": 0.19, "offset": 10 },
+        { "min": 700, "max": 1500, "base": 56.5, "rate": 0.325, "offset": 0 },
+        { "min": 1500, "max": null, "base": 316.5, "rate": 0.37, "offset": 0 }
+      ]
+    },
+    "fortnightly": {
+      "rounding": "bankers",
+      "medicareLevy": {
+        "lowerThreshold": 1800,
+        "upperThreshold": 2400,
+        "fullRate": 0.02,
+        "phaseInRate": 0.08
+      },
+      "brackets": [
+        { "min": 0, "max": 700, "base": 0, "rate": 0, "offset": 0 },
+        { "min": 700, "max": 1400, "base": 0, "rate": 0.19, "offset": 20 },
+        { "min": 1400, "max": 3000, "base": 113, "rate": 0.325, "offset": 0 },
+        { "min": 3000, "max": null, "base": 633, "rate": 0.37, "offset": 0 }
+      ]
+    },
+    "monthly": {
+      "rounding": "bankers",
+      "medicareLevy": {
+        "lowerThreshold": 3900,
+        "upperThreshold": 5200,
+        "fullRate": 0.02,
+        "phaseInRate": 0.08
+      },
+      "brackets": [
+        { "min": 0, "max": 1516.67, "base": 0, "rate": 0, "offset": 0 },
+        { "min": 1516.67, "max": 3033.33, "base": 0, "rate": 0.19, "offset": 43.33 },
+        { "min": 3033.33, "max": 6500, "base": 244.83, "rate": 0.325, "offset": 0 },
+        { "min": 6500, "max": null, "base": 1371.5, "rate": 0.37, "offset": 0 }
+      ]
+    },
+    "quarterly": {
+      "rounding": "standard",
+      "medicareLevy": {
+        "lowerThreshold": 11700,
+        "upperThreshold": 15600,
+        "fullRate": 0.02,
+        "phaseInRate": 0.08
+      },
+      "brackets": [
+        { "min": 0, "max": 4550, "base": 0, "rate": 0, "offset": 0 },
+        { "min": 4550, "max": 9100, "base": 0, "rate": 0.19, "offset": 130 },
+        { "min": 9100, "max": 19500, "base": 734.5, "rate": 0.325, "offset": 0 },
+        { "min": 19500, "max": null, "base": 4114.5, "rate": 0.37, "offset": 0 }
+      ]
+    }
+  }
+}
