@@ -1,0 +1,14 @@
+{
+  "regime": "paygw",
+  "variant": "resident",
+  "description": "2024-25 resident weekly withholding on $900 gross",
+  "payload": {
+    "method": "formula_progressive",
+    "period": "weekly",
+    "gross": 900.0,
+    "tax_free_threshold": true
+  },
+  "expected": {
+    "withholding_cents": 16800
+  }
+}

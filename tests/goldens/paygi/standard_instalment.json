@@ -1,0 +1,13 @@
+{
+  "regime": "paygi",
+  "description": "PAYG instalment with rate credits and adjustments",
+  "payload": {
+    "instalment_income_cents": 1200000,
+    "rate": 0.072,
+    "credits_cents": 20000,
+    "adjustments_cents": 5000
+  },
+  "expected": {
+    "instalment_cents": 71400
+  }
+}
