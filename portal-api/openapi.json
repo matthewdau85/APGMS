@@ -1,0 +1,720 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS Portal API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/readyz": {
+      "get": {
+        "summary": "Readyz",
+        "operationId": "readyz_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadyzResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/yesterday": {
+      "get": {
+        "summary": "Yesterday",
+        "operationId": "yesterday_dashboard_yesterday_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardYesterdayResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/normalize": {
+      "post": {
+        "summary": "Normalize",
+        "operationId": "normalize_normalize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NormalizeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections": {
+      "get": {
+        "summary": "List Connections",
+        "operationId": "list_connections_connections_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  },
+                  "type": "array",
+                  "title": "Response List Connections Connections Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/start": {
+      "post": {
+        "summary": "Start Conn",
+        "operationId": "start_conn_connections_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStartResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/{conn_id}": {
+      "delete": {
+        "summary": "Delete Conn",
+        "operationId": "delete_conn_connections__conn_id__delete",
+        "parameters": [
+          {
+            "name": "conn_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Conn Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Conn Connections  Conn Id  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "Transactions",
+        "operationId": "transactions_transactions_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ato/status": {
+      "get": {
+        "summary": "Ato Status",
+        "operationId": "ato_status_ato_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AtoStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bas/validate": {
+      "post": {
+        "summary": "Bas Validate",
+        "operationId": "bas_validate_bas_validate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bas/lodge": {
+      "post": {
+        "summary": "Bas Lodge",
+        "operationId": "bas_lodge_bas_lodge_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasMessage"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bas/preview": {
+      "get": {
+        "summary": "Bas Preview",
+        "operationId": "bas_preview_bas_preview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasPreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get Settings",
+        "operationId": "get_settings_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsPayload"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Settings",
+        "operationId": "save_settings_settings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveSettingsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "Openapi Proxy",
+        "operationId": "openapi_proxy_openapi_json_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AtoStatusResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "AtoStatusResponse"
+      },
+      "BasMessage": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "message"
+        ],
+        "title": "BasMessage"
+      },
+      "BasPreviewResponse": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "GSTPayable": {
+            "type": "number",
+            "title": "Gstpayable"
+          },
+          "PAYGW": {
+            "type": "number",
+            "title": "Paygw"
+          },
+          "Total": {
+            "type": "number",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "GSTPayable",
+          "PAYGW",
+          "Total"
+        ],
+        "title": "BasPreviewResponse"
+      },
+      "ConnStart": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "provider"
+        ],
+        "title": "ConnStart"
+      },
+      "Connection": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "linked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "provider"
+        ],
+        "title": "Connection"
+      },
+      "ConnectionStartResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ConnectionStartResponse"
+      },
+      "DashboardYesterdayResponse": {
+        "properties": {
+          "jobs": {
+            "type": "integer",
+            "title": "Jobs"
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate"
+          },
+          "top_errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobs",
+          "success_rate",
+          "top_errors"
+        ],
+        "title": "DashboardYesterdayResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "NormalizeResponse": {
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "title": "Received"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "received",
+          "size"
+        ],
+        "title": "NormalizeResponse"
+      },
+      "ReadyzResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "ts": {
+            "type": "number",
+            "title": "Ts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "ts"
+        ],
+        "title": "ReadyzResponse"
+      },
+      "SaveSettingsResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/SettingsPayload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "settings"
+        ],
+        "title": "SaveSettingsResponse"
+      },
+      "SettingsPayload": {
+        "properties": {
+          "retentionMonths": {
+            "type": "integer",
+            "title": "Retentionmonths"
+          },
+          "piiMask": {
+            "type": "boolean",
+            "title": "Piimask"
+          }
+        },
+        "type": "object",
+        "required": [
+          "retentionMonths",
+          "piiMask"
+        ],
+        "title": "SettingsPayload"
+      },
+      "Transaction": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "source",
+          "description",
+          "amount",
+          "category"
+        ],
+        "title": "Transaction"
+      },
+      "TransactionsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "sources"
+        ],
+        "title": "TransactionsResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

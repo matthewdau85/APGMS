@@ -1,41 +1,55 @@
-import React, { useState } from 'react';
+import React from "react";
+
+import { Skeleton } from "../components/Skeleton";
+import { useTransactions } from "../api/hooks";
 
 export default function Audit() {
-  const [logs] = useState([
-    { date: '1 May 2025', action: 'Transferred $1,000 to PAYGW buffer' },
-    { date: '10 May 2025', action: 'Lodged BAS (Q3 FY24-25)' },
-    { date: '15 May 2025', action: 'Audit log downloaded by user' },
-    { date: '22 May 2025', action: 'Reminder sent: PAYGW payment due' },
-    { date: '5 June 2025', action: 'Scheduled PAYGW transfer' },
-    { date: '29 May 2025', action: 'BAS lodged (on time)' },
-    { date: '16 May 2025', action: 'GST payment made' },
-  ]);
+  const { data, isLoading } = useTransactions();
+  const logs = data?.items ?? [];
 
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">Compliance & Audit</h1>
       <p className="text-sm text-muted-foreground">
-        Track every action in your PAYGW and GST account for compliance.
+        Track every transfer and sale flowing into your PAYGW and GST accounts. Download the full audit trail for regulators.
       </p>
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm border border-gray-300 rounded-lg">
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 text-left border-b">Date</th>
-              <th className="px-4 py-2 text-left border-b">Action</th>
+              <th className="px-4 py-2 text-left border-b">Source</th>
+              <th className="px-4 py-2 text-left border-b">Description</th>
+              <th className="px-4 py-2 text-right border-b">Amount</th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, i) => (
-              <tr key={i} className="border-t">
-                <td className="px-4 py-2">{log.date}</td>
-                <td className="px-4 py-2">{log.action}</td>
+            {isLoading ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-6">
+                  <Skeleton height={18} />
+                </td>
               </tr>
-            ))}
+            ) : logs.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
+                  No activity recorded yet.
+                </td>
+              </tr>
+            ) : (
+              logs.map(item => (
+                <tr key={`${item.date}-${item.description}`} className="border-t">
+                  <td className="px-4 py-2">{item.date}</td>
+                  <td className="px-4 py-2 capitalize">{item.source}</td>
+                  <td className="px-4 py-2">{item.description}</td>
+                  <td className="px-4 py-2 text-right">${item.amount.toFixed(2)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
-      <button className="mt-4 bg-primary text-white p-2 rounded-md">Download Full Log</button>
+      <button className="button" style={{ marginTop: 16 }}>Download Full Log</button>
     </div>
   );
 }
