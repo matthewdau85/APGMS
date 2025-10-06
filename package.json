@@ -4,7 +4,11 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "rules:manifest": "ts-node --transpile-only scripts/rules/build_manifest.ts",
+        "seed": "ts-node --transpile-only scripts/seed.ts",
+        "smoke:sim": "ts-node --transpile-only scripts/smoke.sim.ts",
+        "test": "tsx tests/run-e2e.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
@@ -18,6 +22,7 @@
         "typescript": "^5.9.3"
     },
     "dependencies": {
+        "@tanstack/react-query": "file:vendor/react-query",
         "csv-parse": "^6.1.0",
         "dotenv": "^17.2.3",
         "express": "^5.1.0",

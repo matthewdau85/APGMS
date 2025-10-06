@@ -6,10 +6,16 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { simRail } from "./sim/rail/provider";
+import { simRecon } from "./sim/rail/recon";
+import { settlementImportHandler } from "./settlement/import";
+import { registerIntegrationsOps } from "./ops/integrations";
+import { releaseHandler } from "./payments/release";
 
 dotenv.config();
 
 const app = express();
+app.use(express.text({ type: ["text/csv", "text/plain"] }));
 app.use(express.json({ limit: "2mb" }));
 
 // (optional) quick request logger
@@ -19,6 +25,13 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Existing explicit endpoints
+simRail(app);
+simRecon(app);
+registerIntegrationsOps(app);
+
+app.post("/payments/release", idempotency(), releaseHandler);
+app.post("/settlement/import", settlementImportHandler);
+
 app.post("/api/pay", idempotency(), payAto);
 app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);

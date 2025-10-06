@@ -1,8 +1,8 @@
 ﻿import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
-import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
+import { releaseToProvider } from "../payments/release";
 import { Pool } from "pg";
 const pool = new Pool();
 
@@ -18,16 +18,26 @@ export async function closeAndIssue(req:any, res:any) {
   }
 }
 
-export async function payAto(req:any, res:any) {
+export async function payAto(req: any, res: any) {
   const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
-  const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
+  const pr = await pool.query(
+    "select * from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1",
+    [abn, taxType, periodId]
+  );
   if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
   const payload = pr.rows[0].payload;
   try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
-    await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
-    return res.json(r);
+    const result = await releaseToProvider({
+      abn,
+      taxType,
+      periodId,
+      amountCents: Number(payload.amount_cents),
+      rail,
+      reference: payload.reference,
+      idempotencyKey: req.idempotencyKey,
+      actor: req.header?.("X-Actor") || "system",
+    });
+    return res.json(result);
   } catch (e:any) {
     return res.status(400).json({ error: e.message });
   }
