@@ -1,3 +1,6 @@
-test("evidence bundle schema basics", () => {
-  expect(true).toBe(true);
+import test from "node:test";
+import assert from "node:assert/strict";
+
+test("placeholder", () => {
+  assert.equal(true, true);
 });

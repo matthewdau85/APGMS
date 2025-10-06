@@ -1,0 +1,10 @@
+{
+  "version": "2024-25",
+  "files": [
+    {
+      "name": "payg_w_2024_25.json",
+      "sha256": "70c55ff24daa86a95bcf7768689643f057ac52481554bbc096c9b456ce7fd3e2"
+    }
+  ],
+  "manifest_sha256": "fa339dbbea67a0f340e7e6b83ba29dc2d614ca2ca41cdea54886a35fd53db733"
+}
