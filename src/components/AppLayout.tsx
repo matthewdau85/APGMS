@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import ModeBanner from "./ModeBanner";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -43,6 +44,8 @@ export default function AppLayout() {
           ))}
         </nav>
       </header>
+
+      <ModeBanner />
 
       {/* 👇 This tells React Router where to render the child pages */}
       <main style={{ padding: 20 }}>
