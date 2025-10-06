@@ -1,38 +1,54 @@
-﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
 
+import { runMigrations } from "./db/migrate";
+import { pool } from "./db/pool";
+import { requestId, errorHandler } from "./middleware/errorHandler";
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
-import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
-import { api } from "./api";                  // your existing API router(s)
+import { paymentsApi } from "./api/payments";
+import { api } from "./api";
 
 dotenv.config();
 
-const app = express();
-app.use(express.json({ limit: "2mb" }));
+async function bootstrap() {
+  await runMigrations();
 
-// (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
+  const app = express();
+  app.use(express.json({ limit: "2mb" }));
+  app.use(requestId);
 
-// Simple health check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+  app.use((req, _res, next) => {
+    console.log(`[app] ${req.method} ${req.url}`);
+    next();
+  });
 
-// Existing explicit endpoints
-app.post("/api/pay", idempotency(), payAto);
-app.post("/api/close-issue", closeAndIssue);
-app.post("/api/payto/sweep", paytoSweep);
-app.post("/api/settlement/webhook", settlementWebhook);
-app.get("/api/evidence", evidence);
+  app.get("/health", async (_req, res, next) => {
+    try {
+      await pool.query("SELECT 1");
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  });
 
-// ✅ Payments API first so it isn't shadowed by catch-alls in `api`
-app.use("/api", paymentsApi);
+  app.post("/api/pay", idempotency(), payAto);
+  app.post("/api/close-issue", closeAndIssue);
+  app.post("/api/payto/sweep", paytoSweep);
+  app.post("/api/settlement/webhook", settlementWebhook);
+  app.get("/api/evidence", evidence);
 
-// Existing API router(s) after
-app.use("/api", api);
+  app.use("/api", paymentsApi);
+  app.use("/api", api);
 
-// 404 fallback (must be last)
-app.use((_req, res) => res.status(404).send("Not found"));
+  app.use((_req, res) => res.status(404).send("Not found"));
+  app.use(errorHandler);
 
-const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log("APGMS server listening on", port));
+  const port = Number(process.env.PORT) || 3000;
+  app.listen(port, () => console.log("APGMS server listening on", port));
+}
+
+bootstrap().catch(err => {
+  console.error("Failed to bootstrap server", err);
+  process.exit(1);
+});
