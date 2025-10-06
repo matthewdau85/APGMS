@@ -1,0 +1,10 @@
+node_modules
+public
+build
+dist
+coverage
+**/*.js
+**/*.d.ts
+**/*.ps1
+**/*.py
+apps/**/dist
