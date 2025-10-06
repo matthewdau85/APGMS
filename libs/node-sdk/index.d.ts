@@ -1,1 +1,0 @@
-﻿// TODO (P02, P01): Type definitions for RPT and canonical events.

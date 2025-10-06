@@ -1,28 +1,37 @@
 {
-    "scripts": {
-        "start": "node dist/index.js",
-        "build": "echo build root",
-        "typecheck": "echo typecheck root",
-        "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
-    },
-    "version": "0.1.0",
-    "name": "apgms",
-    "private": true,
-    "packageManager": "pnpm@9",
-    "devDependencies": {
-        "@types/express": "^5.0.3",
-        "@types/node": "^24.6.2",
-        "ts-node": "^10.9.2",
-        "tsx": "^4.20.6",
-        "typescript": "^5.9.3"
-    },
-    "dependencies": {
-        "csv-parse": "^6.1.0",
-        "dotenv": "^17.2.3",
-        "express": "^5.1.0",
-        "pg": "^8.16.3",
-        "tweetnacl": "^1.0.3",
-        "uuid": "^13.0.0"
-    }
+  "name": "apgms",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "echo build root",
+    "typecheck": "echo typecheck root",
+    "dev": "tsx src/index.ts",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
+    "migrate": "tsx scripts/migrate.ts",
+    "openapi": "python3 scripts/generate_openapi.py",
+    "client:gen": "tsx scripts/generate_client.ts",
+    "seed": "tsx scripts/seed.ts",
+    "smoke": "tsx scripts/smoke.ts",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "tweetnacl": "^1.0.3",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.6.2",
+    "@typescript-eslint/eslint-plugin": "^8.12.2",
+    "@typescript-eslint/parser": "^8.12.2",
+    "eslint": "^9.13.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
 }

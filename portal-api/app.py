@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Query
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any
 import time
@@ -8,7 +9,7 @@ app = FastAPI(title="APGMS Portal API", version="0.1.0")
 @app.get("/readyz")
 def readyz(): return {"ok": True, "ts": time.time()}
 
-@app.get("/metrics", response_class=None)
+@app.get("/metrics", response_class=PlainTextResponse)
 def metrics():
     return ("\n".join([
         "# HELP portal_up 1 if up",
