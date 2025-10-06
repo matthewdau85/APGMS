@@ -1,0 +1,17 @@
+---
+title: "Ledger management"
+slug: "ledger"
+summary: "Monitor balances and append deposits to one-way accounts."
+---
+
+# Ledger management
+
+The ledger tracks every inflow and outflow for a period.
+
+- Call `GET /api/balance` to return the latest running balance. The response includes the last update timestamp so you can spot
+  staleness.
+- Use `GET /api/ledger` for the full transaction list when reconciling statement exports.
+- Credit funds with `POST /api/deposit`. The request body enforces positive `amountCents` values to protect against accidental
+  reversals.
+
+Deposits and releases appear in chronological order and power the evidence bundle that `GET /api/evidence` exports.

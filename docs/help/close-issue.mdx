@@ -1,0 +1,14 @@
+---
+title: "Close and issue"
+slug: "close-issue"
+summary: "Transition a period into READY_RPT using the close-issue API."
+---
+
+# Close and issue
+
+When reconciliation tasks are done, advance the period to `READY_RPT` so an RPT can be minted.
+
+Invoke `POST /api/close-issue` with the ABN, tax type and period ID. The endpoint enforces that outstanding discrepancies have
+been resolved before it will update the state machine.
+
+Once the call succeeds, proceed with RPT issuance and subsequent release activity.

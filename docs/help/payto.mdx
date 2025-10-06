@@ -1,0 +1,21 @@
+---
+title: "PayTo sweeps"
+slug: "payto"
+summary: "Schedule and reconcile PayTo sweeps with the webhook callbacks."
+---
+
+# PayTo sweeps
+
+PayTo lets APGMS prefund outgoing disbursements from linked mandate accounts. The flow combines a proactive sweep with
+asynchronous settlement notifications.
+
+## Kick off a sweep
+
+Submit `POST /api/payto/sweep` with the ABN, debit amount and reference that matches the mandate agreement. The service will
+reserve the PayTo window and respond immediately when the sweep request is accepted by the banking rail.
+
+## Track settlement
+
+Banking partners confirm the outcome by calling `POST /api/settlement/webhook`. The webhook payload references the same
+`sweep.reference`, along with the status and timestamp so you can reconcile the release window. Store the callback data alongside
+ledger entries to keep the audit trail intact.

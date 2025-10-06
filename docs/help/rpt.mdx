@@ -1,0 +1,23 @@
+---
+title: "Reconciliation Pass Tokens (RPT)"
+slug: "rpt"
+summary: "How RPT issuance gates outbound releases through /api/pay and /api/release."
+---
+
+# Reconciliation Pass Tokens (RPT)
+
+Reconciliation Pass Tokens (RPTs) are the green-light artifacts that unlock outbound flows once a period has reconciled. An RPT
+contains the ABN, tax type, period, and an Ed25519 signature that downstream services verify before moving funds.
+
+## Operational sequence
+
+1. Close the period after resolving anomalies with `POST /api/close-issue`. This transitions the ledger to `READY_RPT` so an RPT
+   can be issued.
+2. Issue the token via the console or automation. The signed payload is persisted alongside the ledger snapshot.
+3. Present that token when invoking `POST /api/pay` for the release service or `POST /api/release` for the payments proxy. Both
+   endpoints verify signature freshness and expiry before debiting the one-way account.
+
+## Failure handling
+
+If the RPT has expired or is missing, the release endpoints return a `400` with an explanatory error. The recovery path is to
+re-issue a fresh RPT for the same period and retry the `POST /api/pay` or `POST /api/release` call.
