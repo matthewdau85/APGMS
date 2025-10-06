@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  sim:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: apgms
+          POSTGRES_USER: apgms
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd "pg_isready -U apgms"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgres://apgms:postgres@localhost:5432/apgms
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: apgms
+      PGUSER: apgms
+      PGPASSWORD: postgres
+      SIM_ABN: "12345678901"
+      SIM_TAX_TYPE: "GST"
+      SIM_PERIOD_ID: "2025-09"
+      ATO_PRN: "1234567890"
+      RPT_ED25519_SECRET_BASE64: "+90YovItUf8zO04zikYkYVE/Y3zDV5eWmDpYmb59WCbo3PdtKfp4T91ezzFkKrEFCrXIeUR/FaAwhrHg3xtOwg=="
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migrations
+        run: |
+          for file in $(ls migrations/*.sql | sort); do
+            echo "Running migration $file"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$file"
+          done
+
+      - name: Seed simulation data
+        run: npm run seed:sim
+
+      - name: Start API server
+        run: |
+          npm run dev > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Wait for API readiness
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:3000/health > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server failed to become ready"
+          cat server.log
+          exit 1
+
+      - name: Run simulation smoke
+        env:
+          SMOKE_BASE_URL: http://localhost:3000
+        run: npm run smoke:sim
+
+      - name: Stop API server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+          if [ -f server.log ]; then
+            echo "===== server.log ====="
+            cat server.log
+          fi
+
+  live:
+    if: ${{ vars.SMOKE_LIVE_BASE_URL != '' }}
+    runs-on: ubuntu-latest
+    needs: sim
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Run live smoke
+        env:
+          SMOKE_LIVE_BASE_URL: ${{ vars.SMOKE_LIVE_BASE_URL }}
+          SMOKE_LIVE_ABN: ${{ vars.SMOKE_LIVE_ABN || '12345678901' }}
+          SMOKE_LIVE_PERIOD_ID: ${{ vars.SMOKE_LIVE_PERIOD_ID || 'SIM-PERIOD' }}
+          SMOKE_LIVE_TAX_TYPE: ${{ vars.SMOKE_LIVE_TAX_TYPE || 'GST' }}
+          SMOKE_LIVE_CLIENT_CERT: ${{ secrets.SMOKE_LIVE_CLIENT_CERT_PATH }}
+          SMOKE_LIVE_CLIENT_KEY: ${{ secrets.SMOKE_LIVE_CLIENT_KEY_PATH }}
+          SMOKE_LIVE_CA: ${{ secrets.SMOKE_LIVE_CA_PATH }}
+        run: npm run smoke:live

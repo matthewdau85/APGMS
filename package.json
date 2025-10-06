@@ -4,7 +4,10 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "seed:sim": "ts-node --transpile-only scripts/seed:sim.ts",
+        "smoke:sim": "ts-node --transpile-only scripts/smoke:sim.ts",
+        "smoke:live": "ts-node --transpile-only scripts/smoke:live.ts"
     },
     "version": "0.1.0",
     "name": "apgms",

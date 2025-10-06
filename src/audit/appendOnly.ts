@@ -8,8 +8,8 @@ export async function appendAudit(actor: string, action: string, payload: any) {
   const payloadHash = sha256Hex(JSON.stringify(payload));
   const terminalHash = sha256Hex(prevHash + payloadHash);
   await pool.query(
-    "insert into audit_log(actor,action,payload_hash,prev_hash,terminal_hash) values (,,,,)",
-    [actor, action, payloadHash, prevHash, terminalHash]
+    "insert into audit_log(actor,action,payload_hash,prev_hash,terminal_hash) values ($1,$2,$3,$4,$5)",
+    [actor, action, payloadHash, prevHash || null, terminalHash]
   );
   return terminalHash;
 }
