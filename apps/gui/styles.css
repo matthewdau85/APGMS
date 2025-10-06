@@ -16,3 +16,20 @@ table{ width:100%; border-collapse:collapse }
 th,td{ padding:8px; border-bottom:1px solid var(--border) }
 .kbd{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px }
 .footer{ margin-top:24px; color:var(--muted) }
+.hidden{ display:none !important }
+
+.cmdk-root{ position:fixed; inset:0; z-index:1000; display:flex; align-items:flex-start; justify-content:center; padding:10vh 16px 16px; background:rgba(15,18,22,0.45); backdrop-filter:blur(4px); }
+.cmdk-panel{ width:min(640px, 100%); background:var(--bg); color:var(--fg); border-radius:16px; border:1px solid var(--border); box-shadow:0 24px 60px rgba(15,18,22,0.25); display:flex; flex-direction:column; overflow:hidden }
+.cmdk-input{ border:none; border-bottom:1px solid var(--border); padding:14px 18px; font-size:16px; background:transparent; color:inherit; outline:none }
+.cmdk-results{ max-height:340px; overflow:auto; padding:8px 0; display:flex; flex-direction:column; gap:8px }
+.cmdk-section{ padding:0 8px }
+.cmdk-section h3{ margin:4px 12px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted) }
+.cmdk-item{ width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px; border:none; background:transparent; padding:10px 12px; border-radius:10px; font-size:14px; color:inherit; cursor:pointer }
+.cmdk-item:hover,.cmdk-item.active{ background:rgba(37,99,235,0.12) }
+.cmdk-item small{ font-size:12px; color:var(--muted) }
+.cmdk-hint{ font-size:11px; color:var(--muted) }
+.cmdk-empty{ padding:28px 24px; text-align:center; color:var(--muted); font-size:13px }
+
+.toast{ position:fixed; right:24px; bottom:24px; padding:12px 16px; border-radius:12px; background:var(--fg); color:var(--bg); box-shadow:0 12px 32px rgba(15,18,22,0.35); opacity:0; pointer-events:none; transform:translateY(12px); transition:opacity .2s ease, transform .2s ease }
+.toast.show{ opacity:1; transform:translateY(0); pointer-events:auto }
+.toast.error{ background:#dc2626; color:#fff }
