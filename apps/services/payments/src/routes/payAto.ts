@@ -34,6 +34,23 @@ export async function payAtoRelease(req: Request, res: Response) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
 
+  const dryFlag = (req.query?.dry_run ?? req.query?.dryRun ?? '').toString().toLowerCase();
+  const dryRun = dryFlag === '1' || dryFlag === 'true';
+
+  if (dryRun) {
+    return res.json({
+      ok: true,
+      dry_run: true,
+      release_preview: {
+        abn,
+        taxType,
+        periodId,
+        amountCents: amt,
+      },
+      rpt_ref: { rpt_id: rpt.rpt_id, payload_sha256: rpt.payload_sha256 },
+    });
+  }
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
