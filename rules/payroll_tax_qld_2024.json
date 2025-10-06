@@ -1,0 +1,35 @@
+{
+  "state": "QLD",
+  "year": 2024,
+  "thresholds": {
+    "annual": 1300000,
+    "monthly": 108333
+  },
+  "rates": [
+    { "threshold": 6250000, "rate": 0.0449 },
+    { "threshold": null, "rate": 0.0475 }
+  ],
+  "grouping": {
+    "shared_threshold": true,
+    "threshold_application": "Queensland applies a single threshold to grouped employers; the higher rate applies once taxable wages exceed the first tier.",
+    "rules": [
+      "Corporations related through control or ownership share the Queensland threshold.",
+      "Businesses with interdependent operations may be grouped under commissioner discretion."
+    ]
+  },
+  "nexus": [
+    "Wages for services performed in Queensland.",
+    "Wages paid in Queensland for employees who mainly work in the state.",
+    "Deemed wages to contractors connected to Queensland."
+  ],
+  "levies": [
+    {
+      "name": "Health Services Levy",
+      "rate": 0.0005,
+      "apply_on": "taxable",
+      "effective_from": "2024-01-01",
+      "effective_to": "2024-03-31",
+      "notes": "Illustrative levy to demonstrate toggling based on effective dates."
+    }
+  ]
+}

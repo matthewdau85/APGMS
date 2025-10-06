@@ -1,0 +1,34 @@
+{
+  "state": "VIC",
+  "year": 2024,
+  "thresholds": {
+    "annual": 700000,
+    "monthly": 58333
+  },
+  "rates": [
+    { "threshold": null, "rate": 0.0465 }
+  ],
+  "grouping": {
+    "shared_threshold": true,
+    "threshold_application": "Victorian groups apply the threshold once to total grouped wages each month.",
+    "rules": [
+      "Related corporations form a payroll tax group.",
+      "Employers using common employees or that are commonly controlled are grouped."
+    ]
+  },
+  "nexus": [
+    "Wages paid in Victoria for services performed in the state.",
+    "Wages paid outside Victoria when the employee is based in Victoria and duties are mainly performed there.",
+    "Deemed wages paid to contractors with a Victorian nexus."
+  ],
+  "levies": [
+    {
+      "name": "Mental Health and Wellbeing Surcharge",
+      "rate": 0.005,
+      "apply_on": "total",
+      "effective_from": "2021-07-01",
+      "effective_to": null,
+      "notes": "Applies to large employers on Victorian wages. For illustration this levy applies to all wages in tests."
+    }
+  ]
+}
