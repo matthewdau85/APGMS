@@ -1,0 +1,15 @@
+{
+  "rates_version": "2025-10",
+  "gst": {
+    "inclusive_rate": 0.1
+  },
+  "paygw": {
+    "base_rate": 0.2,
+    "period_weights": {
+      "weekly": 1,
+      "fortnightly": 1,
+      "monthly": 1,
+      "quarterly": 1
+    }
+  }
+}

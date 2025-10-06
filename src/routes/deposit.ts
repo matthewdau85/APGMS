@@ -1,6 +1,8 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { getPool } from "../db/pool";
 import { randomUUID } from "node:crypto";
+
+const pool = getPool();
 
 export async function deposit(req: Request, res: Response) {
   try {
