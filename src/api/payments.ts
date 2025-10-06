@@ -1,6 +1,7 @@
 // src/api/payments.ts
 import express from "express";
-import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { Payments, RequestContext } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { idempotency } from "../middleware/idempotency";
 
 export const paymentsApi = express.Router();
 
@@ -33,7 +34,7 @@ paymentsApi.get("/ledger", async (req, res) => {
 });
 
 // POST /api/deposit
-paymentsApi.post("/deposit", async (req, res) => {
+paymentsApi.post("/deposit", idempotency(), async (req, res) => {
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
     if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
@@ -42,7 +43,7 @@ paymentsApi.post("/deposit", async (req, res) => {
     if (amountCents <= 0) {
       return res.status(400).json({ error: "Deposit must be positive" });
     }
-    const data = await Payments.deposit({ abn, taxType, periodId, amountCents });
+    const data = await Payments.deposit({ abn, taxType, periodId, amountCents }, buildContext(res));
     res.json(data);
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Deposit failed" });
@@ -50,7 +51,7 @@ paymentsApi.post("/deposit", async (req, res) => {
 });
 
 // POST /api/release  (calls payAto)
-paymentsApi.post("/release", async (req, res) => {
+paymentsApi.post("/release", idempotency(), async (req, res) => {
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
     if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
@@ -59,9 +60,15 @@ paymentsApi.post("/release", async (req, res) => {
     if (amountCents >= 0) {
       return res.status(400).json({ error: "Release must be negative" });
     }
-    const data = await Payments.payAto({ abn, taxType, periodId, amountCents });
+    const data = await Payments.payAto({ abn, taxType, periodId, amountCents }, buildContext(res));
     res.json(data);
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Release failed" });
   }
 });
+
+function buildContext(res: express.Response): RequestContext | undefined {
+  const idem = (res.locals as any)?.idempotency;
+  if (!idem?.key) return undefined;
+  return { idempotencyKey: idem.key, traceId: idem.traceId };
+}
