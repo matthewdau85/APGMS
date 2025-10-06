@@ -1,0 +1,40 @@
+{
+  "rates_version": "2024-25",
+  "files": [
+    {
+      "name": "payg_w_2024_25/weekly.json",
+      "sha256": "794ce6438343d2206e3254070ec9f1a8b2f6a8970b0f62fff6172f695ffd1459",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/weekly-tax-table/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30"
+    },
+    {
+      "name": "payg_w_2024_25/fortnightly.json",
+      "sha256": "f48eaad55fe50bef649354704b19428ae0a79d18a51c72c3284cf7069b8b3b49",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/fortnightly-tax-table/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30"
+    },
+    {
+      "name": "payg_w_2024_25/monthly.json",
+      "sha256": "385d15229bf5519b757b8c6f55ddfe1e5beee1e52b45793c7bb257d2f7c93328",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/monthly-tax-table/",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30"
+    },
+    {
+      "name": "gst_core.json",
+      "sha256": "93834faad9166083e152666db7dd7037b25fac4f4eb32bfd5f7e2cdaf715a97b",
+      "source_url": "https://www.ato.gov.au/business/gst/",
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "name": "bas_labels.json",
+      "sha256": "d8e47974f945611de0ff93d3c597c15423e3613d7c037a228baef9bd48c73fb0",
+      "source_url": "https://www.ato.gov.au/business/business-activity-statements-(bas)/",
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    }
+  ]
+}

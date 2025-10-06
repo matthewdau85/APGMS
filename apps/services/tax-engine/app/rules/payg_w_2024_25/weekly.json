@@ -1,0 +1,23 @@
+{
+  "period": "weekly",
+  "effective_from": "2024-07-01",
+  "schedules": [
+    {
+      "id": "resident_tax_free_threshold",
+      "residency": "resident",
+      "tax_free_threshold": true,
+      "description": "Schedule 1 weekly tax table for residents claiming the tax-free threshold (2024-25)",
+      "rounding": "HALF_UP",
+      "brackets": [
+        { "min": 0,   "max": 87,   "rate": 0.0,   "offset": 0.0,     "addition": 0.0 },
+        { "min": 88,  "max": 371,  "rate": 0.19,  "offset": 16.7115, "addition": 0.0 },
+        { "min": 372, "max": 515,  "rate": 0.234, "offset": 29.0843, "addition": 0.0 },
+        { "min": 516, "max": 932,  "rate": 0.3477,"offset": 88.7134, "addition": 0.0 },
+        { "min": 933, "max": 1430, "rate": 0.345, "offset": 86.4367, "addition": 0.0 },
+        { "min": 1431,"max": 3461, "rate": 0.39,  "offset": 150.6429,"addition": 0.0 },
+        { "min": 3462,"max": 3858, "rate": 0.47,  "offset": 426.6003,"addition": 0.0 },
+        { "min": 3859, "max": null, "rate": 0.47,  "offset": 426.6003,"addition": 0.0 }
+      ]
+    }
+  ]
+}

@@ -1,82 +1,94 @@
-﻿from __future__ import annotations
-from typing import Dict, Any, Tuple
+from __future__ import annotations
 
-def _round(amount: float, mode: str="HALF_UP") -> float:
-    from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN, getcontext
-    getcontext().prec = 28
-    q = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP if mode=="HALF_UP" else ROUND_HALF_EVEN)
-    return float(q)
+from decimal import Decimal, ROUND_HALF_EVEN, ROUND_HALF_UP, getcontext
+from typing import Any, Dict, Tuple
 
-def _bracket_withholding(gross: float, cfg: Dict[str, Any]) -> float:
-    """Generic progressive bracket formula: tax = a*gross - b + fixed (per period)."""
-    brs = cfg.get("brackets", [])
-    for br in brs:
-        if gross <= float(br.get("up_to", 9e9)):
-            a = float(br.get("a", 0.0)); b = float(br.get("b", 0.0)); fixed = float(br.get("fixed", 0.0))
-            return max(0.0, a * gross - b + fixed)
-    return 0.0
+from ..tax_rules import compute_withholding
 
-def _percent_simple(gross: float, rate: float) -> float:
-    return max(0.0, gross * rate)
+getcontext().prec = 28
 
-def _flat_plus_percent(gross: float, rate: float, extra: float) -> float:
-    return max(0.0, gross * rate + extra)
 
-def _bonus_marginal(regular_gross: float, bonus: float, cfg: Dict[str, Any]) -> float:
-    base = _bracket_withholding(regular_gross + bonus, cfg)
-    only_base = _bracket_withholding(regular_gross, cfg)
-    return max(0.0, base - only_base)
+def _to_decimal(value: float | int | Decimal) -> Decimal:
+    return value if isinstance(value, Decimal) else Decimal(str(value))
 
-def _solve_net_to_gross(target_net: float, method_cfg: Tuple[str, Dict[str, Any]]) -> Tuple[float,float]:
-    mname, params = method_cfg
-    lo, hi = 0.0, max(1.0, target_net * 3.0)
+
+def _round(amount: Decimal, mode: str = "HALF_UP") -> Decimal:
+    rounding = ROUND_HALF_UP if mode == "HALF_UP" else ROUND_HALF_EVEN
+    return amount.quantize(Decimal("0.01"), rounding=rounding)
+
+
+def _percent_simple(gross: Decimal, rate: Decimal) -> Decimal:
+    return (gross * rate).max(Decimal("0"))
+
+
+def _flat_plus_percent(gross: Decimal, rate: Decimal, extra: Decimal) -> Decimal:
+    return (gross * rate + extra).max(Decimal("0"))
+
+
+def _bonus_marginal(regular_gross: Decimal, bonus: Decimal, params: Dict[str, Any]) -> Decimal:
+    base = compute_withholding(regular_gross + bonus, params.get("period", "weekly"), params.get("residency", "resident"), params)
+    only_base = compute_withholding(regular_gross, params.get("period", "weekly"), params.get("residency", "resident"), params)
+    return Decimal(base - only_base) / 100
+
+
+def _solve_net_to_gross(target_net: Decimal, params: Dict[str, Any]) -> Tuple[Decimal, Decimal]:
+    lo, hi = Decimal("0"), max(Decimal("1"), target_net * 3)
     for _ in range(60):
-        mid = (lo+hi)/2
-        w = compute_withholding_for_gross(mid, mname, params)
-        net = mid - w
-        if net > target_net: hi = mid
-        else: lo = mid
-    gross = (lo+hi)/2
-    w = compute_withholding_for_gross(gross, mname, params)
-    return gross, w
+        mid = (lo + hi) / 2
+        withholding = Decimal(compute_withholding(mid, params.get("period", "weekly"), params.get("residency", "resident"), params)) / 100
+        net = mid - withholding
+        if net > target_net:
+            hi = mid
+        else:
+            lo = mid
+    gross = (lo + hi) / 2
+    withholding = Decimal(compute_withholding(gross, params.get("period", "weekly"), params.get("residency", "resident"), params)) / 100
+    return gross, withholding
 
-def compute_withholding_for_gross(gross: float, method: str, params: Dict[str, Any]) -> float:
-    if method == "formula_progressive":
-        return _bracket_withholding(gross, params.get("formula_progressive", {}))
-    if method == "percent_simple":
-        return _percent_simple(gross, float(params.get("percent", 0.0)))
-    if method == "flat_plus_percent":
-        return _flat_plus_percent(gross, float(params.get("percent", 0.0)), float(params.get("extra", 0.0)))
-    if method == "bonus_marginal":
-        return _bonus_marginal(float(params.get("regular_gross", 0.0)), float(params.get("bonus", 0.0)), params.get("formula_progressive", {}))
-    if method == "table_ato":
-        # Placeholder: replace with exact ATO schedule logic per period & flags.
-        return _bracket_withholding(gross, params.get("formula_progressive", {}))
-    return 0.0
 
-def compute(event: Dict[str, Any], rules: Dict[str, Any]) -> Dict[str, Any]:
+def compute(event: Dict[str, Any], rules: Dict[str, Any] | None = None) -> Dict[str, Any]:
     pw = event.get("payg_w", {}) or {}
-    method = (pw.get("method") or "table_ato")
-    period = (pw.get("period") or "weekly")
+    method = (pw.get("method") or "table_ato").lower()
+    period = (pw.get("period") or "weekly").lower()
+    residency = (pw.get("residency") or "resident").lower()
     params = {
         "period": period,
+        "residency": residency,
         "tax_free_threshold": bool(pw.get("tax_free_threshold", True)),
         "stsl": bool(pw.get("stsl", False)),
-        "percent": float(pw.get("percent", 0.0)),
-        "extra": float(pw.get("extra", 0.0)),
-        "regular_gross": float(pw.get("regular_gross", 0.0)),
-        "bonus": float(pw.get("bonus", 0.0)),
-        "formula_progressive": (rules.get("formula_progressive") or {})
     }
-    explain = [f"method={method} period={period} TFT={params['tax_free_threshold']} STSL={params['stsl']}"]
-    gross = float(pw.get("gross", 0.0) or 0.0)
-    target_net = pw.get("target_net")
 
-    if method == "net_to_gross" and target_net is not None:
-        gross, w = _solve_net_to_gross(float(target_net), ("formula_progressive", params))
-        net = gross - w
-        return {"method": method, "gross": _round(gross), "withholding": _round(w), "net": _round(net), "explain": explain + [f"solved net_to_gross target_net={target_net}"]}
+    gross = _to_decimal(pw.get("gross", 0) or 0)
+    explain = [
+        f"method={method} period={period} residency={residency} TFT={params['tax_free_threshold']} STSL={params['stsl']}"
+    ]
+
+    if method == "percent_simple":
+        withholding = _percent_simple(gross, _to_decimal(pw.get("percent", 0)))
+    elif method == "flat_plus_percent":
+        withholding = _flat_plus_percent(gross, _to_decimal(pw.get("percent", 0)), _to_decimal(pw.get("extra", 0)))
+    elif method == "bonus_marginal":
+        withholding = _bonus_marginal(_to_decimal(pw.get("regular_gross", gross)), _to_decimal(pw.get("bonus", 0)), params)
+    elif method == "net_to_gross" and pw.get("target_net") is not None:
+        target_net = _to_decimal(pw.get("target_net"))
+        gross, withholding = _solve_net_to_gross(target_net, params)
+        net = gross - withholding
+        return {
+            "method": method,
+            "gross": float(_round(gross)),
+            "withholding": float(_round(withholding)),
+            "net": float(_round(net)),
+            "explain": explain + [f"solved net_to_gross target_net={target_net}"]
+        }
     else:
-        w = compute_withholding_for_gross(gross, method, params)
-        net = gross - w
-        return {"method": method, "gross": _round(gross), "withholding": _round(w), "net": _round(net), "explain": explain + [f"computed from gross={gross}"]}
+        cents = compute_withholding(gross, period, residency, params)
+        withholding = Decimal(cents) / 100
+
+    net = gross - withholding
+    return {
+        "method": method,
+        "gross": float(_round(gross)),
+        "withholding": float(_round(withholding)),
+        "net": float(_round(net)),
+        "explain": explain + [f"computed from gross={gross}"]
+    }

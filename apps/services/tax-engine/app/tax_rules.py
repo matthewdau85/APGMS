@@ -1,23 +1,58 @@
-from typing import Literal
+from __future__ import annotations
 
-GST_RATE = 0.10
+from decimal import Decimal
+from typing import Dict, Iterable, Literal, Optional
 
-def gst_line_tax(amount_cents: int, tax_code: Literal["GST","GST_FREE","EXEMPT","ZERO_RATED",""] = "GST") -> int:
-    if amount_cents <= 0:
-        return 0
-    return round(amount_cents * GST_RATE) if (tax_code or "").upper() == "GST" else 0
+from .engine import RULES, compute_gst as _compute_gst, compute_withholding as _compute_withholding, ledger
+
+
+def compute_withholding(
+    amount: float | Decimal,
+    period: str,
+    residency: str,
+    opts: Optional[Dict[str, object]] = None,
+) -> int:
+    return _compute_withholding(amount, period, residency, opts)
+
+
+def compute_gst(
+    period_id: str,
+    basis: str,
+    transactions: Optional[Iterable[Dict[str, object]]] = None,
+) -> Dict[str, Dict[str, int] | int]:
+    return _compute_gst(period_id, basis, transactions)
+
+
+def gst_line_tax(
+    amount_cents: int,
+    tax_code: Literal["GST", "GST_FREE", "EXEMPT", "ZERO_RATED", "INPUT_TAXED", ""] = "GST",
+    basis: str = "cash",
+) -> int:
+    """Compatibility helper used by legacy tooling to calculate GST for a single line."""
+    result = _compute_gst(
+        "adhoc",
+        basis,
+        [
+            {
+                "type": "sale",
+                "total_cents": int(amount_cents),
+                "tax_code": tax_code,
+                "recognised": [basis],
+            }
+        ],
+    )
+    return int(result.get("1A", 0))
+
 
 def paygw_weekly(gross_cents: int) -> int:
-    """
-    Progressive toy scale used by tests:
-      - 15% up to 80,000?
-      - 20% on the portion above 80,000?
-    """
-    if gross_cents <= 0:
-        return 0
-    bracket = 80_000
-    if gross_cents <= bracket:
-        return round(gross_cents * 0.15)
-    base = round(bracket * 0.15)
-    excess = gross_cents - bracket
-    return base + round(excess * 0.20)
+    return _compute_withholding(Decimal(gross_cents) / 100, "weekly", "resident", {"tax_free_threshold": True})
+
+
+__all__ = [
+    "RULES",
+    "ledger",
+    "compute_withholding",
+    "compute_gst",
+    "gst_line_tax",
+    "paygw_weekly",
+]

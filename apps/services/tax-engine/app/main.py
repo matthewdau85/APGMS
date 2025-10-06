@@ -1,5 +1,5 @@
 ﻿from __future__ import annotations
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, HTTPException, Query, Response
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
 app = FastAPI(title="APGMS Tax Engine")
@@ -147,17 +147,36 @@ from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
-import os, json
+from .tax_rules import ledger
+import os
 
-TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+
+@app.get("/tax/{abn}/{period_id}/totals")
+def get_tax_totals(abn: str, period_id: str, basis: str = Query("cash")):
+    basis_value = (basis or "cash").lower()
+    if basis_value not in {"cash", "accrual"}:
+        raise HTTPException(status_code=400, detail="basis must be 'cash' or 'accrual'")
+    try:
+        return ledger.get_period_totals(abn, period_id, basis_value)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="period not found")
+
+try:
+    TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+    app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+except AssertionError:
+    TEMPLATES = None
 
 @app.get("/ui")
 def ui_index(request: Request):
+    if TEMPLATES is None:
+        raise HTTPException(status_code=503, detail="Templates unavailable")
     return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge":"demo"})
 
 @app.post("/ui/calc")
 async def ui_calc(request: Request):
+    if TEMPLATES is None:
+        raise HTTPException(status_code=503, detail="Templates unavailable")
     form = await request.form()
     pw = {
         "method": form.get("method"),
@@ -171,13 +190,13 @@ async def ui_calc(request: Request):
         "stsl": form.get("stsl") == "true",
         "target_net": float(form.get("target_net")) if form.get("target_net") else None
     }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
-        rules = json.load(f)
-    res = payg_w_mod.compute({"payg_w": pw}, rules)
+    res = payg_w_mod.compute({"payg_w": pw})
     return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})
 
 @app.get("/ui/help")
 def ui_help(request: Request):
+    if TEMPLATES is None:
+        raise HTTPException(status_code=503, detail="Templates unavailable")
     return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge":"demo"})
 # --- END MINI_UI ---
 

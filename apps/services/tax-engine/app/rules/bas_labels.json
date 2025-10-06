@@ -1,0 +1,13 @@
+{
+  "payg": {
+    "wages_gross": "W1",
+    "withheld": "W2"
+  },
+  "gst": {
+    "sales_gross": "G1",
+    "sales_net": "G10",
+    "purchases_net": "G11",
+    "sales_tax": "1A",
+    "purchases_tax": "1B"
+  }
+}
