@@ -1,0 +1,37 @@
+{
+  "period": "fortnightly",
+  "brackets": [
+    {
+      "threshold": 0,
+      "limit": 1730,
+      "rate": 0.15,
+      "base": 0.0
+    },
+    {
+      "threshold": 1730,
+      "limit": 3308,
+      "rate": 0.32,
+      "base": 259.5
+    },
+    {
+      "threshold": 3308,
+      "limit": 6922,
+      "rate": 0.37,
+      "base": 764.46
+    },
+    {
+      "threshold": 6922,
+      "limit": null,
+      "rate": 0.45,
+      "base": 2027.0
+    }
+  ],
+  "rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  },
+  "tiers": [
+    37000,
+    90000
+  ]
+}

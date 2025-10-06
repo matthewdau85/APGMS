@@ -1,0 +1,81 @@
+{
+  "period": "quarterly",
+  "tables": {
+    "with_tax_free_threshold": {
+      "tax_free_threshold": true,
+      "brackets": [
+        {
+          "threshold": 0,
+          "limit": 4810,
+          "rate": 0.0,
+          "base": 0.0
+        },
+        {
+          "threshold": 4810,
+          "limit": 11700,
+          "rate": 0.19,
+          "base": 0.0
+        },
+        {
+          "threshold": 11700,
+          "limit": 18200,
+          "rate": 0.325,
+          "base": 1303.9
+        },
+        {
+          "threshold": 18200,
+          "limit": 40443,
+          "rate": 0.37,
+          "base": 3416.4
+        },
+        {
+          "threshold": 40443,
+          "limit": null,
+          "rate": 0.45,
+          "base": 11646.31
+        }
+      ],
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    },
+    "no_tax_free_threshold": {
+      "tax_free_threshold": false,
+      "brackets": [
+        {
+          "threshold": 0,
+          "limit": 6500,
+          "rate": 0.19,
+          "base": 0.0
+        },
+        {
+          "threshold": 6500,
+          "limit": 13000,
+          "rate": 0.32,
+          "base": 1235.0
+        },
+        {
+          "threshold": 13000,
+          "limit": 39000,
+          "rate": 0.37,
+          "base": 3315.0
+        },
+        {
+          "threshold": 39000,
+          "limit": null,
+          "rate": 0.45,
+          "base": 12935.0
+        }
+      ],
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    }
+  },
+  "default_rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "period": "monthly",
+  "brackets": [
+    {
+      "threshold": 0,
+      "limit": 3460,
+      "rate": 0.15,
+      "base": 0.0
+    },
+    {
+      "threshold": 3460,
+      "limit": 6616,
+      "rate": 0.32,
+      "base": 519.0
+    },
+    {
+      "threshold": 6616,
+      "limit": 13844,
+      "rate": 0.37,
+      "base": 1528.92
+    },
+    {
+      "threshold": 13844,
+      "limit": null,
+      "rate": 0.45,
+      "base": 4054.0
+    }
+  ],
+  "rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  },
+  "tiers": [
+    37000,
+    90000
+  ]
+}
