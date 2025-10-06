@@ -1,0 +1,87 @@
+name: Deploy to AWS Staging
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-test-scan-deploy:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-west-2
+      CDK_STAGE: staging
+      ECR_REPOSITORY: apgms/app
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: |
+          npm run lint --if-present
+          npm test --if-present
+
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_STAGING_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build container image
+        run: |
+          docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Scan container image with Trivy
+        uses: aquasecurity/trivy-action@0.16.0
+        with:
+          image-ref: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+
+      - name: Push image to ECR
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Install CDK dependencies
+        run: |
+          npm install --prefix infra/cdk
+
+      - name: Lint infrastructure code
+        run: |
+          npm run --prefix infra/cdk lint
+
+      - name: Synthesize infrastructure
+        run: |
+          npm run --prefix infra/cdk build
+          npx --yes cdk synth --app "npx ts-node --prefer-ts-exts infra/cdk/bin/apgms-infra.ts" --context stage=$CDK_STAGE
+
+      - name: Run Checkov IaC scan
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra/cdk/cdk.out
+          soft_fail: false
+
+      - name: Deploy infrastructure and service
+        run: |
+          npx --yes cdk deploy --app "npx ts-node --prefer-ts-exts infra/cdk/bin/apgms-infra.ts" --context stage=$CDK_STAGE --require-approval never
