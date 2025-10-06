@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "jest --runInBand",
+    "test": "tsx --test test/allowlist.test.ts test/release/idempotency.test.ts test/recon/import.test.ts",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts"
   },
