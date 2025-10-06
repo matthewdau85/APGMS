@@ -10,6 +10,7 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { createObservability } from './observability.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -22,12 +23,23 @@ const connectionString =
 
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
+const observability = createObservability({
+  service: process.env.SERVICE_NAME ?? 'payments',
+  version: process.env.SERVICE_VERSION ?? process.env.npm_package_version ?? '1.0.0',
+  env: process.env.SERVICE_ENV ?? process.env.NODE_ENV ?? 'local',
+});
+observability.trackDbPool(pool, 'primary');
 
 const app = express();
 app.use(express.json());
+app.use(observability.middleware);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+app.get('/metrics', async (req, res) => {
+  await observability.metricsHandler(req, res);
+});
 
 // Endpoints
 app.post('/deposit', deposit);
@@ -42,3 +54,5 @@ app.use((_req, res) => res.status(404).send('Not found'));
 app.listen(PORT, () => {
   console.log(`[payments] listening on http://localhost:${PORT}`);
 });
+
+export { observability };

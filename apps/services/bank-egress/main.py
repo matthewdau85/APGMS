@@ -1,23 +1,43 @@
 ﻿# apps/services/bank-egress/main.py
+import json
+import os
+import psycopg2
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os, psycopg2, json
 from libs.rpt.rpt import verify
 
+_cursor = Path(__file__).resolve()
+for _ in range(6):
+    parent = _cursor.parent
+    if (parent / "observability.py").exists():
+        if str(parent) not in sys.path:
+            sys.path.append(str(parent))
+        break
+    _cursor = parent
+
+from observability import Observability
+
 app = FastAPI(title="bank-egress")
+observability = Observability("bank-egress")
+observability.install_http_middleware(app)
+observability.install_metrics_endpoint(app)
 
 class EgressReq(BaseModel):
     period_id: str
     rpt: dict
 
 def db():
-    return psycopg2.connect(
+    conn = psycopg2.connect(
         host=os.getenv("PGHOST","127.0.0.1"),
         user=os.getenv("PGUSER","postgres"),
         password=os.getenv("PGPASSWORD","postgres"),
         dbname=os.getenv("PGDATABASE","postgres"),
         port=int(os.getenv("PGPORT","5432"))
     )
+    return observability.instrument_db_connection(conn)
 
 @app.post("/egress/remit")
 def remit(req: EgressReq):

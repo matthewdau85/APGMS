@@ -1,9 +1,29 @@
 ﻿# apps/services/bas-gate/main.py
+import json
+import os
+import psycopg2
+import sys
+import time
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os, psycopg2, json, time
+
+_cursor = Path(__file__).resolve()
+for _ in range(6):
+    parent = _cursor.parent
+    if (parent / "observability.py").exists():
+        if str(parent) not in sys.path:
+            sys.path.append(str(parent))
+        break
+    _cursor = parent
+
+from observability import Observability
 
 app = FastAPI(title="bas-gate")
+observability = Observability("bas-gate")
+observability.install_http_middleware(app)
+observability.install_metrics_endpoint(app)
 
 class TransitionReq(BaseModel):
     period_id: str
@@ -11,13 +31,14 @@ class TransitionReq(BaseModel):
     reason_code: str | None = None
 
 def db():
-    return psycopg2.connect(
+    conn = psycopg2.connect(
         host=os.getenv("PGHOST","127.0.0.1"),
         user=os.getenv("PGUSER","postgres"),
         password=os.getenv("PGPASSWORD","postgres"),
         dbname=os.getenv("PGDATABASE","postgres"),
         port=int(os.getenv("PGPORT","5432"))
     )
+    return observability.instrument_db_connection(conn)
 
 @app.post("/gate/transition")
 def transition(req: TransitionReq):
