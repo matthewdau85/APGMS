@@ -1,8 +1,10 @@
-﻿import { issueRPT } from "../rpt/issuer";
+import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
-import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
-import { parseSettlementCSV } from "../settlement/splitParser";
+import { ingestSettlement } from "../settlement/process";
+import { enqueueDlq } from "../ops/dlq";
+import { recordActivity } from "../ops/activity";
+import { performRailRelease, RailReleasePayload } from "../rails/release";
 import { Pool } from "pg";
 const pool = new Pool();
 
@@ -20,16 +22,41 @@ export async function closeAndIssue(req:any, res:any) {
 
 export async function payAto(req:any, res:any) {
   const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
-  const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
-  if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
-  const payload = pr.rows[0].payload;
+  const pr = await pool.query(
+    "select * from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1",
+    [abn, taxType, periodId]
+  );
+  if (pr.rowCount === 0) {
+    await recordActivity("ops", "release_attempt", "FAILED", { abn, taxType, periodId, rail, error: "NO_RPT" });
+    return res.status(400).json({error:"NO_RPT"});
+  }
+  const payload = pr.rows[0].payload || {};
+  const resolvedRail = (rail || payload.rail) as "EFT" | "BPAY" | undefined;
+  if (!resolvedRail) {
+    await recordActivity("ops", "release_attempt", "FAILED", { abn, taxType, periodId, error: "MISSING_RAIL" });
+    return res.status(400).json({ error: "MISSING_RAIL" });
+  }
+  const releasePayload: RailReleasePayload = {
+    abn,
+    taxType,
+    periodId,
+    rail: resolvedRail,
+    reference: payload.reference,
+    amount_cents: Math.abs(Number(payload.amount_cents ?? payload.amountCents ?? 0))
+  };
   try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
-    await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
-    return res.json(r);
+    const result = await performRailRelease(releasePayload);
+    await recordActivity("ops", "release_attempt", "SUCCESS", {
+      ...releasePayload,
+      bank_receipt_hash: result?.bank_receipt_hash ?? null,
+      transfer_uuid: result?.transfer_uuid ?? null
+    });
+    return res.json(result);
   } catch (e:any) {
-    return res.status(400).json({ error: e.message });
+    const message = e?.message || "RAIL_ERROR";
+    await enqueueDlq("rail_release", releasePayload, e);
+    await recordActivity("ops", "release_attempt", "FAILED", { ...releasePayload, error: message });
+    return res.status(400).json({ error: message });
   }
 }
 
@@ -41,9 +68,16 @@ export async function paytoSweep(req:any, res:any) {
 
 export async function settlementWebhook(req:any, res:any) {
   const csvText = req.body?.csv || "";
-  const rows = parseSettlementCSV(csvText);
-  // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
-  return res.json({ ingested: rows.length });
+  try {
+    const ingest = ingestSettlement(csvText);
+    await recordActivity("ops", "recon_import", "SUCCESS", { rows: ingest.ingested });
+    return res.json({ ingested: ingest.ingested });
+  } catch (e:any) {
+    const message = e?.message || "INVALID_CSV";
+    await enqueueDlq("settlement_webhook", { csv: csvText }, e);
+    await recordActivity("ops", "recon_import", "FAILED", { error: message });
+    return res.status(400).json({ error: message });
+  }
 }
 
 export async function evidence(req:any, res:any) {
