@@ -1,0 +1,82 @@
+{
+  "earnings_codes": [
+    {
+      "bas_labels": [
+        "W1"
+      ],
+      "code": "SALARY",
+      "description": "Ordinary time earnings (salary and wages)",
+      "stp_income_stream_type": "SAW"
+    },
+    {
+      "bas_labels": [
+        "W1"
+      ],
+      "code": "ALLOWANCE-CAR",
+      "description": "Allowance - cents per kilometre",
+      "stp_income_stream_type": "SAW"
+    },
+    {
+      "bas_labels": [
+        "W1"
+      ],
+      "code": "ALLOWANCE-OTHER",
+      "description": "Allowance - other taxable",
+      "stp_income_stream_type": "SAW"
+    },
+    {
+      "bas_labels": [
+        "W1"
+      ],
+      "code": "EMPLOYER-SUPER",
+      "description": "Employer superannuation contributions",
+      "stp_income_stream_type": "SUP"
+    },
+    {
+      "bas_labels": [
+        "W1",
+        "W2"
+      ],
+      "code": "ETP-T",
+      "description": "Eligible termination payment (taxable component)",
+      "stp_income_stream_type": "ETP"
+    },
+    {
+      "bas_labels": [
+        "W1"
+      ],
+      "code": "ETP-R",
+      "description": "Eligible termination payment (rolled-over component)",
+      "stp_income_stream_type": "ETP"
+    }
+  ],
+  "metadata": {
+    "effective_from": "2022-01-01",
+    "effective_to": null,
+    "last_reviewed": "2025-10-06",
+    "name": "stp2_mapping.json",
+    "source_url": "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/single-touch-payroll/in-detail/single-touch-payroll-phase-2-employer-reporting-guidelines"
+  },
+  "rfba_reporting": {
+    "notes": [
+      "Reportable fringe benefits amounts above $2,000 must be disclosed with RFBA income type in STP phase 2.",
+      "RFBA totals map to payment summary label RFBA and do not contribute to W1/W2 on the BAS."
+    ],
+    "payment_summary_label": "RFBA",
+    "stp_income_stream_type": "RFBA",
+    "threshold": 2000
+  },
+  "withholding_mapping": {
+    "w1_includes": [
+      "SALARY",
+      "ALLOWANCE-CAR",
+      "ALLOWANCE-OTHER",
+      "EMPLOYER-SUPER",
+      "ETP-T",
+      "ETP-R"
+    ],
+    "w2_includes": [
+      "ETP-T"
+    ]
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "default_rate_percent": 11.5,
+  "future_rate_schedule": [
+    {
+      "effective_from": "2025-07-01",
+      "rate_percent": 12.0
+    }
+  ],
+  "metadata": {
+    "effective_from": "2024-07-01",
+    "effective_to": "2025-06-30",
+    "last_reviewed": "2025-10-06",
+    "name": "sg_2024_25.json",
+    "source_url": "https://www.ato.gov.au/tax-rates-and-codes/key-superannuation-rates-and-thresholds/super-guarantee"
+  },
+  "notes": [
+    "Rates follow the legislated SG increase timetable with 11.5% applying for the 2024-25 income year.",
+    "Maximum contribution base per quarter remains $62,270 through 30 June 2025 as published by the ATO."
+  ],
+  "quarters": [
+    {
+      "maximum_contribution_base": 62270,
+      "quarter": "2024-07-01_2024-09-30",
+      "rate_percent": 11.5
+    },
+    {
+      "maximum_contribution_base": 62270,
+      "quarter": "2024-10-01_2024-12-31",
+      "rate_percent": 11.5
+    },
+    {
+      "maximum_contribution_base": 62270,
+      "quarter": "2025-01-01_2025-03-31",
+      "rate_percent": 11.5
+    },
+    {
+      "maximum_contribution_base": 62270,
+      "quarter": "2025-04-01_2025-06-30",
+      "rate_percent": 11.5
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "labels": {
+    "1A": "GST on sales",
+    "1B": "GST on purchases",
+    "F1": "PAYG income tax instalment",
+    "F2": "PAYG income tax instalment credits",
+    "G1": "Total sales",
+    "G10": "Capital purchases",
+    "G11": "Non-capital purchases",
+    "G2": "Export sales",
+    "G3": "Other GST-free sales",
+    "T1": "PAYG withholding where no ABN is quoted",
+    "T2": "PAYG withholding for payments to foreign residents",
+    "T3": "PAYG withholding from investment income payments",
+    "T4": "PAYG withholding from superannuation income streams",
+    "W1": "Total salary, wages and other payments",
+    "W2": "Amounts withheld from payments shown at W1"
+  },
+  "metadata": {
+    "effective_from": "2024-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-10-06",
+    "name": "bas_labels.json",
+    "source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst"
+  },
+  "notes": [
+    "BAS labels align to the standard Business Activity Statement instructions for GST and PAYG withholding.",
+    "Label descriptions support mapping outputs for the tax engine."
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "accounting_methods": {
+    "accrual": {
+      "bas_labels": {
+        "gst_on_purchases": "1B",
+        "gst_on_sales": "1A",
+        "purchases": "G11",
+        "sales": "G1"
+      },
+      "description": "Attribute GST on the activity statement when an invoice is issued or received, even if unpaid."
+    },
+    "cash": {
+      "bas_labels": {
+        "gst_on_purchases": "1B",
+        "gst_on_sales": "1A",
+        "purchases": "G11",
+        "sales": "G1"
+      },
+      "description": "Attribute GST on the activity statement when payment is received or made."
+    }
+  },
+  "metadata": {
+    "effective_from": "2000-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-10-06",
+    "name": "gst_core.json",
+    "source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst"
+  },
+  "notes": [
+    "Standard GST rate has remained at 10% since introduction on 1 July 2000.",
+    "Cash and accrual attribution follow the same BAS labels but differ in timing of attribution.",
+    "Deferred GST entries should reference the DGST scheme rules."
+  ],
+  "rounding": {
+    "method": "nearest_cent",
+    "notes": [
+      "GST is generally calculated on the taxable supply amount multiplied by 10% and rounded to the nearest cent.",
+      "Rounding rules follow ATO guidance: 0.5 rounds up to the next cent."
+    ]
+  },
+  "standard_rate": 0.1
+}

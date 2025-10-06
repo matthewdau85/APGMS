@@ -1,0 +1,190 @@
+{
+  "rates_version": "2024-25",
+  "generated_at": "2025-10-06T09:37:33.307Z",
+  "files": [
+    {
+      "name": "bas_labels.json",
+      "sha256": "13cd1eb4fce1b15722746f78314b76f0f89ece98f339e6617786b0383f33e418",
+      "source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "dgst.json",
+      "sha256": "e7e64e7cac3ca934b6cb50b5a35bc2a32083745c75e0c14667c32a66b40fa911",
+      "source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail/rules-for-specific-transactions/international-transactions/deferred-gst",
+      "effective_from": "2010-01-01",
+      "effective_to": null,
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "fbt_2024_2025.json",
+      "sha256": "5506609644f1e2ac9594c70b3fad909df7ad4b1d4a9e6ab451c41c7187745a5e",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/fringe-benefits-tax-rates-and-thresholds",
+      "effective_from": "2024-04-01",
+      "effective_to": "2025-03-31",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "gst_core.json",
+      "sha256": "59c2be2abf005c04181ce71b01a7444e445e6dfc57c7573013c669895e97ab9a",
+      "source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst",
+      "effective_from": "2000-07-01",
+      "effective_to": null,
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/fortnightly.foreign.json",
+      "sha256": "1ab280efe91783aa0183230085507938c87dc43d16079805fe9423f5842fb897",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/fortnightly.no_tfn.json",
+      "sha256": "5635ac0a25267b09a64240a0e4862fcce23ab6c4bec9e536fd48546ed63353ba",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/fortnightly.resident.json",
+      "sha256": "5d6b92007edef512daa05da71d05ed5a920106b178d4f7edc9c45a067099aeb2",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/fortnightly.whm.json",
+      "sha256": "9beedc92913abf05c2c58e7bf222d4c5d7714d93dc0ed9dd53597c122bc72282",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/monthly.foreign.json",
+      "sha256": "0d55835b10d2ef4d9e43b03474845f408fb7c485310fabda3cd70066670c344f",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/monthly.no_tfn.json",
+      "sha256": "bb4f2ba1463d1f064f586ddd322c95d54dbdbcff10143a23a5f42d0c615b420c",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/monthly.resident.json",
+      "sha256": "63de14d85048a14ad9a7c00481fcf261189dc61128aefc017d7db95a852ca7f2",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/monthly.whm.json",
+      "sha256": "7d8bbdfdc2c70ba79132d685032d7c71051a736c36fd31ec5cd3f07c27083328",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/quarterly.foreign.json",
+      "sha256": "1bed0bfe0a3b3f6c084ecb1a2c8f3b7d90dc191e3fc68681e24d12ee41dc00cf",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/quarterly.no_tfn.json",
+      "sha256": "55a9e590081165d0f8a50fb934c0e6d47b90a3e8beda23749291cf36969556bc",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/quarterly.resident.json",
+      "sha256": "2ccab75f4fbec08fe15b99d8bd51686dfce211d056f8a21007b30989795b7a0a",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/quarterly.whm.json",
+      "sha256": "25cd4f5e558f65aa7cb0043fbac3a35f3e9e96db77273e7fb564b75074117c98",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/weekly.foreign.json",
+      "sha256": "367407f0f2a8364c700a8ffcfc7824b92b11713bf08fdc055984697b867412e8",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/weekly.no_tfn.json",
+      "sha256": "65c1a327c173ca2b5eb65a98419d677f0dbc3217da5b3d8a94c3c4e203f3772f",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/weekly.resident.json",
+      "sha256": "38a71133c53624a7e3fc3d190952c688ed3426b32faea988d59703b671a29a0b",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "payg_w_2024_25/weekly.whm.json",
+      "sha256": "4bb11ae693deebd7bbddc671754e6b7b68f98021adbce6d887819dcc92e7014a",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "paygi_gdp_uplift_2024_25.json",
+      "sha256": "4343d9d6909d86405e6a2d6cf1bd207ea5bc2982dd16eb484b722831090c4ef4",
+      "source_url": "https://softwaredevelopers.ato.gov.au/gdp-adjustment-2024-25-gst-and-payg-instalments",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "sg_2024_25.json",
+      "sha256": "7797b7fa591a03937b9a8ed27f0a55e31b1d2c118a61c20a688073f838bcdc07",
+      "source_url": "https://www.ato.gov.au/tax-rates-and-codes/key-superannuation-rates-and-thresholds/super-guarantee",
+      "effective_from": "2024-07-01",
+      "effective_to": "2025-06-30",
+      "last_reviewed": "2025-10-06"
+    },
+    {
+      "name": "stp2_mapping.json",
+      "sha256": "f68b98bfb036fd90ee5a8d2298de625400c5588ee8e3e8accb6dd9b0b0104522",
+      "source_url": "https://www.ato.gov.au/businesses-and-organisations/hiring-and-paying-your-workers/single-touch-payroll/in-detail/single-touch-payroll-phase-2-employer-reporting-guidelines",
+      "effective_from": "2022-01-01",
+      "effective_to": null,
+      "last_reviewed": "2025-10-06"
+    }
+  ]
+}

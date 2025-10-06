@@ -1,0 +1,24 @@
+{
+  "caps": {
+    "meal_entertainment_exemption": 2000,
+    "remote_area_housing_rebate_percent": 50.0,
+    "salary_packaging_meal_entertainment_cap": 2600
+  },
+  "fbt_rate_percent": 47.0,
+  "gross_up_factors": {
+    "type1": 2.0802,
+    "type2": 1.8868
+  },
+  "metadata": {
+    "effective_from": "2024-04-01",
+    "effective_to": "2025-03-31",
+    "last_reviewed": "2025-10-06",
+    "name": "fbt_2024_2025.json",
+    "source_url": "https://www.ato.gov.au/tax-rates-and-codes/fringe-benefits-tax-rates-and-thresholds"
+  },
+  "notes": [
+    "FBT year runs from 1 April 2024 to 31 March 2025.",
+    "Type 1 gross-up factor applies where the employer can claim GST credits; type 2 applies otherwise.",
+    "Salary packaging caps reflect thresholds quoted for not-for-profit and hospital employers."
+  ]
+}
