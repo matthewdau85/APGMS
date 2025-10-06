@@ -1,10 +1,9 @@
 // apps/services/payments/src/middleware/rptGate.ts
 import { Request, Response, NextFunction } from "express";
 import pg from "pg"; const { Pool } = pg;
+import nacl from "tweetnacl";
 import { sha256Hex } from "../utils/crypto";
-import { selectKms } from "../kms/kmsProvider";
-
-const kms = selectKms();
+import { getPublicKeys, decodeSignature } from "../../../../src/crypto/kms.js";
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 export async function rptGate(req: Request, res: Response, next: NextFunction) {
@@ -37,13 +36,36 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
       return res.status(403).json({ error: "Payload hash mismatch" });
     }
 
-    // Signature verify (signature is stored as base64 text in your seed)
     const payload = Buffer.from(r.payload_c14n);
-    const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(r.payload_c14n);
+    } catch (err) {
+      return res.status(403).json({ error: "Payload not JSON" });
+    }
+
+    const kid = parsed?.kid;
+    if (typeof kid !== "string" || !kid) {
+      return res.status(403).json({ error: "Missing kid in payload" });
+    }
+
+    const ratesVersion = parsed?.rates_version;
+    const expectedRates = process.env.RATES_VERSION || process.env.RPT_RATES_VERSION;
+    const featureRates = String(process.env.FEATURE_ATO_TABLES ?? "false").toLowerCase() === "true";
+    if (featureRates && expectedRates && ratesVersion !== expectedRates) {
+      return res.status(403).json({ error: "RATES_VERSION_MISMATCH", expected: expectedRates, got: ratesVersion });
+    }
+
+    const sig = decodeSignature(r.signature);
+    const keyset = await getPublicKeys();
+    const key = keyset.find((k) => k.kid === kid);
+    if (!key) {
+      return res.status(403).json({ error: "KID_NOT_ACCEPTED" });
+    }
+    const ok = nacl.sign.detached.verify(payload, sig, key.publicKey);
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256, kid };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });

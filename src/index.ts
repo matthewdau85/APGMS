@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { opsCryptoRouter } from "./api/ops/crypto";
 
 dotenv.config();
 
@@ -24,6 +25,9 @@ app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);
+
+// Ops crypto endpoints
+app.use("/api/ops/crypto", opsCryptoRouter);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
