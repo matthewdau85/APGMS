@@ -1,7 +1,12 @@
 // libs/paymentsClient.ts
+import type { components } from "../src/api/types";
+
 type Common = { abn: string; taxType: string; periodId: string };
 export type DepositArgs = Common & { amountCents: number };   // > 0
 export type ReleaseArgs = Common & { amountCents: number };   // < 0
+
+type BalanceResponse = components["schemas"]["BalanceResponse"];
+type RptIssueResponse = components["schemas"]["RptIssueResponse"];
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
@@ -9,7 +14,7 @@ const BASE =
   process.env.PAYMENTS_BASE_URL ||
   "http://localhost:3001";
 
-async function handle(res: Response) {
+async function handle<T>(res: Response): Promise<T> {
   const text = await res.text();
   let json: any;
   try { json = text ? JSON.parse(text) : null; } catch { /* keep text */ }
@@ -17,7 +22,7 @@ async function handle(res: Response) {
     const msg = (json && (json.error || json.detail)) || text || `HTTP ${res.status}`;
     throw new Error(String(msg));
   }
-  return json;
+  return json as T;
 }
 
 export const Payments = {
@@ -35,13 +40,13 @@ export const Payments = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(args),
     });
-    return handle(res);
+    return handle<RptIssueResponse>(res);
   },
   async balance(q: Common) {
     const u = new URL(`${BASE}/balance`);
     Object.entries(q).forEach(([k, v]) => u.searchParams.set(k, String(v)));
     const res = await fetch(u);
-    return handle(res);
+    return handle<BalanceResponse>(res);
   },
   async ledger(q: Common) {
     const u = new URL(`${BASE}/ledger`);

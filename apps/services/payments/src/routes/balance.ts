@@ -1,6 +1,91 @@
 import type { Request, Response } from "express";
 import { pool } from "../index.js";
 
+/**
+ * @openapi
+ * {
+ *   "paths": {
+ *     "/balance": {
+ *       "get": {
+ *         "summary": "Retrieve the OWA ledger balance for a BAS period",
+ *         "description": "Returns the aggregated balance for the specified ABN, tax type and period from the OWA ledger.",
+ *         "parameters": [
+ *           {
+ *             "in": "query",
+ *             "name": "abn",
+ *             "required": true,
+ *             "schema": { "type": "string" },
+ *             "description": "Australian Business Number identifying the entity"
+ *           },
+ *           {
+ *             "in": "query",
+ *             "name": "taxType",
+ *             "required": true,
+ *             "schema": { "type": "string", "enum": ["GST", "PAYGW"] },
+ *             "description": "Tax type for the BAS period"
+ *           },
+ *           {
+ *             "in": "query",
+ *             "name": "periodId",
+ *             "required": true,
+ *             "schema": { "type": "string" },
+ *             "description": "BAS period identifier (e.g. 2025-09)"
+ *           }
+ *         ],
+ *         "responses": {
+ *           "200": {
+ *             "description": "Balance information",
+ *             "content": {
+ *               "application/json": {
+ *                 "schema": { "$ref": "#/components/schemas/BalanceResponse" }
+ *               }
+ *             }
+ *           },
+ *           "400": {
+ *             "description": "Missing or invalid query parameters",
+ *             "content": {
+ *               "application/json": {
+ *                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+ *               }
+ *             }
+ *           },
+ *           "500": {
+ *             "description": "Unexpected failure whilst computing the balance",
+ *             "content": {
+ *               "application/json": {
+ *                 "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+ *               }
+ *             }
+ *           }
+ *         }
+ *       }
+ *     }
+ *   },
+ *   "components": {
+ *     "schemas": {
+ *       "BalanceResponse": {
+ *         "type": "object",
+ *         "required": ["abn", "taxType", "periodId", "balance_cents", "has_release"],
+ *         "properties": {
+ *           "abn": { "type": "string" },
+ *           "taxType": { "type": "string" },
+ *           "periodId": { "type": "string" },
+ *           "balance_cents": { "type": "integer" },
+ *           "has_release": { "type": "boolean" }
+ *         }
+ *       },
+ *       "ErrorResponse": {
+ *         "type": "object",
+ *         "required": ["error"],
+ *         "properties": {
+ *           "error": { "type": "string" },
+ *           "detail": { "type": "string" }
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ */
 export async function balance(req: Request, res: Response) {
   try {
     const { abn, taxType, periodId } = req.query as Record<string, string>;
