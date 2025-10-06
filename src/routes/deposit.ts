@@ -1,54 +1,76 @@
-﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { Request, Response } from "express";
 import { randomUUID } from "node:crypto";
+import { z } from "../validation/zod";
+
+import { appendAudit } from "../audit/appendOnly";
+import { pool } from "../db/pool";
+
+const depositSchema = z.object({
+  abn: z.string().min(1),
+  taxType: z.enum(["PAYGW", "GST"]),
+  periodId: z.string().min(1),
+  amountCents: z.coerce.number().int().positive(),
+});
 
 export async function deposit(req: Request, res: Response) {
+  res.locals.routePath = "/api/deposit";
+  const parsed = depositSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: "VALIDATION_FAILED",
+      issues: parsed.error.issues,
+    });
+  }
+
+  const { abn, taxType, periodId, amountCents } = parsed.data;
+  const client = await pool.connect();
   try {
-    const { abn, taxType, periodId, amountCents } = req.body || {};
-    if (!abn || !taxType || !periodId) {
-      return res.status(400).json({ error: "Missing abn/taxType/periodId" });
-    }
-    const amt = Number(amountCents);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      return res.status(400).json({ error: "amountCents must be positive for a deposit" });
-    }
+    await client.query("BEGIN");
 
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-
-      const { rows: last } = await client.query(
-        `SELECT balance_after_cents FROM owa_ledger
+    const { rows: last } = await client.query<{ balance_after_cents: string }>(
+      `SELECT balance_after_cents FROM owa_ledger
          WHERE abn=$1 AND tax_type=$2 AND period_id=$3
          ORDER BY id DESC LIMIT 1`,
-        [abn, taxType, periodId]
-      );
-      const prevBal = last[0]?.balance_after_cents ?? 0;
-      const newBal = prevBal + amt;
+      [abn, taxType, periodId]
+    );
+    const prevBal = Number(last[0]?.balance_after_cents ?? 0);
+    const newBal = prevBal + amountCents;
 
-      const { rows: ins } = await client.query(
-        `INSERT INTO owa_ledger
-           (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,now())
-         RETURNING id,transfer_uuid,balance_after_cents`,
-        [abn, taxType, periodId, randomUUID(), amt, newBal]
-      );
+    const { rows: inserted } = await client.query(
+      `INSERT INTO owa_ledger
+         (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, now())
+       RETURNING id, transfer_uuid, balance_after_cents`,
+      [abn, taxType, periodId, randomUUID(), amountCents, newBal]
+    );
 
-      await client.query("COMMIT");
-      return res.json({
-        ok: true,
-        ledger_id: ins[0].id,
-        transfer_uuid: ins[0].transfer_uuid,
-        balance_after_cents: ins[0].balance_after_cents
-      });
+    await client.query("COMMIT");
 
-    } catch (e:any) {
-      await client.query("ROLLBACK");
-      return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
-    } finally {
-      client.release();
-    }
-  } catch (e:any) {
-    return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
+    const response = {
+      ok: true,
+      ledger_id: inserted[0].id,
+      transfer_uuid: inserted[0].transfer_uuid,
+      balance_after_cents: inserted[0].balance_after_cents,
+    };
+
+    await appendAudit(req.user?.id ?? "system", "deposit", {
+      ...parsed.data,
+      requestId: req.requestId,
+      newBalance: newBal,
+    });
+
+    return res.json(response);
+  } catch (error: any) {
+    await client.query("ROLLBACK");
+    req.log?.("error", "deposit_failed", {
+      error: error?.message ?? String(error),
+      requestId: req.requestId,
+    });
+    return res.status(500).json({
+      error: "DEPOSIT_FAILED",
+      detail: String(error?.message || error),
+    });
+  } finally {
+    client.release();
   }
 }

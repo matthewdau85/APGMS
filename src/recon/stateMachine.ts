@@ -2,7 +2,7 @@
 export interface Thresholds { epsilon_cents: number; variance_ratio: number; dup_rate: number; gap_minutes: number; }
 
 export function nextState(current: PeriodState, evt: string): PeriodState {
-  const t = ${current}:;
+  const t = `${current}:${evt}`;
   switch (t) {
     case "OPEN:CLOSE": return "CLOSING";
     case "CLOSING:PASS": return "READY_RPT";

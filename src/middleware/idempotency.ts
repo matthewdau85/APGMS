@@ -1,16 +1,24 @@
-﻿import { Pool } from "pg";
-const pool = new Pool();
-/** Express middleware for idempotency via Idempotency-Key header */
+import { NextFunction, Request, Response } from "express";
+
+import { pool } from "../db/pool";
+
 export function idempotency() {
-  return async (req:any, res:any, next:any) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     const key = req.header("Idempotency-Key");
     if (!key) return next();
     try {
-      await pool.query("insert into idempotency_keys(key,last_status) values(,)", [key, "INIT"]);
+      await pool.query("INSERT INTO idempotency_keys(key,last_status) VALUES($1,$2)", [key, "INIT"]);
       return next();
     } catch {
-      const r = await pool.query("select last_status, response_hash from idempotency_keys where key=", [key]);
-      return res.status(200).json({ idempotent:true, status: r.rows[0]?.last_status || "DONE" });
+      const existing = await pool.query(
+        "SELECT last_status, response_hash FROM idempotency_keys WHERE key=$1",
+        [key]
+      );
+      return res.status(200).json({
+        idempotent: true,
+        status: existing.rows[0]?.last_status || "DONE",
+        response_hash: existing.rows[0]?.response_hash ?? null,
+      });
     }
   };
 }
