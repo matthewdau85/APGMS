@@ -1,0 +1,206 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "APGMS Payments API",
+    "version": "1.0.0",
+    "description": "OpenAPI description for the APGMS payments endpoints exposed under /api/payments."
+  },
+  "servers": [
+    { "url": "https://api.example.com/api/payments", "description": "Production" },
+    { "url": "http://localhost:3001", "description": "Local development" }
+  ],
+  "paths": {
+    "/balance": {
+      "get": {
+        "summary": "Retrieve the current balance for a tax period",
+        "operationId": "getBalance",
+        "parameters": [
+          {
+            "name": "abn",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Australian Business Number in 11 digit format."
+          },
+          {
+            "name": "taxType",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "example": "PAYGW" },
+            "description": "Tax type identifier (PAYGW, GST, etc)."
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "example": "2025-Q4" },
+            "description": "Internal identifier for the withholding period."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balance response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "abn": { "type": "string" },
+                    "taxType": { "type": "string" },
+                    "periodId": { "type": "string" },
+                    "balance_cents": { "type": "integer", "format": "int64" },
+                    "has_release": { "type": "boolean" }
+                  },
+                  "required": ["abn", "taxType", "periodId", "balance_cents", "has_release"]
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing or invalid query parameters" },
+          "500": { "description": "Unexpected server error" }
+        }
+      }
+    },
+    "/ledger": {
+      "get": {
+        "summary": "List ledger entries for a tax period",
+        "operationId": "getLedger",
+        "parameters": [
+          { "name": "abn", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "taxType", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "periodId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "abn": { "type": "string" },
+                    "taxType": { "type": "string" },
+                    "periodId": { "type": "string" },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "amount_cents": { "type": "integer" },
+                          "balance_after_cents": { "type": "integer" },
+                          "rpt_verified": { "type": "boolean" },
+                          "release_uuid": { "type": "string", "nullable": true },
+                          "bank_receipt_id": { "type": "string", "nullable": true },
+                          "created_at": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  },
+                  "required": ["abn", "taxType", "periodId", "rows"]
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing or invalid query parameters" },
+          "500": { "description": "Unexpected server error" }
+        }
+      }
+    },
+    "/deposit": {
+      "post": {
+        "summary": "Record a deposit into an One-Way Account",
+        "operationId": "postDeposit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "abn": { "type": "string" },
+                  "taxType": { "type": "string" },
+                  "periodId": { "type": "string" },
+                  "amountCents": { "type": "integer", "minimum": 1 }
+                },
+                "required": ["abn", "taxType", "periodId", "amountCents"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "ledger_id": { "type": "integer" },
+                    "balance_after_cents": { "type": "integer" }
+                  },
+                  "required": ["ok", "ledger_id", "balance_after_cents"]
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation failed" },
+          "500": { "description": "Unexpected server error" }
+        }
+      }
+    },
+    "/release": {
+      "post": {
+        "summary": "Release funds to the ATO (negative ledger entry)",
+        "operationId": "postRelease",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "abn": { "type": "string" },
+                  "taxType": { "type": "string" },
+                  "periodId": { "type": "string" },
+                  "amountCents": { "type": "integer", "maximum": -1 }
+                },
+                "required": ["abn", "taxType", "periodId", "amountCents"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "ledger_id": { "type": "integer" },
+                    "transfer_uuid": { "type": "string" },
+                    "release_uuid": { "type": "string" },
+                    "balance_after_cents": { "type": "integer" },
+                    "rpt_ref": {
+                      "type": "object",
+                      "properties": {
+                        "rpt_id": { "type": "string" },
+                        "kid": { "type": "string" },
+                        "payload_sha256": { "type": "string" }
+                      }
+                    }
+                  },
+                  "required": ["ok", "ledger_id", "transfer_uuid", "release_uuid", "balance_after_cents", "rpt_ref"]
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation failed or RPT missing" }
+        }
+      }
+    }
+  }
+}

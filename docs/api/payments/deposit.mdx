@@ -1,0 +1,37 @@
+---
+title: Deposit endpoint
+---
+
+# POST /api/payments/deposit
+
+Record a positive inflow into the protected One-Way Account. Deposits are idempotent within the upstream service using a UUID p
+er row.
+
+## Request body
+
+```
+{
+  "abn": "12345678901",
+  "taxType": "PAYGW",
+  "periodId": "2025-Q4",
+  "amountCents": 120000
+}
+```
+
+- `amountCents` must be greater than zero.
+- The service automatically assigns a new ledger UUID and updates the running balance.
+
+## Response
+
+```
+{
+  "ok": true,
+  "ledger_id": 41,
+  "balance_after_cents": 120000
+}
+```
+
+## Errors
+
+- `400` for missing body parameters or a non-positive `amountCents`.
+- `500` for unexpected persistence errors.

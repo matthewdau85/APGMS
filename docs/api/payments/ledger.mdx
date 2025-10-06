@@ -1,0 +1,47 @@
+---
+title: Ledger endpoint
+---
+
+# GET /api/payments/ledger
+
+Fetch a chronological list of One-Way Account entries for a period. The ledger includes deposits, releases and the running balanc
+e after each entry.
+
+## Request
+
+- `abn` (query) – ABN tied to the ledger.
+- `taxType` (query) – PAYGW, GST or other configured tax stream.
+- `periodId` (query) – Reference for the withholding period you want to inspect.
+
+## Response
+
+```
+{
+  "abn": "12345678901",
+  "taxType": "PAYGW",
+  "periodId": "2025-Q4",
+  "rows": [
+    {
+      "id": 42,
+      "amount_cents": 120000,
+      "balance_after_cents": 120000,
+      "created_at": "2025-05-01T02:30:00Z",
+      "rpt_verified": false
+    },
+    {
+      "id": 43,
+      "amount_cents": -119500,
+      "balance_after_cents": 500,
+      "release_uuid": "44d0...",
+      "rpt_verified": true
+    }
+  ]
+}
+```
+
+Rows are ordered oldest to newest so you can reconstruct the balance history.
+
+## Errors
+
+- `400` when the required query values are missing.
+- `500` if the ledger query throws an error.

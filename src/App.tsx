@@ -2,6 +2,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
+import { SupportProvider } from "./context/SupportContext";
 
 import Dashboard from "./pages/Dashboard";
 import BAS from "./pages/BAS";
@@ -14,19 +15,21 @@ import Help from "./pages/Help";
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/bas" element={<BAS />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/wizard" element={<Wizard />} />
-          <Route path="/audit" element={<Audit />} />
-          <Route path="/fraud" element={<Fraud />} />
-          <Route path="/integrations" element={<Integrations />} />
-          <Route path="/help" element={<Help />} />
-        </Route>
-      </Routes>
-    </Router>
+    <SupportProvider>
+      <Router>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/bas" element={<BAS />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/wizard" element={<Wizard />} />
+            <Route path="/audit" element={<Audit />} />
+            <Route path="/fraud" element={<Fraud />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/help" element={<Help />} />
+          </Route>
+        </Routes>
+      </Router>
+    </SupportProvider>
   );
 }
