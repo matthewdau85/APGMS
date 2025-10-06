@@ -1,0 +1,29 @@
+# Declarative rounding configuration consumed by app.rounding.
+# Methods define their line-level rounding and the final aggregation/label step.
+# GST follows the ATO instruction: round each line to cents (HALF_UP) then
+# report BAS labels in whole dollars. PAYGW uses the table-specific rounding for
+# each pay period before rounding BAS labels.
+---
+defaults:
+  mode: HALF_UP
+  precision: nearest_cent
+
+methods:
+  gst:
+    line:
+      precision: nearest_cent
+    aggregate:
+      precision: whole_dollar
+
+  paygw_table:
+    line:
+      precision: nearest_cent
+    aggregate:
+      precision: whole_dollar
+    periods:
+      weekly:
+        line:
+          precision: nearest_cent
+      monthly:
+        line:
+          precision: whole_dollar

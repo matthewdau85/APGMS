@@ -9,5 +9,12 @@
   <li><b>Bonus (marginal)</b>: withhold bonus at marginal rate on top of regular.</li>
   <li><b>Net â†’ Gross</b>: solve gross to hit a target net using selected formula.</li>
 </ul>
+<h3>ATO rounding order</h3>
+<p>
+  Rounding rules live in <code>rules/rounding.yaml</code>. GST is rounded at the line
+  level to the nearest cent (HALF_UP) before totals are rounded to whole dollars
+  for BAS labels. PAYGW uses the per-period table rounding (weekly stays at cents,
+  monthly rounds to whole dollars) before labels are rounded to whole dollars.
+</p>
 <p><i>Disclaimer:</i> demo UI; not legal or tax advice. Validate against ATO examples before production.</p>
 {% endblock %}
