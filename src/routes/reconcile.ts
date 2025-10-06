@@ -20,13 +20,21 @@ export async function closeAndIssue(req:any, res:any) {
 
 export async function payAto(req:any, res:any) {
   const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
-  const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
+  const pr = await pool.query(
+    `SELECT payload FROM rpt_tokens
+      WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+      ORDER BY id DESC LIMIT 1`,
+    [abn, taxType, periodId]
+  );
   if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
   const payload = pr.rows[0].payload;
   try {
     await resolveDestination(abn, rail, payload.reference);
     const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
-    await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
+    await pool.query(
+      "UPDATE periods SET state='RELEASED' WHERE abn=$1 AND tax_type=$2 AND period_id=$3",
+      [abn, taxType, periodId]
+    );
     return res.json(r);
   } catch (e:any) {
     return res.status(400).json({ error: e.message });
