@@ -1,0 +1,23 @@
+server:
+  http_listen_port: 3200
+  log_level: info
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+        http:
+compactor:
+  compaction:
+    block_retention: 48h
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /tmp/tempo/wal
+    local:
+      path: /tmp/tempo/blocks
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo

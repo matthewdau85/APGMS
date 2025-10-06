@@ -76,3 +76,75 @@ groups:
           summary: "NATS exporter is DOWN"
         labels:
           severity: warning
+
+      - uid: release_slo_degrading
+        title: Release success ratio below SLO
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 900
+              to: 0
+            datasourceUid: Prometheus
+            model:
+              expr: apgms_release_success_ratio < 0.99
+              instant: true
+              interval: ""
+              legendFormat: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: "Release endpoint falling below 99% success"
+        labels:
+          severity: critical
+
+      - uid: dlq_backlog_growth
+        title: DLQ backlog present
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: Prometheus
+            model:
+              expr: apgms_dlq_backlog > 0
+              instant: true
+              interval: ""
+              legendFormat: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 10m
+        annotations:
+          summary: "There are periods blocked in DLQ state"
+        labels:
+          severity: warning
+
+      - uid: rule_drift_detected
+        title: Active rule drift detected
+        condition: A
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: Prometheus
+            model:
+              expr: apgms_rule_drift > 0
+              instant: true
+              interval: ""
+              legendFormat: ""
+              refId: A
+        noDataState: NoData
+        execErrState: Alerting
+        for: 5m
+        annotations:
+          summary: "Runtime rule version differs from approved baseline"
+        labels:
+          severity: critical
