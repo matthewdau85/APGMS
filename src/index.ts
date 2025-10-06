@@ -1,6 +1,7 @@
 ﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
+import helmet from "helmet";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
@@ -11,6 +12,20 @@ dotenv.config();
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      "default-src": ["'self'"],
+      "script-src": ["'self'"],
+      "object-src": ["'none'"],
+      "frame-ancestors": ["'none'"]
+    }
+  },
+  referrerPolicy: { policy: "no-referrer" },
+  frameguard: { action: "deny" },
+  hsts: { maxAge: 15552000, includeSubDomains: true, preload: false }
+}));
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
