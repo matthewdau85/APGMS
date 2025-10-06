@@ -1,6 +1,8 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import ModeBanner from "./ModeBanner";
+import { getComplianceCopy } from "../utils/compliance";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -14,12 +16,15 @@ const navLinks = [
 ];
 
 export default function AppLayout() {
+  const { subtitle, footer } = getComplianceCopy();
+
   return (
     <div>
+      <ModeBanner />
       <header className="app-header">
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
-        <p>ATO-Compliant Tax Management System</p>
+        <p>{subtitle}</p>
         <nav style={{ marginTop: 16 }}>
           {navLinks.map((link) => (
             <NavLink
@@ -50,7 +55,7 @@ export default function AppLayout() {
       </main>
 
       <footer className="app-footer">
-        <p>© 2025 APGMS | Compliant with Income Tax Assessment Act 1997 & GST Act 1999</p>
+        <p>{footer}</p>
       </footer>
     </div>
   );
