@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 
 import Dashboard from "./pages/Dashboard";
+import Activity from "./pages/Activity";
+import Approvals from "./pages/Approvals";
 import BAS from "./pages/BAS";
 import Settings from "./pages/Settings";
 import Wizard from "./pages/Wizard";
@@ -18,6 +20,8 @@ export default function App() {
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/activity" element={<Activity />} />
+          <Route path="/approvals" element={<Approvals />} />
           <Route path="/bas" element={<BAS />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/wizard" element={<Wizard />} />
