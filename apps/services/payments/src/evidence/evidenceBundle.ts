@@ -1,4 +1,4 @@
-﻿import pg from "pg";
+import pg from "pg";
 const { PoolClient } = pg;
 import { canonicalJson, sha256Hex } from "../utils/crypto";
 
@@ -10,13 +10,32 @@ type BuildParams = {
   owaAfterHash: string;
 };
 
-export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
+export interface EvidenceBundle {
+  bundle_id: number;
+  payload_sha256: string;
+  settlement: null | { amount_cents: number; provider_ref: string; bank_receipt_hash: string };
+  rules: { manifest_sha256: string | null };
+  narrative: string[];
+}
+
+export async function buildEvidenceBundle(client: PoolClient, p: BuildParams): Promise<EvidenceBundle> {
   const rpt = await client.query(
-    "SELECT rpt_id, payload_c14n, payload_sha256, signature FROM rpt_tokens WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND status='ISSUED' ORDER BY created_at DESC LIMIT 1",
+    "SELECT rpt_id, kid, payload_c14n, payload_sha256, signature FROM rpt_tokens WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND status='ISSUED' ORDER BY created_at DESC LIMIT 1",
     [p.abn, p.taxType, p.periodId]
   );
   if (!rpt.rows.length) throw new Error("Missing RPT for bundle");
   const r = rpt.rows[0];
+
+  let reconRow: { manifest_sha256: string | null; gate_state: string | null } | null = null;
+  try {
+    const recon = await client.query(
+      "SELECT manifest_sha256, gate_state FROM recon_imports WHERE abn=$1 AND tax_type=$2 AND period_id=$3 ORDER BY imported_at DESC LIMIT 1",
+      [p.abn, p.taxType, p.periodId]
+    );
+    reconRow = recon.rows[0] ?? null;
+  } catch {
+    reconRow = null;
+  }
 
   const thresholds = { variance_pct: 0.02, dup_rate: 0.01, gap_allowed: 3 };
   const anomalies = { variance: 0.0, dups: 0, gaps: 0 };
@@ -56,5 +75,30 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
     canonicalJson(p.bankReceipts), canonicalJson(p.atoReceipts), canonicalJson(p.operatorOverrides)
   ];
   const out = await client.query(ins, vals);
-  return out.rows[0].bundle_id as number;
+
+  const latestRelease = await client.query(
+    `SELECT amount_cents, bank_receipt_id
+       FROM owa_ledger
+       WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND amount_cents < 0
+       ORDER BY entry_id DESC
+       LIMIT 1`,
+    [p.abn, p.taxType, p.periodId]
+  );
+  const releaseRow = latestRelease.rows[0] ?? null;
+  const providerRef = releaseRow?.bank_receipt_id || p.bankReceipts[0]?.receipt_id || null;
+  const settlementAmount = releaseRow ? Math.abs(Number(releaseRow.amount_cents)) : Math.abs(balBefore - balAfter);
+  const bankReceiptHash = providerRef ? sha256Hex(providerRef) : "";
+
+  return {
+    bundle_id: out.rows[0].bundle_id as number,
+    payload_sha256,
+    settlement: providerRef
+      ? { amount_cents: settlementAmount, provider_ref: providerRef, bank_receipt_hash: bankReceiptHash }
+      : null,
+    rules: { manifest_sha256: reconRow?.manifest_sha256 ?? null },
+    narrative: [
+      `gate:${reconRow?.gate_state ?? "UNKNOWN"}`,
+      `kid:${r.kid ?? "UNKNOWN"}`,
+    ],
+  };
 }

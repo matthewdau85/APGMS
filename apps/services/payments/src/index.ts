@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 
+import { assertSafeCombo, logFeatureToggles } from './config/features.js';
+
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
@@ -23,6 +25,10 @@ const connectionString =
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
 
+// Validate feature toggles as early as possible
+assertSafeCombo();
+logFeatureToggles();
+
 const app = express();
 app.use(express.json());
 
@@ -38,7 +44,9 @@ app.get('/ledger', ledger);
 // 404 fallback
 app.use((_req, res) => res.status(404).send('Not found'));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`[payments] listening on http://localhost:${PORT}`);
-});
+// Start server unless running under tests
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`[payments] listening on http://localhost:${PORT}`);
+  });
+}
