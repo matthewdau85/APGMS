@@ -1,0 +1,13 @@
+{
+  "paygw": {
+    "gross_wages": "W1",
+    "withheld": "W2"
+  },
+  "gst": {
+    "taxable_sales": "G1",
+    "gst_free_sales": "G10",
+    "input_taxed_purchases": "G11",
+    "gst_on_sales": "1A",
+    "gst_on_purchases": "1B"
+  }
+}
