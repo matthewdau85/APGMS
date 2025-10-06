@@ -1,19 +1,36 @@
-﻿// src/index.ts
+// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
-import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import {
+  closeAndIssue,
+  payAto,
+  paytoSweep,
+  settlementWebhook,
+  evidence,
+} from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
-import { api } from "./api";                  // your existing API router(s)
+import { api } from "./api"; // your existing API router(s)
+import { FEATURES, assertSafeBoot } from "./config/features";
+import { modeHeaders } from "./http/modeHeaders";
 
 dotenv.config();
+assertSafeBoot();
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
+app.use(modeHeaders);
 
 // (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
+app.use((req, _res, next) => {
+  console.log(`[app] ${req.method} ${req.url}`);
+  next();
+});
+
+console.log(
+  `[boot] APP_MODE=${FEATURES.APP_MODE} simulated=${FEATURES.SIM_INBOUND || FEATURES.SIM_OUTBOUND || FEATURES.DRY_RUN || FEATURES.SHADOW_ONLY}`
+);
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
