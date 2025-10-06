@@ -52,14 +52,14 @@ paymentsApi.post("/deposit", async (req, res) => {
 // POST /api/release  (calls payAto)
 paymentsApi.post("/release", async (req, res) => {
   try {
-    const { abn, taxType, periodId, amountCents } = req.body || {};
-    if (!abn || !taxType || !periodId || typeof amountCents !== "number") {
+    const { abn, taxType, periodId, amountCents, currency, mode, reversal } = req.body || {};
+    if (!abn || !taxType || !periodId || typeof amountCents !== "number" || !currency) {
       return res.status(400).json({ error: "Missing fields" });
     }
-    if (amountCents >= 0) {
-      return res.status(400).json({ error: "Release must be negative" });
+    if (amountCents <= 0 && !reversal) {
+      return res.status(400).json({ error: "Release must be positive" });
     }
-    const data = await Payments.payAto({ abn, taxType, periodId, amountCents });
+    const data = await Payments.payAto({ abn, taxType, periodId, amountCents, currency, mode, reversal });
     res.json(data);
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Release failed" });
