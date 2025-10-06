@@ -1,38 +1,48 @@
-﻿// src/index.ts
+// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
+import { requestContext } from "./middleware/requestContext";
+import { requestLogger } from "./middleware/requestLogger";
+import { httpMetricsMiddleware, metricsHandler } from "./observability/metrics";
+import { initTelemetry } from "./observability/otel";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
-import { api } from "./api";                  // your existing API router(s)
+import { api } from "./api"; // your existing API router(s)
 
 dotenv.config();
+initTelemetry("apgms-api");
 
-const app = express();
-app.use(express.json({ limit: "2mb" }));
+export function createApp() {
+  const app = express();
+  app.use(express.json({ limit: "2mb" }));
+  app.use(requestContext());
+  app.use(requestLogger());
+  app.use(httpMetricsMiddleware);
 
-// (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
+  app.get("/health", (_req, res) => res.json({ ok: true }));
+  app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+  app.get("/metrics", metricsHandler);
 
-// Simple health check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+  app.post("/api/pay", idempotency(), payAto);
+  app.post("/api/close-issue", closeAndIssue);
+  app.post("/api/payto/sweep", paytoSweep);
+  app.post("/api/settlement/webhook", settlementWebhook);
+  app.get("/api/evidence", evidence);
 
-// Existing explicit endpoints
-app.post("/api/pay", idempotency(), payAto);
-app.post("/api/close-issue", closeAndIssue);
-app.post("/api/payto/sweep", paytoSweep);
-app.post("/api/settlement/webhook", settlementWebhook);
-app.get("/api/evidence", evidence);
+  app.use("/api", paymentsApi);
+  app.use("/api", api);
 
-// ✅ Payments API first so it isn't shadowed by catch-alls in `api`
-app.use("/api", paymentsApi);
+  app.use((_req, res) => res.status(404).send("Not found"));
 
-// Existing API router(s) after
-app.use("/api", api);
+  return app;
+}
 
-// 404 fallback (must be last)
-app.use((_req, res) => res.status(404).send("Not found"));
-
-const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log("APGMS server listening on", port));
+if (process.env.NODE_ENV !== "test") {
+  const app = createApp();
+  const port = Number(process.env.PORT) || 3000;
+  app.listen(port, () => {
+    console.log(JSON.stringify({ msg: "apgms-api listening", port }));
+  });
+}
