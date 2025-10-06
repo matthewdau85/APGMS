@@ -1,9 +1,8 @@
 ﻿import { Pool } from "pg";
-import crypto from "crypto";
-import { signRpt, RptPayload } from "../crypto/ed25519";
+import { createHash, randomUUID } from "crypto";
+import { RptPayload, signRptPayload } from "../crypto/rptSigner";
 import { exceeds } from "../anomaly/deterministic";
 const pool = new Pool();
-const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
 
 export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
   const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
@@ -23,15 +22,29 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
   }
 
   const payload: RptPayload = {
-    entity_id: row.abn, period_id: row.period_id, tax_type: row.tax_type,
+    entity_id: row.abn,
+    period_id: row.period_id,
+    tax_type: row.tax_type,
     amount_cents: Number(row.final_liability_cents),
-    merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
-    anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
+    merkle_root: row.merkle_root,
+    running_balance_hash: row.running_balance_hash,
+    anomaly_vector: v,
+    thresholds,
+    rail_id: "EFT",
+    reference: process.env.ATO_PRN || "",
+    expiry_ts: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+    nonce: randomUUID(),
+    rates_version: row.rates_version ?? "baseline",
   };
-  const signature = signRpt(payload, new Uint8Array(secretKey));
-  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
-    [abn, taxType, periodId, payload, signature]);
+
+  const signed = await signRptPayload(payload);
+  const { token, signature, canonical } = signed;
+  const sha256 = createHash("sha256").update(canonical).digest("hex");
+
+  await pool.query(
+    "insert into rpt_tokens(abn,tax_type,period_id,payload_json,payload_c14n,payload_sha256,sig_ed25519,key_id) values ($1,$2,$3,$4,$5,$6,$7,$8)",
+    [abn, taxType, periodId, token, canonical, sha256, signature, token.kid]
+  );
   await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
-  return { payload, signature };
+  return { rpt: token, signature };
 }
