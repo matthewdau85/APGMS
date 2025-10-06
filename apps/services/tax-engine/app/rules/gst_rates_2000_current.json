@@ -1,0 +1,31 @@
+{
+  "version": "2000-current",
+  "standard_rate": 0.1,
+  "basis_flags": ["cash", "accrual"],
+  "categories": {
+    "GST": {
+      "rate": 0.1,
+      "bas_label": "G1"
+    },
+    "GST_FREE": {
+      "rate": 0.0,
+      "bas_label": "G3"
+    },
+    "EXPORT": {
+      "rate": 0.0,
+      "bas_label": "G2"
+    },
+    "INPUT_TAXED": {
+      "rate": 0.0,
+      "bas_label": "G0"
+    },
+    "PURCHASE_GST": {
+      "rate": 0.1,
+      "bas_label": "G11"
+    },
+    "PURCHASE_GST_CAPITAL": {
+      "rate": 0.1,
+      "bas_label": "G10"
+    }
+  }
+}
