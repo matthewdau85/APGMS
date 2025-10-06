@@ -1,5 +1,6 @@
 // components/PaymentsForm.tsx
 import React from "react";
+import { toast } from "react-hot-toast";
 
 export function PaymentsForm() {
   const [abn, setAbn] = React.useState("12345678901");
@@ -9,46 +10,58 @@ export function PaymentsForm() {
   const [status, setStatus] = React.useState<string>("");
 
   async function post(path: string, body: any) {
-    const r = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data?.error || "Request failed");
-    return data;
+    try {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const text = await response.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
+
+      if (!response.ok) {
+        const message =
+          (data && typeof data === "object" && (data.error || data.detail)) ||
+          (typeof data === "string" && data) ||
+          `Request failed (${response.status})`;
+        throw new Error(message);
+      }
+
+      return data;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Request failed";
+      toast.error(message);
+      throw error;
+    }
   }
 
   async function onDeposit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("Submitting deposit…");
-    try {
-      const res = await post("/api/payments/deposit", { abn, taxType, periodId, amountCents: Math.abs(amountCents) });
-      setStatus(`✅ Deposit ok. Ledger #${res.ledger_id}, balance ${res.balance_after_cents}`);
-    } catch (err: any) {
-      // Show service 4xx messages from payments service:
-      // e.g. "No active RPT for period", "RPT signature invalid / expired"
-      setStatus(`❌ ${err.message}`);
-    }
+    const res = await post("/api/payments/deposit", {
+      abn,
+      taxType,
+      periodId,
+      amountCents: Math.abs(amountCents),
+    });
+    setStatus(`✅ Deposit ok. Ledger #${res.ledger_id}, balance ${res.balance_after_cents}`);
   }
 
   async function onRelease(e: React.FormEvent) {
     e.preventDefault();
     setStatus("Submitting release…");
-    try {
-      const res = await post("/api/payments/release", {
-        abn,
-        taxType,
-        periodId,
-        amountCents: -Math.abs(amountCents), // negative
-      });
-      setStatus(`✅ Released. Transfer ${res.transfer_uuid}. Balance ${res.balance_after_cents}`);
-    } catch (err: any) {
-      // Example messages:
-      // "duplicate key … ux_owa_single_release_per_period"
-      // "No active RPT for period"
-      setStatus(`❌ ${err.message}`);
-    }
+    const res = await post("/api/payments/release", {
+      abn,
+      taxType,
+      periodId,
+      amountCents: -Math.abs(amountCents), // negative
+    });
+    setStatus(`✅ Released. Transfer ${res.transfer_uuid}. Balance ${res.balance_after_cents}`);
   }
 
   return (
