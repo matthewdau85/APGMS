@@ -9,6 +9,11 @@ exporters:
     endpoint: http://tempo:4318
   prometheus:
     endpoint: "0.0.0.0:8889"
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    labels:
+      resource:
+        service.name: service
 processors:
   batch: {}
 service:
@@ -21,3 +26,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [loki]

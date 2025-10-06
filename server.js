@@ -4,18 +4,82 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const client = require('prom-client');
 
 const app = express();
 app.use(bodyParser.json());
+client.collectDefaultMetrics();
 
 const {
   PGHOST='127.0.0.1', PGUSER='apgms', PGPASSWORD='apgms_pw', PGDATABASE='apgms', PGPORT='5432',
-  RPT_ED25519_SECRET_BASE64, RPT_PUBLIC_BASE64, ATO_PRN='1234567890'
+  RPT_ED25519_SECRET_BASE64, RPT_PUBLIC_BASE64, ATO_PRN='1234567890',
+  ACTIVE_RULE_VERSION
 } = process.env;
 
 const pool = new Pool({
   host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
 });
+
+const releaseSuccessCounter = new client.Counter({
+  name: 'apgms_release_success_total',
+  help: 'Number of successful /release calls',
+});
+const releaseFailureCounter = new client.Counter({
+  name: 'apgms_release_failure_total',
+  help: 'Number of failed /release calls',
+});
+const releaseSuccessRatioGauge = new client.Gauge({
+  name: 'apgms_release_success_ratio',
+  help: 'Share of successful releases in this process lifetime',
+});
+const dlqBacklogGauge = new client.Gauge({
+  name: 'apgms_dlq_backlog',
+  help: 'Periods blocked or awaiting manual intervention',
+});
+const ruleDriftGauge = new client.Gauge({
+  name: 'apgms_rule_drift',
+  help: '1 when active rule version differs from expected baseline',
+});
+const ruleVersionInfo = new client.Gauge({
+  name: 'apgms_rules_version_info',
+  help: 'Metadata about the loaded PAYGW/GST rules',
+  labelNames: ['version', 'period'],
+});
+
+let releaseSuccessCount = 0;
+let releaseFailureCount = 0;
+
+const rulesPath = path.join(__dirname, 'apps', 'services', 'tax-engine', 'app', 'rules');
+try {
+  const ruleFile = fs.readdirSync(rulesPath).find((file) => file.endsWith('.json'));
+  if (ruleFile) {
+    const raw = fs.readFileSync(path.join(rulesPath, ruleFile), 'utf8').replace(/^\uFEFF/, '');
+    const parsed = JSON.parse(raw);
+    const version = parsed.version || 'unknown';
+    const period = (parsed.formula_progressive && parsed.formula_progressive.period) || 'unknown';
+    ruleVersionInfo.labels(version, period).set(1);
+    if (ACTIVE_RULE_VERSION) {
+      ruleDriftGauge.set(version === ACTIVE_RULE_VERSION ? 0 : 1);
+    }
+  }
+} catch (err) {
+  console.warn('Unable to load rule metadata for drift detection', err);
+}
+
+async function refreshOperationalGauges() {
+  try {
+    const backlog = await pool.query(
+      "select count(*) as cnt from periods where state in ('BLOCKED_ANOMALY','BLOCKED_DISCREPANCY')"
+    );
+    dlqBacklogGauge.set(Number(backlog.rows[0]?.cnt || 0));
+  } catch (err) {
+    console.warn('Failed to refresh DLQ backlog gauge', err);
+  }
+  const total = releaseSuccessCount + releaseFailureCount;
+  releaseSuccessRatioGauge.set(total === 0 ? 1 : releaseSuccessCount / total);
+}
 
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
@@ -112,55 +176,77 @@ app.post('/rpt/issue', ah(async (req,res)=>{
 // ---------- RELEASE (debit from OWA; uses owa_append OUT cols) ----------
 app.post('/release', ah(async (req,res)=>{
   const {abn, taxType, periodId} = req.body;
+  let failureRecorded = false;
+  try {
 
-  const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
-    [abn, taxType, periodId]
-  );
-  if (pr.rowCount===0) throw new Error('PERIOD_NOT_FOUND');
-  const p = pr.rows[0];
+    const pr = await pool.query(
+      select * from periods where abn= and tax_type= and period_id=,
+      [abn, taxType, periodId]
+    );
+    if (pr.rowCount===0) throw new Error('PERIOD_NOT_FOUND');
+    const p = pr.rows[0];
 
-  // need latest token
-  const rr = await pool.query(
-    select payload, signature from rpt_tokens
-     where abn= and tax_type= and period_id=
-     order by id desc limit 1,
-    [abn, taxType, periodId]
-  );
-  if (rr.rowCount===0) return res.status(400).json({error:'NO_RPT'});
-
-  // ensure funds exist
-  const lr = await pool.query(
-    select balance_after_cents from owa_ledger
-       where abn= and tax_type= and period_id=
-       order by id desc limit 1,
-    [abn, taxType, periodId]
-  );
-  const prevBal = lr.rows[0]?.balance_after_cents ?? 0;
-  const amt = Number(p.final_liability_cents);
-  if (prevBal < amt) return res.status(422).json({error:'INSUFFICIENT_OWA', prevBal: String(prevBal), needed: amt});
-
-  // do the debit
-  const synthetic = 'rpt_debit:' + crypto.randomUUID().slice(0,12);
-  const r = await pool.query(select * from owa_append(,,,,),
-    [abn, taxType, periodId, -amt, synthetic]);
-
-  let newBalance = null;
-  if (r.rowCount && r.rows[0] && r.rows[0].out_balance_after != null) {
-    newBalance = r.rows[0].out_balance_after;
-  } else {
-    // fallback: read back most recent balance if no row returned
-    const fr = await pool.query(
-      select balance_after_cents as bal from owa_ledger
+    // need latest token
+    const rr = await pool.query(
+      select payload, signature from rpt_tokens
        where abn= and tax_type= and period_id=
        order by id desc limit 1,
       [abn, taxType, periodId]
     );
-    newBalance = fr.rows[0]?.bal ?? (prevBal - amt);
-  }
+    if (rr.rowCount===0) {
+      failureRecorded = true;
+      releaseFailureCounter.inc();
+      releaseFailureCount += 1;
+      return res.status(400).json({error:'NO_RPT'});
+    }
 
-  await pool.query(update periods set state='RELEASED' where id=, [p.id]);
-  res.json({ released: true, bank_receipt_hash: synthetic, new_balance: newBalance });
+    // ensure funds exist
+    const lr = await pool.query(
+      select balance_after_cents from owa_ledger
+         where abn= and tax_type= and period_id=
+         order by id desc limit 1,
+      [abn, taxType, periodId]
+    );
+    const prevBal = lr.rows[0]?.balance_after_cents ?? 0;
+    const amt = Number(p.final_liability_cents);
+    if (prevBal < amt) {
+      failureRecorded = true;
+      releaseFailureCounter.inc();
+      releaseFailureCount += 1;
+      return res.status(422).json({error:'INSUFFICIENT_OWA', prevBal: String(prevBal), needed: amt});
+    }
+
+    // do the debit
+    const synthetic = 'rpt_debit:' + crypto.randomUUID().slice(0,12);
+    const r = await pool.query(select * from owa_append(,,,,),
+      [abn, taxType, periodId, -amt, synthetic]);
+
+    let newBalance = null;
+    if (r.rowCount && r.rows[0] && r.rows[0].out_balance_after != null) {
+      newBalance = r.rows[0].out_balance_after;
+    } else {
+      // fallback: read back most recent balance if no row returned
+      const fr = await pool.query(
+        select balance_after_cents as bal from owa_ledger
+         where abn= and tax_type= and period_id=
+         order by id desc limit 1,
+        [abn, taxType, periodId]
+      );
+      newBalance = fr.rows[0]?.bal ?? (prevBal - amt);
+    }
+
+    await pool.query(update periods set state='RELEASED' where id=, [p.id]);
+    releaseSuccessCounter.inc();
+    releaseSuccessCount += 1;
+    res.json({ released: true, bank_receipt_hash: synthetic, new_balance: newBalance });
+    await refreshOperationalGauges();
+  } catch (err) {
+    if (!failureRecorded) {
+      releaseFailureCounter.inc();
+      releaseFailureCount += 1;
+    }
+    throw err;
+  }
 }));
 
 // ---------- EVIDENCE ----------
@@ -210,6 +296,12 @@ app.get('/evidence', ah(async (req,res)=>{
     discrepancy_log: []
   });
 }));
+
+app.get('/metrics', async (req, res) => {
+  await refreshOperationalGauges();
+  res.set('Content-Type', client.register.contentType);
+  res.end(await client.register.metrics());
+});
 
 const port = process.env.PORT ? +process.env.PORT : 8080;
 app.listen(port, ()=> console.log(APGMS demo API listening on :));

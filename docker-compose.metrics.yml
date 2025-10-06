@@ -5,7 +5,7 @@
     ports:
       - "9090:9090"
     volumes:
-      - "./ops/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro"
+      - "./ops/prometheus:/etc/prometheus:ro"
     depends_on:
       - normalizer
       - tax-engine
@@ -43,5 +43,32 @@
       - "./ops/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro"
       - "./ops/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro"
       - "./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro"
+
+  loki:
+    image: grafana/loki:2.9.4
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - "./ops/loki/local-config.yaml:/etc/loki/local-config.yaml:ro"
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo/tempo-local.yaml"]
+    ports:
+      - "3200:3200"
+    volumes:
+      - "./ops/tempo/tempo-local.yaml:/etc/tempo/tempo-local.yaml:ro"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "4318:4318"
+    volumes:
+      - "./ops/otel-config.yaml:/etc/otelcol/config.yaml:ro"
+    depends_on:
+      - loki
+      - tempo
 
 

@@ -35,6 +35,22 @@
       "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }
     },
     {
+      "type": "stat",
+      "title": "Release success ratio",
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "apgms_release_success_ratio", "refId": "A" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false, "fields": "" },
+        "orientation": "auto",
+        "colorMode": "value",
+        "textMode": "value_and_name"
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }
+    },
+    {
       "type": "graph",
       "title": "NATS Connections",
       "id": 3,
@@ -43,6 +59,88 @@
         { "expr": "nats_varz_connections", "refId": "A" }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 }
+    },
+    {
+      "type": "timeseries",
+      "title": "DLQ backlog (blocked periods)",
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "apgms_dlq_backlog", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" } },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 }
+    },
+    {
+      "type": "stat",
+      "title": "Rule drift",
+      "id": 6,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "apgms_rule_drift", "refId": "A" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false, "fields": "" },
+        "orientation": "auto",
+        "colorMode": "background",
+        "textMode": "name"
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 14 }
+    },
+    {
+      "type": "stat",
+      "title": "Active rule version",
+      "id": 7,
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [
+        { "expr": "sum(apgms_rules_version_info)", "refId": "A" }
+      ],
+      "fieldConfig": {
+        "defaults": { "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] } },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false, "fields": "" },
+        "orientation": "auto",
+        "colorMode": "none",
+        "textMode": "name_and_value"
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 14 }
+    },
+    {
+      "type": "logs",
+      "title": "Recent application logs",
+      "id": 8,
+      "datasource": { "type": "loki", "uid": "Loki" },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{app=\"apgms\"}",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
+    },
+    {
+      "type": "traces",
+      "title": "Recent traces",
+      "id": 9,
+      "datasource": { "type": "tempo", "uid": "Tempo" },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "traceql",
+          "expr": "{ service.name = \"event-normalizer\" }"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
     }
   ],
   "schemaVersion": 39,
@@ -52,5 +150,5 @@
   "time": { "from": "now-15m", "to": "now" },
   "timezone": "",
   "title": "APGMS Overview",
-  "version": 1
+  "version": 2
 }

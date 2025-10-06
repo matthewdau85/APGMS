@@ -1,0 +1,104 @@
+name: Rules ingestion guardrail
+
+on:
+  workflow_dispatch:
+    inputs:
+      compare_ref:
+        description: 'Git ref or commit to diff against (defaults to base branch)'
+        required: false
+  pull_request:
+    paths:
+      - 'apps/services/tax-engine/app/rules/**'
+      - 'scripts/rules_ingestion.py'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/services/tax-engine/app/rules/**'
+      - 'scripts/rules_ingestion.py'
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+    outputs:
+      diff_found: ${{ steps.detect.outputs.diff_found }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compute rules diff
+        id: detect
+        env:
+          COMPARE_REF: ${{ github.event.inputs.compare_ref || github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+        run: |
+          python scripts/rules_ingestion.py --compare-ref "${COMPARE_REF}" --output rules_diff.md --summary-json rules_diff.json
+          if [[ -f rules_diff.md && -s rules_diff.md ]]; then
+            echo "diff_found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "diff_found=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload diff artifact
+        if: steps.detect.outputs.diff_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rules-diff
+          path: |
+            rules_diff.md
+            rules_diff.json
+      - name: Post pull request comment
+        if: steps.detect.outputs.diff_found == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const diffBody = fs.readFileSync('rules_diff.md', 'utf8');
+            const head = diffBody.length > 6000 ? diffBody.slice(0, 6000) + '\n… (truncated)' : diffBody;
+            const body = `<!-- rules-ingestion -->\n### Rule changes detected\n\n\`\`\`diff\n${head}\n\`\`\``;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find(comment => comment.body && comment.body.includes('<!-- rules-ingestion -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+  activation:
+    needs: diff
+    if: needs.diff.outputs.diff_found == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: rules-activation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: rules-diff
+          path: artifacts
+      - name: Await manual activation
+        run: |
+          echo 'Rules diff captured. Approve this job to mark the new schedule as active.'
+          echo ''
+          echo 'Changed files:'
+          cat artifacts/rules_diff.json
+      - name: Publish job summary
+        run: |
+          echo "### Rules ready for activation" >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo '\`\`\`diff' >> "$GITHUB_STEP_SUMMARY"
+          cat artifacts/rules_diff.md >> "$GITHUB_STEP_SUMMARY"
+          echo '\`\`\`' >> "$GITHUB_STEP_SUMMARY"

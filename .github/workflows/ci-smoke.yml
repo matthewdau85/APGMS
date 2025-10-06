@@ -1,0 +1,68 @@
+name: CI smoke pipeline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Install Node dependencies
+        run: npm install
+      - name: Wait for postgres
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for i in {1..40}; do
+            if pg_isready -h localhost -p 5432 -U postgres >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Postgres not ready" >&2
+          exit 1
+      - name: Run smoke tests
+        env:
+          APGMS_TEST_ADMIN_DSN: postgresql://postgres:postgres@localhost:5432/postgres
+          APGMS_TEST_DB_USER: postgres
+          APGMS_TEST_DB_PASSWORD: postgres
+          APGMS_TEST_DB: apgms_ci
+        run: |
+          pytest -q
+      - name: Preserve evidence artefacts
+        if: always()
+        run: |
+          ls evidence_* 2>/dev/null || echo "No evidence bundles generated"
+      - name: Upload evidence bundle
+        if: always() && hashFiles('evidence_*.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-evidence
+          path: evidence_*.json

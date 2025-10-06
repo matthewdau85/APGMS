@@ -6,3 +6,27 @@ datasources:
     isDefault: true
     url: http://prometheus:9090
     jsonData: {}
+    uid: Prometheus
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      maxLines: 1000
+    uid: Loki
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3100
+    jsonData:
+      httpMethod: GET
+      tracesToLogsV2:
+        datasourceUid: Loki
+        spanStartTimeShift: '1m'
+        spanEndTimeShift: '1m'
+        tags: [{ key: 'job', value: 'normalizer' }]
+      serviceMap:
+        datasourceUid: Prometheus
+      search:
+        hide: false
+    uid: Tempo
