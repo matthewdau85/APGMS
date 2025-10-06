@@ -1,0 +1,12 @@
+{
+  "generated_at": "2025-10-06T09:25:44.312Z",
+  "rates_version": "2024.10.05.0",
+  "files": [
+    {
+      "name": "payg_w_2024_25.json",
+      "sha256": "45543a98f56c39c207f32cd3535f58695525c91700e04bd1ee0cee18676b4d9a",
+      "last_reviewed": "2024-10-01",
+      "source_url": "https://www.ato.gov.au/rates/tax-tables/weekly-tax-table"
+    }
+  ]
+}
