@@ -2,7 +2,10 @@
 from fastapi import FastAPI
 import os, psycopg2, json
 
+from libs.observability import instrument_app
+
 app = FastAPI(title="audit")
+instrument_app(app, "audit")
 
 def db():
     return psycopg2.connect(

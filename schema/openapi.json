@@ -1,0 +1,136 @@
+{
+  "components": {
+    "schemas": {
+      "DepositRequest": {
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "amountCents": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "amountCents"
+        ],
+        "type": "object"
+      },
+      "DepositResponse": {
+        "properties": {
+          "balanceAfter": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "LedgerEntry": {
+        "properties": {
+          "amountCents": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "balanceAfterCents": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "bankReceiptHash": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "LedgerResponse": {
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            },
+            "type": "array"
+          },
+          "periodId": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "APGMS Demo API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/payments/deposit": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            },
+            "description": "Deposit accepted"
+          }
+        },
+        "summary": "Deposit funds into the OWA ledger"
+      }
+    },
+    "/payments/ledger": {
+      "get": {
+        "parameters": [
+          {
+            "in": "query",
+            "name": "periodId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerResponse"
+                }
+              }
+            },
+            "description": "Ledger snapshot"
+          }
+        },
+        "summary": "Return ledger entries for a period"
+      }
+    }
+  }
+}

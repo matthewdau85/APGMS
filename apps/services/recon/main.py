@@ -3,7 +3,10 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import os, psycopg2, json, math
 
+from libs.observability import instrument_app
+
 app = FastAPI(title="recon")
+instrument_app(app, "recon")
 
 class ReconReq(BaseModel):
     period_id: str

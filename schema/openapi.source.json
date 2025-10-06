@@ -1,0 +1,101 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS Demo API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/payments/deposit": {
+      "post": {
+        "summary": "Deposit funds into the OWA ledger",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/payments/ledger": {
+      "get": {
+        "summary": "Return ledger entries for a period",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "periodId",
+            "schema": { "type": "string" },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DepositRequest": {
+        "type": "object",
+        "required": ["abn", "taxType", "periodId", "amountCents"],
+        "properties": {
+          "abn": { "type": "string" },
+          "taxType": { "type": "string" },
+          "periodId": { "type": "string" },
+          "amountCents": { "type": "integer", "format": "int64" }
+        }
+      },
+      "DepositResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" },
+          "balanceAfter": { "type": "integer", "format": "int64" }
+        }
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "amountCents": { "type": "integer", "format": "int64" },
+          "balanceAfterCents": { "type": "integer", "format": "int64" },
+          "bankReceiptHash": { "type": "string" }
+        }
+      },
+      "LedgerResponse": {
+        "type": "object",
+        "properties": {
+          "periodId": { "type": "string" },
+          "entries": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LedgerEntry" }
+          }
+        }
+      }
+    }
+  }
+}
