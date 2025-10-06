@@ -1,17 +1,35 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React from "react";
+import { Link } from "react-router-dom";
+import { useDashboardQuery } from "../api/hooks";
+import { formatCurrencyFromCents, formatDate } from "../utils/format";
 
 export default function Dashboard() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65,
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { data, isLoading } = useDashboardQuery();
+
+  if (isLoading || !data) {
+    return (
+      <div className="main-card">
+        <div className="skeleton skeleton-block" style={{ height: 32, marginBottom: 16 }} />
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[0, 1, 2].map((idx) => (
+            <div key={idx} className="bg-white p-4 rounded-xl shadow">
+              <div className="skeleton skeleton-block" style={{ height: 20 }} />
+              <div className="skeleton skeleton-block" style={{ height: 18 }} />
+              <div className="skeleton skeleton-block" style={{ height: 18 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const summary = data.summary;
+  const complianceText = summary.overallCompliance >= 90
+    ? "Excellent"
+    : summary.overallCompliance >= 70
+    ? "Good"
+    : "Needs attention";
 
   return (
     <div className="main-card">
@@ -30,18 +48,22 @@ export default function Dashboard() {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Lodgments</h2>
-          <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
+          <p className={summary.lodgmentsUpToDate ? "text-green-600" : "text-red-600"}>
+            {summary.lodgmentsUpToDate ? "Up to date ✅" : "Overdue ❌"}
           </p>
-          <Link to="/bas" className="text-blue-600 text-sm underline">View BAS</Link>
+          <Link to="/bas" className="text-blue-600 text-sm underline">
+            View BAS
+          </Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
           <h2 className="text-lg font-semibold">Payments</h2>
-          <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
+          <p className={summary.paymentsUpToDate ? "text-green-600" : "text-red-600"}>
+            {summary.paymentsUpToDate ? "All paid ✅" : "Outstanding ❌"}
           </p>
-          <Link to="/audit" className="text-blue-600 text-sm underline">View Audit</Link>
+          <Link to="/audit" className="text-blue-600 text-sm underline">
+            View Audit
+          </Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow text-center">
@@ -59,7 +81,7 @@ export default function Dashboard() {
                 fill="none"
                 stroke="url(#grad)"
                 strokeWidth="2"
-                strokeDasharray={`${complianceStatus.overallCompliance}, 100`}
+                strokeDasharray={`${summary.overallCompliance}, 100`}
               />
               <defs>
                 <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
@@ -68,27 +90,35 @@ export default function Dashboard() {
                   <stop offset="100%" stopColor="green" />
                 </linearGradient>
               </defs>
-              <text x="18" y="20.35" textAnchor="middle" fontSize="5">{complianceStatus.overallCompliance}%</text>
+              <text x="18" y="20.35" textAnchor="middle" fontSize="5">{summary.overallCompliance}%</text>
             </svg>
           </div>
-          <p className="text-sm mt-2 text-gray-600">
-            {complianceStatus.overallCompliance >= 90
-              ? 'Excellent'
-              : complianceStatus.overallCompliance >= 70
-              ? 'Good'
-              : 'Needs attention'}
-          </p>
+          <p className="text-sm mt-2 text-gray-600">{complianceText}</p>
         </div>
       </div>
 
-      <div className="mt-6 text-sm text-gray-700">
-        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
-        <p>Next BAS due by <strong>{complianceStatus.nextDue}</strong>.</p>
-        {complianceStatus.outstandingLodgments.length > 0 && (
-          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
+      <div className="mt-6 text-sm text-gray-700 space-y-1">
+        <p>
+          Last BAS lodged on <strong>{formatDate(summary.lastBasLodged)}</strong>.{" "}
+          <Link to="/bas" className="text-blue-600 underline">
+            Go to BAS
+          </Link>
+        </p>
+        <p>Next BAS due by <strong>{formatDate(summary.nextDueDate)}</strong>.</p>
+        {summary.outstandingLodgments.length > 0 && (
+          <p className="text-red-600">
+            Outstanding Lodgments: {summary.outstandingLodgments.join(", ")}
+          </p>
         )}
-        {complianceStatus.outstandingAmounts.length > 0 && (
-          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
+        {summary.outstandingAmounts.length > 0 && (
+          <ul className="text-red-600 list-disc list-inside">
+            {summary.outstandingAmounts.map((item) => (
+              <li key={`${item.taxType}-${item.amountCents}`}>
+                {formatCurrencyFromCents(item.amountCents)} {item.taxType}
+                {item.description ? ` – ${item.description}` : ""}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
 

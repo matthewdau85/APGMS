@@ -1,19 +1,22 @@
-import React, { useState } from 'react';
+import React from "react";
+import { useAuditQuery } from "../api/hooks";
+import { formatDate } from "../utils/format";
 
 export default function Audit() {
-  const [logs] = useState([
-    { date: '1 May 2025', action: 'Transferred $1,000 to PAYGW buffer' },
-    { date: '10 May 2025', action: 'Lodged BAS (Q3 FY24-25)' },
-    { date: '15 May 2025', action: 'Audit log downloaded by user' },
-    { date: '22 May 2025', action: 'Reminder sent: PAYGW payment due' },
-    { date: '5 June 2025', action: 'Scheduled PAYGW transfer' },
-    { date: '29 May 2025', action: 'BAS lodged (on time)' },
-    { date: '16 May 2025', action: 'GST payment made' },
-  ]);
+  const { data, isLoading } = useAuditQuery();
+
+  if (isLoading || !data) {
+    return (
+      <div className="p-6 space-y-4">
+        <div className="skeleton skeleton-block" style={{ height: 28 }} />
+        <div className="skeleton skeleton-block" style={{ height: 200 }} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Compliance & Audit</h1>
+      <h1 className="text-2xl font-bold">Compliance &amp; Audit</h1>
       <p className="text-sm text-muted-foreground">
         Track every action in your PAYGW and GST account for compliance.
       </p>
@@ -22,20 +25,21 @@ export default function Audit() {
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 text-left border-b">Date</th>
+              <th className="px-4 py-2 text-left border-b">Actor</th>
               <th className="px-4 py-2 text-left border-b">Action</th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, i) => (
-              <tr key={i} className="border-t">
-                <td className="px-4 py-2">{log.date}</td>
+            {data.entries.map((log) => (
+              <tr key={log.id} className="border-t">
+                <td className="px-4 py-2">{formatDate(log.occurredAt)}</td>
+                <td className="px-4 py-2">{log.actor}</td>
                 <td className="px-4 py-2">{log.action}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <button className="mt-4 bg-primary text-white p-2 rounded-md">Download Full Log</button>
     </div>
   );
 }

@@ -1,0 +1,263 @@
+// src/openapi/node.ts
+import type { ComponentsObject, PathsObject } from "./types";
+
+const currencyAmountSchema = {
+  type: "integer",
+  format: "int64",
+  description: "Amount expressed in Australian cents",
+};
+
+export const nodeComponents: ComponentsObject = {
+  schemas: {
+    ConsoleOutstandingAmount: {
+      type: "object",
+      required: ["taxType", "amountCents"],
+      properties: {
+        taxType: { type: "string", description: "PAYGW, GST, or other tax bucket" },
+        amountCents: currencyAmountSchema,
+        description: { type: "string", nullable: true },
+      },
+    },
+    ConsoleComplianceSnapshot: {
+      type: "object",
+      required: [
+        "lodgmentsUpToDate",
+        "paymentsUpToDate",
+        "overallCompliance",
+        "lastBasLodged",
+        "nextDueDate",
+        "outstandingLodgments",
+        "outstandingAmounts",
+      ],
+      properties: {
+        lodgmentsUpToDate: { type: "boolean" },
+        paymentsUpToDate: { type: "boolean" },
+        overallCompliance: { type: "number", description: "Overall compliance score from 0-100" },
+        lastBasLodged: { type: "string", format: "date" },
+        nextDueDate: { type: "string", format: "date" },
+        outstandingLodgments: {
+          type: "array",
+          items: { type: "string" },
+        },
+        outstandingAmounts: {
+          type: "array",
+          items: { $ref: "#/components/schemas/ConsoleOutstandingAmount" },
+        },
+      },
+    },
+    ConsoleDashboardResponse: {
+      type: "object",
+      required: ["summary"],
+      properties: {
+        summary: { $ref: "#/components/schemas/ConsoleComplianceSnapshot" },
+      },
+    },
+    ConsoleBasLineItem: {
+      type: "object",
+      required: ["code", "label", "amountCents"],
+      properties: {
+        code: { type: "string" },
+        label: { type: "string" },
+        amountCents: currencyAmountSchema,
+      },
+    },
+    ConsoleBasHistoryEntry: {
+      type: "object",
+      required: ["period", "paygwPaidCents", "gstPaidCents", "status", "daysLate", "penaltiesCents"],
+      properties: {
+        period: { type: "string", format: "date" },
+        paygwPaidCents: currencyAmountSchema,
+        gstPaidCents: currencyAmountSchema,
+        status: { type: "string", enum: ["On Time", "Late", "Partial"] },
+        daysLate: { type: "integer" },
+        penaltiesCents: currencyAmountSchema,
+      },
+    },
+    ConsoleBasResponse: {
+      type: "object",
+      required: ["compliance", "currentPeriod", "history"],
+      properties: {
+        compliance: { $ref: "#/components/schemas/ConsoleComplianceSnapshot" },
+        currentPeriod: {
+          type: "object",
+          required: ["period", "lineItems"],
+          properties: {
+            period: { type: "string" },
+            lineItems: {
+              type: "array",
+              items: { $ref: "#/components/schemas/ConsoleBasLineItem" },
+            },
+          },
+        },
+        history: {
+          type: "array",
+          items: { $ref: "#/components/schemas/ConsoleBasHistoryEntry" },
+        },
+      },
+    },
+    ConsoleAccount: {
+      type: "object",
+      required: ["id", "name", "bsb", "accountNumber", "type"],
+      properties: {
+        id: { type: "string" },
+        name: { type: "string" },
+        bsb: { type: "string" },
+        accountNumber: { type: "string" },
+        type: { type: "string" },
+      },
+    },
+    ConsoleTransfer: {
+      type: "object",
+      required: ["id", "type", "amountCents", "frequency", "nextRun"],
+      properties: {
+        id: { type: "string" },
+        type: { type: "string" },
+        amountCents: currencyAmountSchema,
+        frequency: { type: "string", enum: ["weekly", "fortnightly", "monthly"] },
+        nextRun: { type: "string", format: "date" },
+      },
+    },
+    ConsoleSettingsResponse: {
+      type: "object",
+      required: ["profile", "accounts", "payrollProviders", "salesChannels", "transfers", "security", "notifications"],
+      properties: {
+        profile: {
+          type: "object",
+          required: ["abn", "legalName", "tradingName", "contacts"],
+          properties: {
+            abn: { type: "string" },
+            legalName: { type: "string" },
+            tradingName: { type: "string" },
+            contacts: {
+              type: "object",
+              required: ["email"],
+              properties: {
+                email: { type: "string", format: "email" },
+                phone: { type: "string", nullable: true },
+              },
+            },
+          },
+        },
+        accounts: {
+          type: "array",
+          items: { $ref: "#/components/schemas/ConsoleAccount" },
+        },
+        payrollProviders: {
+          type: "array",
+          items: { type: "string" },
+        },
+        salesChannels: {
+          type: "array",
+          items: { type: "string" },
+        },
+        transfers: {
+          type: "array",
+          items: { $ref: "#/components/schemas/ConsoleTransfer" },
+        },
+        security: {
+          type: "object",
+          required: ["twoFactor", "smsAlerts"],
+          properties: {
+            twoFactor: { type: "boolean" },
+            smsAlerts: { type: "boolean" },
+          },
+        },
+        notifications: {
+          type: "object",
+          required: ["emailReminders", "smsLodgmentReminders"],
+          properties: {
+            emailReminders: { type: "boolean" },
+            smsLodgmentReminders: { type: "boolean" },
+          },
+        },
+      },
+    },
+    ConsoleAuditEntry: {
+      type: "object",
+      required: ["id", "occurredAt", "actor", "action"],
+      properties: {
+        id: { type: "string" },
+        occurredAt: { type: "string", format: "date-time" },
+        actor: { type: "string" },
+        action: { type: "string" },
+      },
+    },
+    ConsoleAuditResponse: {
+      type: "object",
+      required: ["entries"],
+      properties: {
+        entries: {
+          type: "array",
+          items: { $ref: "#/components/schemas/ConsoleAuditEntry" },
+        },
+      },
+    },
+  },
+};
+
+export const nodePaths: PathsObject = {
+  "/api/console/dashboard": {
+    get: {
+      summary: "Get dashboard compliance summary",
+      tags: ["Console"],
+      responses: {
+        "200": {
+          description: "Dashboard summary payload",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ConsoleDashboardResponse" },
+            },
+          },
+        },
+      },
+    },
+  },
+  "/api/console/bas": {
+    get: {
+      summary: "Get BAS period data",
+      tags: ["Console"],
+      responses: {
+        "200": {
+          description: "BAS summary for the current and historical periods",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ConsoleBasResponse" },
+            },
+          },
+        },
+      },
+    },
+  },
+  "/api/console/settings": {
+    get: {
+      summary: "Get console settings snapshot",
+      tags: ["Console"],
+      responses: {
+        "200": {
+          description: "Configuration data for settings tabs",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ConsoleSettingsResponse" },
+            },
+          },
+        },
+      },
+    },
+  },
+  "/api/console/audit": {
+    get: {
+      summary: "List console audit entries",
+      tags: ["Console"],
+      responses: {
+        "200": {
+          description: "Audit log entries",
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/ConsoleAuditResponse" },
+            },
+          },
+        },
+      },
+    },
+  },
+};
