@@ -65,3 +65,27 @@ paymentsApi.post("/release", async (req, res) => {
     res.status(400).json({ error: err?.message || "Release failed" });
   }
 });
+
+// POST /api/bas/:periodId/amend
+paymentsApi.post("/bas/:periodId/amend", async (req, res) => {
+  try {
+    const { periodId } = req.params as { periodId: string };
+    const { abn, taxType, domainTotals, submittedBy, reason, evidenceRef, nextPeriodId } = req.body || {};
+    if (!abn || !taxType || typeof domainTotals !== "object" || !periodId) {
+      return res.status(400).json({ error: "Missing amendment fields" });
+    }
+    const data = await Payments.amendBas({
+      abn,
+      taxType,
+      periodId,
+      domainTotals,
+      submittedBy,
+      reason,
+      evidenceRef,
+      nextPeriodId,
+    });
+    res.json(data);
+  } catch (err: any) {
+    res.status(400).json({ error: err?.message || "Amendment failed" });
+  }
+});

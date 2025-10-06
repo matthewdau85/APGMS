@@ -10,6 +10,7 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { amendBas } from './routes/basAmend.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -34,6 +35,7 @@ app.post('/deposit', deposit);
 app.post('/payAto', rptGate, payAtoRelease);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
+app.post('/bas/:periodId/amend', amendBas);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).send('Not found'));

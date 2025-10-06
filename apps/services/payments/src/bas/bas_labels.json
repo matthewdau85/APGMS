@@ -1,0 +1,18 @@
+{
+  "GST": {
+    "total_taxable_sales_cents": "G1",
+    "export_sales_cents": "G2",
+    "other_gst_free_sales_cents": "G3",
+    "capital_purchases_cents": "G10",
+    "non_capital_purchases_cents": "G11",
+    "gst_on_sales_cents": "1A",
+    "gst_on_purchases_cents": "1B"
+  },
+  "PAYGW": {
+    "gross_wages_cents": "W1",
+    "withheld_paygw_cents": "W2",
+    "instalment_income_cents": "T1",
+    "fringe_benefits_tax_cents": "F1",
+    "fringe_benefits_withheld_cents": "F2"
+  }
+}
