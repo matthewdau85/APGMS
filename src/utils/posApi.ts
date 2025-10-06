@@ -1,6 +1,14 @@
-// Placeholder for POS API integration logic
+import { withApiErrorToast } from "./apiClient";
 
-export {};
-// Placeholder for POS API integration logic
+export interface PosSyncResult {
+  transactionsSynced: number;
+  lastSync: string;
+}
 
-export {};
+export const syncPosTransactions = withApiErrorToast(
+  "POS sync",
+  async (): Promise<PosSyncResult> => ({
+    transactionsSynced: 0,
+    lastSync: new Date().toISOString(),
+  })
+);

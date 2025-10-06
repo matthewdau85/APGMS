@@ -1,11 +1,12 @@
 import React from "react";
+import { toast } from "react-hot-toast";
 import { transferToOneWayAccount } from "../utils/bankApi";
 
 export default function FundSecuring({ paygwDue, gstDue }: { paygwDue: number; gstDue: number }) {
   async function secureFunds() {
     await transferToOneWayAccount(paygwDue, "businessRevenueAcc", "oneWayPaygwAcc");
     await transferToOneWayAccount(gstDue, "businessRevenueAcc", "oneWayGstAcc");
-    alert("Funds secured in designated one-way accounts.");
+    toast.success("Funds secured in designated one-way accounts.");
   }
   return (
     <div className="card">
