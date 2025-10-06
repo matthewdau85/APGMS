@@ -14,5 +14,6 @@ Thumbs.db
 .DS_Store
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 .idea/

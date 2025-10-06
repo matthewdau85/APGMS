@@ -1,0 +1,19 @@
+extends: substitution
+message: "Prefer '%s'."
+level: warning
+ignorecase: true
+swap:
+  initiate: start
+  initiated: started
+  initiating: starting
+  initiation: start
+  terminate: stop
+  terminated: stopped
+  terminating: stopping
+  termination: stop
+  utilize: use
+  utilization: use
+  commence: start
+  facilitates: helps
+  facilitate: help
+  facilitation: help
