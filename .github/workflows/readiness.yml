@@ -1,0 +1,158 @@
+name: Readiness
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run unit tests
+        run: npm test --if-present
+
+      - name: Generate readiness score
+        run: npm run readiness:score
+
+      - name: Generate readiness badges
+        run: npm run readiness:badge
+
+      - name: Upload readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-report
+          path: artifacts/readiness/report.md
+
+      - name: Load readiness summary
+        id: readiness
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const summary = JSON.parse(fs.readFileSync('artifacts/readiness/summary.json', 'utf8'));
+          const lines = [
+            `prototype_score=${summary.prototype.score}`,
+            `prototype_delta=${summary.prototype.delta ?? 'null'}`,
+            `real_score=${summary.real.score}`,
+            `real_delta=${summary.real.delta ?? 'null'}`,
+            `prototype_pass=${summary.prototype.pass}`,
+            `real_pass=${summary.real.pass}`,
+            `report_path=artifacts/readiness/report.md`
+          ];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, lines.join('\n') + '\n');
+          NODE
+
+      - name: Determine PR scope
+        id: scope
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            const realPatterns = [/infra\//i, /ops\//i, /server\.js$/i, /security/i, /kms/i, /rail/i, /crypto/i];
+            const prototypePatterns = [/src\//, /apps\//, /docs\//, /public\//, /tests\//];
+            let realRelated = false;
+            let prototypeRelated = false;
+            for (const file of files) {
+              if (realPatterns.some((re) => re.test(file.filename))) realRelated = true;
+              if (prototypePatterns.some((re) => re.test(file.filename))) prototypeRelated = true;
+            }
+            core.setOutput('prototype_only', String(prototypeRelated && !realRelated));
+            core.setOutput('real_related', String(realRelated));
+
+      - name: Post readiness comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PROTOTYPE_SCORE: ${{ steps.readiness.outputs.prototype_score }}
+          PROTOTYPE_DELTA: ${{ steps.readiness.outputs.prototype_delta }}
+          PROTOTYPE_PASS: ${{ steps.readiness.outputs.prototype_pass }}
+          REAL_SCORE: ${{ steps.readiness.outputs.real_score }}
+          REAL_DELTA: ${{ steps.readiness.outputs.real_delta }}
+          REAL_PASS: ${{ steps.readiness.outputs.real_pass }}
+          REPORT_PATH: ${{ steps.readiness.outputs.report_path }}
+        with:
+          script: |
+            const marker = '<!-- readiness-scorecard -->';
+            const prototypeScore = Number(process.env.PROTOTYPE_SCORE || '0').toFixed(2);
+            const protoDeltaRaw = process.env.PROTOTYPE_DELTA;
+            const protoDeltaNumber = protoDeltaRaw && protoDeltaRaw !== 'null' ? Number(protoDeltaRaw) : NaN;
+            const prototypeDelta = Number.isFinite(protoDeltaNumber) ? protoDeltaNumber.toFixed(2) : 'n/a';
+            const prototypePass = process.env.PROTOTYPE_PASS === 'true' ? '✅' : '❌';
+            const realScore = Number(process.env.REAL_SCORE || '0').toFixed(2);
+            const realDeltaRaw = process.env.REAL_DELTA;
+            const realDeltaNumber = realDeltaRaw && realDeltaRaw !== 'null' ? Number(realDeltaRaw) : NaN;
+            const realDelta = Number.isFinite(realDeltaNumber) ? realDeltaNumber.toFixed(2) : 'n/a';
+            const realPass = process.env.REAL_PASS === 'true' ? '✅' : '❌';
+            const repo = `${context.repo.owner}/${context.repo.repo}`;
+            const badgeBase = `https://github.com/${repo}/blob/${context.sha}/public/badges`;
+            const body = `${marker}\n` +
+`## Readiness Scorecard\n\n` +
+`| Track | Score | Δ vs last | Pass | Badge |\n` +
+`| --- | --- | --- | --- | --- |\n` +
+`| Prototype | ${prototypeScore} / 10 | ${prototypeDelta} | ${prototypePass} | ![Prototype badge](${badgeBase}/prototype.svg?raw=1) |\n` +
+`| Real | ${realScore} / 10 | ${realDelta} | ${realPass} | ![Real badge](${badgeBase}/real.svg?raw=1) |\n` +
+`\n[Read the full report](${repo ? `https://github.com/${repo}/blob/${context.sha}/${process.env.REPORT_PATH || 'artifacts/readiness/report.md'}` : '#'})`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((comment) => comment.body && comment.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Check score regressions
+        env:
+          PROTO_DELTA: ${{ steps.readiness.outputs.prototype_delta }}
+          REAL_DELTA: ${{ steps.readiness.outputs.real_delta }}
+          PROTOTYPE_ONLY: ${{ steps.scope.outputs.prototype_only || 'false' }}
+          REAL_RELATED: ${{ steps.scope.outputs.real_related || 'false' }}
+        run: |
+          node <<'NODE'
+          const protoDelta = Number(process.env.PROTO_DELTA);
+          const realDelta = Number(process.env.REAL_DELTA);
+          const prototypeOnly = process.env.PROTOTYPE_ONLY === 'true';
+          const realRelated = process.env.REAL_RELATED === 'true';
+          const failures = [];
+          if (!Number.isNaN(protoDelta) && prototypeOnly && protoDelta < 0) {
+            failures.push(`Prototype score regressed (${protoDelta.toFixed(2)})`);
+          }
+          if (!Number.isNaN(realDelta) && realRelated && realDelta < 0) {
+            failures.push(`Real score regressed (${realDelta.toFixed(2)})`);
+          }
+          if (failures.length) {
+            console.error(failures.join('\n'));
+            process.exit(1);
+          }
+          NODE
