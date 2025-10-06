@@ -4,12 +4,13 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "prototype:parity": "tsx tests/sim/parity.test.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
     "private": true,
-    "packageManager": "pnpm@9",
+    "packageManager": "pnpm@9.0.0",
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",

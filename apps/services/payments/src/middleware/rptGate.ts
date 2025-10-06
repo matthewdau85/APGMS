@@ -16,7 +16,7 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
 
     // Accept pending/active. Order by created_at so newest wins.
     const q = `
-      SELECT id as rpt_id, payload_c14n, payload_sha256, signature, expires_at, status, nonce
+      SELECT rpt_id, kid, payload_c14n, payload_sha256, signature, expires_at, status, nonce
       FROM rpt_tokens
       WHERE abn = $1 AND tax_type = $2 AND period_id = $3
         AND status IN ('pending','active')
@@ -43,7 +43,7 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
     const ok = await kms.verify(payload, sig);
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256, kid: r.kid };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });
