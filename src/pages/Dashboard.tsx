@@ -1,6 +1,7 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { t } from '../ui/i18n';
 
 export default function Dashboard() {
   const complianceStatus = {
@@ -10,42 +11,45 @@ export default function Dashboard() {
     lastBAS: '29 May 2025',
     nextDue: '28 July 2025',
     outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
+    outstandingAmounts: ['$1,200 pay employees tax withheld', '$400 business tax (GST)']
   };
 
   return (
     <div className="main-card">
-      <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6">
-        <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
-        <p className="text-sm opacity-90">
-          Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
-        </p>
-        <div className="mt-4">
+      <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6 space-y-2">
+        <h1 className="text-3xl font-bold">{t('app.dashboard.title')}</h1>
+        <p className="text-sm opacity-90">{t('app.dashboard.subtitle_manage')}</p>
+        <p className="text-sm opacity-90">{t('app.dashboard.subtitle_track')}</p>
+        <div className="pt-2">
           <Link to="/wizard" className="bg-white text-[#00716b] font-semibold px-4 py-2 rounded shadow hover:bg-gray-100">
-            Get Started
+            {t('dashboard.next_step')}
           </Link>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
-          <h2 className="text-lg font-semibold">Lodgments</h2>
+          <h2 className="text-lg font-semibold">{t('app.dashboard.lodgments_title')}</h2>
           <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
+            {complianceStatus.lodgmentsUpToDate ? t('status.up_to_date') : t('status.overdue')}
           </p>
-          <Link to="/bas" className="text-blue-600 text-sm underline">View BAS</Link>
+          <Link to="/bas" className="text-blue-600 text-sm underline">
+            {t('link.open_bas')}
+          </Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow space-y-2">
-          <h2 className="text-lg font-semibold">Payments</h2>
+          <h2 className="text-lg font-semibold">{t('app.dashboard.payments_title')}</h2>
           <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-            {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
+            {complianceStatus.paymentsUpToDate ? t('status.all_paid') : t('status.outstanding')}
           </p>
-          <Link to="/audit" className="text-blue-600 text-sm underline">View Audit</Link>
+          <Link to="/audit" className="text-blue-600 text-sm underline">
+            {t('link.open_audit')}
+          </Link>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow text-center">
-          <h2 className="text-lg font-semibold mb-2">Compliance Score</h2>
+          <h2 className="text-lg font-semibold mb-2">{t('app.dashboard.compliance_title')}</h2>
           <div className="relative w-16 h-16 mx-auto">
             <svg viewBox="0 0 36 36" className="w-full h-full">
               <path
@@ -73,27 +77,38 @@ export default function Dashboard() {
           </div>
           <p className="text-sm mt-2 text-gray-600">
             {complianceStatus.overallCompliance >= 90
-              ? 'Excellent'
+              ? t('app.dashboard.score.excellent')
               : complianceStatus.overallCompliance >= 70
-              ? 'Good'
-              : 'Needs attention'}
+              ? t('app.dashboard.score.good')
+              : t('app.dashboard.score.attention')}
           </p>
         </div>
       </div>
 
       <div className="mt-6 text-sm text-gray-700">
-        <p>Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. <Link to="/bas" className="text-blue-600 underline">Go to BAS</Link></p>
-        <p>Next BAS due by <strong>{complianceStatus.nextDue}</strong>.</p>
+        <p>
+          {t('app.dashboard.last_bas')} <strong>{complianceStatus.lastBAS}</strong>.{' '}
+          <Link to="/bas" className="text-blue-600 underline">
+            {t('link.open_bas')}
+          </Link>
+        </p>
+        <p>
+          {t('app.dashboard.next_bas')} <strong>{complianceStatus.nextDue}</strong>.
+        </p>
         {complianceStatus.outstandingLodgments.length > 0 && (
-          <p className="text-red-600">Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
+          <p className="text-red-600">
+            {t('app.dashboard.outstanding_lodgments')}: {complianceStatus.outstandingLodgments.join(', ')}
+          </p>
         )}
         {complianceStatus.outstandingAmounts.length > 0 && (
-          <p className="text-red-600">Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
+          <p className="text-red-600">
+            {t('app.dashboard.outstanding_payments')}: {complianceStatus.outstandingAmounts.join(', ')}
+          </p>
         )}
       </div>
 
       <div className="mt-4 text-xs text-gray-500 italic">
-        Staying compliant helps avoid audits, reduce penalties, and increase access to ATO support programs.
+        {t('app.dashboard.compliance_footer')}
       </div>
     </div>
   );

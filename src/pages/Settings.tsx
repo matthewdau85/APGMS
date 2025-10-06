@@ -1,20 +1,22 @@
 import React, { useState } from "react";
+import { t } from "../ui/i18n";
 
-const tabs = [
-  "Business Profile",
-  "Accounts",
-  "Payroll & Sales",
-  "Automated Transfers",
-  "Security",
-  "Compliance & Audit",
-  "Customisation",
-  "Notifications",
-  "Advanced"
-];
+const tabKeys = [
+  "settings.tab.business_profile",
+  "settings.tab.accounts",
+  "settings.tab.payroll_sales",
+  "settings.tab.transfers",
+  "settings.tab.security",
+  "settings.tab.audit",
+  "settings.tab.customisation",
+  "settings.tab.notifications",
+  "settings.tab.advanced"
+] as const;
+
+type TabKey = (typeof tabKeys)[number];
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState(tabs[0]);
-  // Mock business profile state
+  const [activeTab, setActiveTab] = useState<TabKey>(tabKeys[0]);
   const [profile, setProfile] = useState({
     abn: "12 345 678 901",
     name: "Example Pty Ltd",
@@ -22,23 +24,48 @@ export default function Settings() {
     contact: "info@example.com"
   });
 
+  const accountRows = [
+    {
+      nameKey: "settings.accounts.row.main_name",
+      bsb: "123-456",
+      number: "11111111",
+      typeKey: "settings.accounts.row.main_type"
+    },
+    {
+      nameKey: "settings.accounts.row.reserve_name",
+      bsb: "123-456",
+      number: "22222222",
+      typeKey: "settings.accounts.row.reserve_type"
+    }
+  ];
+
+  const payrollProviders = [
+    "settings.payroll.provider.myob",
+    "settings.payroll.provider.quickbooks"
+  ];
+
+  const salesChannels = [
+    "settings.sales.channel.vend",
+    "settings.sales.channel.square"
+  ];
+
   return (
     <div className="settings-card">
       <div className="tabs-row">
-        {tabs.map(tab => (
+        {tabKeys.map(key => (
           <div
-            key={tab}
-            className={`tab-item${activeTab === tab ? " active" : ""}`}
-            onClick={() => setActiveTab(tab)}
+            key={key}
+            className={`tab-item${activeTab === key ? " active" : ""}`}
+            onClick={() => setActiveTab(key)}
             tabIndex={0}
           >
-            {tab}
+            {t(key)}
           </div>
         ))}
       </div>
 
       <div style={{ marginTop: 30 }}>
-        {activeTab === "Business Profile" && (
+        {activeTab === "settings.tab.business_profile" && (
           <form
             style={{
               background: "#f9f9f9",
@@ -48,7 +75,7 @@ export default function Settings() {
             }}
           >
             <div style={{ marginBottom: 16 }}>
-              <label>ABN:</label>
+              <label>{t("settings.business_profile.abn_label")}</label>
               <input
                 className="settings-input"
                 style={{ width: "100%" }}
@@ -57,7 +84,7 @@ export default function Settings() {
               />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <label>Legal Name:</label>
+              <label>{t("settings.business_profile.legal_name_label")}</label>
               <input
                 className="settings-input"
                 style={{ width: "100%" }}
@@ -66,7 +93,7 @@ export default function Settings() {
               />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <label>Trading Name:</label>
+              <label>{t("settings.business_profile.trading_name_label")}</label>
               <input
                 className="settings-input"
                 style={{ width: "100%" }}
@@ -75,7 +102,7 @@ export default function Settings() {
               />
             </div>
             <div style={{ marginBottom: 16 }}>
-              <label>Contact Email/Phone:</label>
+              <label>{t("settings.business_profile.contact_label")}</label>
               <input
                 className="settings-input"
                 style={{ width: "100%" }}
@@ -85,129 +112,146 @@ export default function Settings() {
             </div>
           </form>
         )}
-        {activeTab === "Accounts" && (
+
+        {activeTab === "settings.tab.accounts" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Linked Accounts</h3>
+            <h3>{t("settings.accounts.title")}</h3>
             <table>
               <thead>
                 <tr>
-                  <th>Account Name</th>
-                  <th>BSB</th>
-                  <th>Account #</th>
-                  <th>Type</th>
-                  <th>Action</th>
+                  <th>{t("settings.accounts.header.account")}</th>
+                  <th>{t("settings.accounts.header.bsb")}</th>
+                  <th>{t("settings.accounts.header.number")}</th>
+                  <th>{t("settings.accounts.header.type")}</th>
+                  <th>{t("settings.accounts.header.action")}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Main Business</td>
-                  <td>123-456</td>
-                  <td>11111111</td>
-                  <td>Operating</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Remove</button></td>
-                </tr>
-                <tr>
-                  <td>PAYGW Saver</td>
-                  <td>123-456</td>
-                  <td>22222222</td>
-                  <td>PAYGW Buffer</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Remove</button></td>
-                </tr>
+                {accountRows.map(row => (
+                  <tr key={row.nameKey}>
+                    <td>{t(row.nameKey)}</td>
+                    <td>{row.bsb}</td>
+                    <td>{row.number}</td>
+                    <td>{t(row.typeKey)}</td>
+                    <td>
+                      <button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>
+                        {t("settings.accounts.button.remove")}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             <div style={{ marginTop: 18 }}>
-              <button className="button">Link New Account</button>
+              <button className="button">{t("settings.accounts.button.add")}</button>
             </div>
           </div>
         )}
-        {activeTab === "Payroll & Sales" && (
+
+        {activeTab === "settings.tab.payroll_sales" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Payroll Providers</h3>
+            <h3>{t("settings.payroll.title")}</h3>
             <ul>
-              <li>MYOB</li>
-              <li>QuickBooks</li>
+              {payrollProviders.map(providerKey => (
+                <li key={providerKey}>{t(providerKey)}</li>
+              ))}
             </ul>
-            <button className="button" style={{ marginTop: 10 }}>Add Provider</button>
-            <h3 style={{ marginTop: 24 }}>Sales Channels</h3>
+            <button className="button" style={{ marginTop: 10 }}>
+              {t("settings.payroll.button.add")}
+            </button>
+            <h3 style={{ marginTop: 24 }}>{t("settings.sales.title")}</h3>
             <ul>
-              <li>Vend</li>
-              <li>Square</li>
+              {salesChannels.map(channelKey => (
+                <li key={channelKey}>{t(channelKey)}</li>
+              ))}
             </ul>
-            <button className="button" style={{ marginTop: 10 }}>Add Channel</button>
+            <button className="button" style={{ marginTop: 10 }}>
+              {t("settings.sales.button.add")}
+            </button>
           </div>
         )}
-        {activeTab === "Automated Transfers" && (
+
+        {activeTab === "settings.tab.transfers" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Scheduled Transfers</h3>
+            <h3>{t("settings.transfers.title")}</h3>
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Frequency</th>
-                  <th>Next Date</th>
-                  <th>Action</th>
+                  <th>{t("settings.transfers.header.type")}</th>
+                  <th>{t("settings.transfers.header.amount")}</th>
+                  <th>{t("settings.transfers.header.frequency")}</th>
+                  <th>{t("settings.transfers.header.next")}</th>
+                  <th>{t("settings.transfers.header.action")}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>PAYGW</td>
+                  <td>{t("settings.transfers.row.paygw_type")}</td>
                   <td>$1,000</td>
-                  <td>Weekly</td>
+                  <td>{t("settings.transfers.row.frequency_weekly")}</td>
                   <td>05/06/2025</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Edit</button></td>
+                  <td>
+                    <button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>
+                      {t("settings.transfers.button.edit")}
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
             <div style={{ marginTop: 18 }}>
-              <button className="button">Add Transfer</button>
+              <button className="button">{t("settings.transfers.button.add")}</button>
             </div>
           </div>
         )}
-        {activeTab === "Security" && (
+
+        {activeTab === "settings.tab.security" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Security Settings</h3>
+            <h3>{t("settings.security.title")}</h3>
             <label>
-              <input type="checkbox" defaultChecked /> Two-factor authentication enabled
+              <input type="checkbox" defaultChecked /> {t("settings.security.two_factor")}
             </label>
             <br />
             <label>
-              <input type="checkbox" /> SMS alerts on large payments
+              <input type="checkbox" /> {t("settings.security.sms_payments")}
             </label>
           </div>
         )}
-        {activeTab === "Compliance & Audit" && (
+
+        {activeTab === "settings.tab.audit" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Audit Log (Mock)</h3>
+            <h3>{t("settings.audit.title")}</h3>
             <ul>
-              <li>05/06/2025 - PAYGW transfer scheduled</li>
-              <li>29/05/2025 - BAS submitted</li>
+              <li>{t("settings.audit.entry.transfer")}</li>
+              <li>{t("settings.audit.entry.bas")}</li>
             </ul>
           </div>
         )}
-        {activeTab === "Customisation" && (
+
+        {activeTab === "settings.tab.customisation" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>App Theme</h3>
-            <button className="button" style={{ marginRight: 10 }}>ATO Style</button>
-            <button className="button" style={{ background: "#262626" }}>Dark</button>
+            <h3>{t("settings.customisation.title")}</h3>
+            <button className="button" style={{ marginRight: 10 }}>{t("settings.customisation.button.ato")}</button>
+            <button className="button" style={{ background: "#262626" }}>{t("settings.customisation.button.dark")}</button>
           </div>
         )}
-        {activeTab === "Notifications" && (
+
+        {activeTab === "settings.tab.notifications" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Notification Preferences</h3>
+            <h3>{t("settings.notifications.title")}</h3>
             <label>
-              <input type="checkbox" defaultChecked /> Email reminders for due dates
+              <input type="checkbox" defaultChecked /> {t("settings.notifications.email_due")}
             </label>
             <br />
             <label>
-              <input type="checkbox" /> SMS notifications for lodgment
+              <input type="checkbox" /> {t("settings.notifications.sms_lodgment")}
             </label>
           </div>
         )}
-        {activeTab === "Advanced" && (
+
+        {activeTab === "settings.tab.advanced" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Export Data</h3>
-            <button className="button">Export as CSV</button>
+            <h3>{t("settings.advanced.title")}</h3>
+            <button className="button">{t("settings.advanced.button.csv")}</button>
           </div>
         )}
       </div>
