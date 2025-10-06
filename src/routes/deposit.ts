@@ -1,6 +1,8 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
 import { randomUUID } from "node:crypto";
+import { pool } from "../db/pool";
+import { appendAudit } from "../audit/appendOnly";
+import { AuthenticatedUser } from "../auth/types";
 
 export async function deposit(req: Request, res: Response) {
   try {
@@ -32,6 +34,17 @@ export async function deposit(req: Request, res: Response) {
          VALUES ($1,$2,$3,$4,$5,$6,now())
          RETURNING id,transfer_uuid,balance_after_cents`,
         [abn, taxType, periodId, randomUUID(), amt, newBal]
+      );
+
+      await appendAudit(
+        {
+          actorId: (req.user as AuthenticatedUser | undefined)?.sub,
+          action: "deposit",
+          targetType: "period",
+          targetId: `${abn}:${taxType}:${periodId}`,
+          payload: { abn, taxType, periodId, amountCents: amt, ledgerId: ins[0].id },
+        },
+        client
       );
 
       await client.query("COMMIT");
