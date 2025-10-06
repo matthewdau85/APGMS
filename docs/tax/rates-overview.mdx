@@ -1,0 +1,38 @@
+---
+title: Tax Rates Manifest
+---
+
+The manifest endpoint publishes the currently active PAYG withholding rates and their effective windows.
+
+## Endpoint
+
+- **GET `/tax/rates`** — Retrieve the active rates manifest.
+- Optional query: `period` (defaults to `weekly`) to compute the advisory window.
+
+## Response
+
+```json
+{
+  "rates_version": "2024-25",
+  "manifest": {
+    "rates_version": "2024-25",
+    "source": {
+      "description": "ATO PAYG withholding weekly tax tables",
+      "effective_from": "2024-07-01",
+      "fetched_at": "2024-07-01T00:00:00Z",
+      "url": "https://example.ato.gov.au/paygw/2024-25-weekly.json"
+    },
+    "effective_periods": [
+      {"period": "weekly", "start": "2024-07-01", "end": "2025-06-30", "file": "payg_w_2024_25.json"},
+      {"period": "weekly", "start": "2025-07-01", "end": "2026-06-30", "file": "payg_w_2025_26.json", "notes": "placeholder for next financial year"}
+    ]
+  },
+  "period_notice": {
+    "rates_version": "2024-25",
+    "active_start": "2024-07-01",
+    "warning": null
+  }
+}
+```
+
+The `period_notice` object mirrors the UI banner and highlights when the requested pay period will cross into an upcoming rules window. A warning is returned when `period_notice.warning` is non-null, allowing automation to block silent drift.

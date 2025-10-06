@@ -143,25 +143,194 @@ except Exception:
 # --- END READINESS_METRICS (tax-engine) ---
 
 # --- BEGIN MINI_UI ---
-from fastapi import Request
-from fastapi.templating import Jinja2Templates
+import json
+import os
+from datetime import date, timedelta
+from functools import lru_cache
+from typing import Any, Dict, Optional as TypingOptional
+
+from fastapi import Body, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
+
 from .domains import payg_w as payg_w_mod
-import os, json
+
+MANIFEST_PATH = os.path.join(os.path.dirname(__file__), "rules_manifest.json")
+
+
+@lru_cache(maxsize=1)
+def _load_manifest() -> Dict[str, Any]:
+    with open(MANIFEST_PATH, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _manifest_copy() -> Dict[str, Any]:
+    # json round-trip gives us a cheap deep copy without importing copy
+    return json.loads(json.dumps(_load_manifest()))
+
+
+def _parse_iso_date(value: str) -> TypingOptional[date]:
+    try:
+        return date.fromisoformat(value)
+    except Exception:
+        return None
+
+
+_PERIOD_WINDOWS = {
+    "weekly": 7,
+    "fortnightly": 14,
+    "monthly": 31,
+}
+
+
+def _effective_entries_sorted(manifest: Dict[str, Any]):
+    entries = manifest.get("effective_periods") or []
+    enriched = []
+    for entry in entries:
+        start = _parse_iso_date(str(entry.get("start", "")))
+        if not start:
+            continue
+        enriched.append((start, entry))
+    return sorted(enriched, key=lambda item: item[0])
+
+
+def build_period_notice(period: str, today: TypingOptional[date] = None) -> Dict[str, Any]:
+    manifest = _manifest_copy()
+    today = today or date.today()
+    window_days = _PERIOD_WINDOWS.get(period.lower(), 7)
+    window_end = today + timedelta(days=window_days)
+
+    sorted_entries = _effective_entries_sorted(manifest)
+    active_entry = None
+    next_change = None
+    for start, entry in sorted_entries:
+        if start <= today:
+            active_entry = {"start": start, "entry": entry}
+        elif not next_change:
+            next_change = {"start": start, "entry": entry}
+
+    warning: TypingOptional[str] = None
+    if next_change and window_end >= next_change["start"]:
+        next_label = next_change["entry"].get("version") or next_change["entry"].get("file")
+        warning = (
+            f"The selected {period.lower()} period will span the upcoming rates change "
+            f"on {next_change['start'].isoformat()}. Prepare to switch to version "
+            f"{next_label}"
+        )
+
+    active_period = active_entry["entry"] if active_entry else None
+    active_start = active_entry["start"].isoformat() if active_entry else None
+
+    return {
+        "rates_version": manifest.get("rates_version"),
+        "source": manifest.get("source", {}),
+        "active_period": active_period,
+        "active_start": active_start,
+        "next_change": next_change["entry"] if next_change else None,
+        "warning": warning,
+    }
+
+
+def _resolve_rules_file(period: str) -> str:
+    manifest = _manifest_copy()
+    period_lower = period.lower()
+    for entry in manifest.get("effective_periods", []):
+        if str(entry.get("period", "")).lower() == period_lower and entry.get("file"):
+            return os.path.join(os.path.dirname(__file__), "rules", entry["file"])
+    # fallback to existing default file
+    return os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json")
+
+
+def _load_rules(period: str) -> Dict[str, Any]:
+    path = _resolve_rules_file(period)
+    if not os.path.exists(path):
+        raise HTTPException(status_code=500, detail=f"Rules file not found for period '{period}'")
+    with open(path, "r", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+class PaygwCalcRequest(BaseModel):
+    method: str = Field("formula_progressive", description="Calculation method to use")
+    period: str = Field("weekly", description="Pay cycle for withholding")
+    gross: float = Field(..., ge=0, description="Gross earnings for the period")
+    percent: float = Field(0.0, description="Percent rate for percent/flat methods")
+    extra: float = Field(0.0, description="Additional flat withholding")
+    regular_gross: float = Field(0.0, description="Regular gross amount for bonus calculations")
+    bonus: float = Field(0.0, description="Bonus amount for marginal bonus method")
+    tax_free_threshold: bool = Field(True, description="Whether the tax-free threshold applies")
+    stsl: bool = Field(False, description="Whether HELP/SSL adjustments apply")
+    target_net: TypingOptional[float] = Field(
+        None,
+        description="Target net amount when using net-to-gross solver",
+    )
+
+    def to_event(self) -> Dict[str, Any]:
+        data = self.dict()
+        return {
+            "payg_w": {
+                "method": data.get("method"),
+                "period": data.get("period"),
+                "gross": data.get("gross"),
+                "percent": data.get("percent"),
+                "extra": data.get("extra"),
+                "regular_gross": data.get("regular_gross") or data.get("gross"),
+                "bonus": data.get("bonus"),
+                "tax_free_threshold": data.get("tax_free_threshold"),
+                "stsl": data.get("stsl"),
+                "target_net": data.get("target_net"),
+            }
+        }
 
 TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
+
+@app.get("/tax/rates")
+def tax_rates(period: str = "weekly"):
+    manifest = _manifest_copy()
+    notice = build_period_notice(period)
+    return {
+        "rates_version": manifest.get("rates_version"),
+        "manifest": manifest,
+        "period_notice": notice,
+    }
+
+
+@app.post("/tax/paygw/calc")
+def tax_paygw_calc(payload: PaygwCalcRequest = Body(...)):
+    period = (payload.period or "weekly").lower()
+    event = payload.to_event()
+    event["payg_w"]["period"] = period
+    rules = _load_rules(period)
+    result = payg_w_mod.compute(event, rules)
+    notice = build_period_notice(period)
+    return {
+        "result": result,
+        "rates_version": notice.get("rates_version"),
+        "period_notice": notice,
+    }
+
 @app.get("/ui")
 def ui_index(request: Request):
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge":"demo"})
+    period = "weekly"
+    notice = build_period_notice(period)
+    context = {
+        "request": request,
+        "title": "PAYG-W Calculator",
+        "badge": "demo",
+        "period_notice": notice,
+        "form_values": {"period": period},
+    }
+    return TEMPLATES.TemplateResponse("index.html", context)
 
 @app.post("/ui/calc")
 async def ui_calc(request: Request):
     form = await request.form()
+    period = (form.get("period") or "weekly").lower()
     pw = {
         "method": form.get("method"),
-        "period": form.get("period"),
+        "period": period,
         "gross": float(form.get("gross") or 0),
         "percent": float(form.get("percent") or 0),
         "extra": float(form.get("extra") or 0),
@@ -171,10 +340,17 @@ async def ui_calc(request: Request):
         "stsl": form.get("stsl") == "true",
         "target_net": float(form.get("target_net")) if form.get("target_net") else None
     }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
-        rules = json.load(f)
+    rules = _load_rules(period)
     res = payg_w_mod.compute({"payg_w": pw}, rules)
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})
+    context = {
+        "request": request,
+        "title": "PAYG-W Calculator",
+        "result": res,
+        "badge": "demo",
+        "period_notice": build_period_notice(period),
+        "form_values": pw,
+    }
+    return TEMPLATES.TemplateResponse("index.html", context)
 
 @app.get("/ui/help")
 def ui_help(request: Request):

@@ -1,38 +1,76 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 {% block content %}
+{% set current_period = (form_values.get('period') if form_values is defined and form_values else 'weekly') %}
+{% set current_method = (form_values.get('method') if form_values is defined and form_values else 'table_ato') %}
+{% set current_tft = (form_values.get('tax_free_threshold') if form_values is defined and form_values else True) %}
+{% set current_stsl = (form_values.get('stsl') if form_values is defined and form_values else False) %}
+
+{% if period_notice %}
+  <div class="rates-banner">
+    <strong>Tax rules version {{ period_notice.rates_version }}</strong>
+    <span>
+      {% if period_notice.active_start %}
+        Effective from {{ period_notice.active_start }}
+      {% else %}
+        Effective period not set
+      {% endif %}
+      {% if period_notice.source and period_notice.source.description %}
+        · Source: {{ period_notice.source.description }}
+      {% endif %}
+    </span>
+  </div>
+  {% if period_notice.warning %}
+    <div class="rates-warning" role="alert">{{ period_notice.warning }}</div>
+  {% endif %}
+{% endif %}
+
 <form method="post" action="/ui/calc">
   <div class="row">
     <div>
       <label>Method</label>
       <select name="method">
-        <option value="table_ato">ATO Table (placeholder)</option>
-        <option value="formula_progressive">Formula (progressive)</option>
-        <option value="percent_simple">Percent simple</option>
-        <option value="flat_plus_percent">Flat + percent</option>
-        <option value="bonus_marginal">Bonus (marginal)</option>
-        <option value="net_to_gross">Net â†’ Gross (solver)</option>
+        <option value="table_ato" {% if current_method=='table_ato' %}selected{% endif %}>ATO Table (placeholder)</option>
+        <option value="formula_progressive" {% if current_method=='formula_progressive' %}selected{% endif %}>Formula (progressive)</option>
+        <option value="percent_simple" {% if current_method=='percent_simple' %}selected{% endif %}>Percent simple</option>
+        <option value="flat_plus_percent" {% if current_method=='flat_plus_percent' %}selected{% endif %}>Flat + percent</option>
+        <option value="bonus_marginal" {% if current_method=='bonus_marginal' %}selected{% endif %}>Bonus (marginal)</option>
+        <option value="net_to_gross" {% if current_method=='net_to_gross' %}selected{% endif %}>Net → Gross (solver)</option>
       </select>
     </div>
     <div>
       <label>Period</label>
       <select name="period">
-        <option>weekly</option><option>fortnightly</option><option>monthly</option>
+        <option value="weekly" {% if current_period=='weekly' %}selected{% endif %}>weekly</option>
+        <option value="fortnightly" {% if current_period=='fortnightly' %}selected{% endif %}>fortnightly</option>
+        <option value="monthly" {% if current_period=='monthly' %}selected{% endif %}>monthly</option>
       </select>
     </div>
     <div>
       <label>Gross (or Regular Gross)</label>
-      <input type="number" step="0.01" name="gross" value="2000">
+      <input type="number" step="0.01" name="gross" value="{{ form_values.get('gross', 2000) if form_values is defined and form_values else 2000 }}">
     </div>
   </div>
   <div class="row">
-    <div><label>Percent</label><input type="number" step="0.0001" name="percent" value="0.2"></div>
-    <div><label>Extra (flat)</label><input type="number" step="0.01" name="extra" value="0"></div>
-    <div><label>Bonus</label><input type="number" step="0.01" name="bonus" value="0"></div>
+    <div><label>Percent</label><input type="number" step="0.0001" name="percent" value="{{ form_values.get('percent', 0.2) if form_values is defined and form_values else 0.2 }}"></div>
+    <div><label>Extra (flat)</label><input type="number" step="0.01" name="extra" value="{{ form_values.get('extra', 0) if form_values is defined and form_values else 0 }}"></div>
+    <div><label>Bonus</label><input type="number" step="0.01" name="bonus" value="{{ form_values.get('bonus', 0) if form_values is defined and form_values else 0 }}"></div>
   </div>
   <div class="row">
-    <div><label>Tax-free threshold</label><select name="tft"><option value="true">true</option><option value="false">false</option></select></div>
-    <div><label>STSL/HELP</label><select name="stsl"><option value="false">false</option><option value="true">true</option></select></div>
-    <div><label>Target Net (for netâ†’gross)</label><input type="number" step="0.01" name="target_net" value=""></div>
+    <div>
+      <label>Tax-free threshold</label>
+      <select name="tft">
+        <option value="true" {% if current_tft %}selected{% endif %}>true</option>
+        <option value="false" {% if not current_tft %}selected{% endif %}>false</option>
+      </select>
+    </div>
+    <div>
+      <label>STSL/HELP</label>
+      <select name="stsl">
+        <option value="false" {% if not current_stsl %}selected{% endif %}>false</option>
+        <option value="true" {% if current_stsl %}selected{% endif %}>true</option>
+      </select>
+    </div>
+    <div><label>Target Net (for net→gross)</label><input type="number" step="0.01" name="target_net" value="{{ form_values.get('target_net', '') if form_values is defined and form_values else '' }}"></div>
   </div>
   <div style="margin-top:12px"><button type="submit">Calculate</button></div>
 </form>
@@ -45,7 +83,7 @@
   <h2>Explain</h2>
   <div class="result">
     {% for line in result.get("explain", []) %}
-      â€¢ {{ line }}{% if not loop.last %}\n{% endif %}
+      • {{ line }}{% if not loop.last %}\n{% endif %}
     {% endfor %}
   </div>
 {% endif %}
