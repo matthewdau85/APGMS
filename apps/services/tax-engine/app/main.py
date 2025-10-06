@@ -28,7 +28,7 @@ import asyncio
 import os
 from typing import Optional
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, HTTPException, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
@@ -143,41 +143,58 @@ except Exception:
 # --- END READINESS_METRICS (tax-engine) ---
 
 # --- BEGIN MINI_UI ---
-from fastapi import Request
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
+from .domains import storage as storage_mod
+from .domains import tax_engine as tax_engine_mod
 import os, json
 
-TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+if os.getenv("TAX_ENGINE_ENABLE_UI", "1") == "1":
+    try:
+        from fastapi import Request
+        from fastapi.templating import Jinja2Templates
+        from fastapi.staticfiles import StaticFiles
 
-@app.get("/ui")
-def ui_index(request: Request):
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge":"demo"})
+        TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+        app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
 
-@app.post("/ui/calc")
-async def ui_calc(request: Request):
-    form = await request.form()
-    pw = {
-        "method": form.get("method"),
-        "period": form.get("period"),
-        "gross": float(form.get("gross") or 0),
-        "percent": float(form.get("percent") or 0),
-        "extra": float(form.get("extra") or 0),
-        "regular_gross": float(form.get("gross") or 0),
-        "bonus": float(form.get("bonus") or 0),
-        "tax_free_threshold": form.get("tft") == "true",
-        "stsl": form.get("stsl") == "true",
-        "target_net": float(form.get("target_net")) if form.get("target_net") else None
-    }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
-        rules = json.load(f)
-    res = payg_w_mod.compute({"payg_w": pw}, rules)
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})
+        @app.get("/ui")
+        def ui_index(request: Request):
+            return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge": "demo"})
 
-@app.get("/ui/help")
-def ui_help(request: Request):
-    return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge":"demo"})
+        @app.post("/ui/calc")
+        async def ui_calc(request: Request):
+            form = await request.form()
+            pw = {
+                "method": form.get("method"),
+                "period": form.get("period"),
+                "gross": float(form.get("gross") or 0),
+                "percent": float(form.get("percent") or 0),
+                "extra": float(form.get("extra") or 0),
+                "regular_gross": float(form.get("gross") or 0),
+                "bonus": float(form.get("bonus") or 0),
+                "tax_free_threshold": form.get("tft") == "true",
+                "stsl": form.get("stsl") == "true",
+                "target_net": float(form.get("target_net")) if form.get("target_net") else None,
+            }
+            with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
+                rules = json.load(f)
+            res = payg_w_mod.compute({"payg_w": pw}, rules)
+            return TEMPLATES.TemplateResponse(
+                "index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge": "demo"}
+            )
+
+        @app.get("/ui/help")
+        def ui_help(request: Request):
+            return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge": "demo"})
+    except Exception:
+        pass
 # --- END MINI_UI ---
+
+
+@app.get("/tax/{abn}/{period_id}/totals")
+def get_tax_totals(abn: str, period_id: str):
+    period_data = storage_mod.get_period_data(abn, period_id)
+    if period_data is None:
+        raise HTTPException(status_code=404, detail="period not found")
+    return tax_engine_mod.compute_totals(abn, period_id, period_data)
 

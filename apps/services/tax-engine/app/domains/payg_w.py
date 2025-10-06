@@ -1,82 +1,146 @@
-﻿from __future__ import annotations
-from typing import Dict, Any, Tuple
+from __future__ import annotations
 
-def _round(amount: float, mode: str="HALF_UP") -> float:
-    from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN, getcontext
-    getcontext().prec = 28
-    q = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP if mode=="HALF_UP" else ROUND_HALF_EVEN)
-    return float(q)
+from dataclasses import dataclass
+from decimal import Decimal
+from typing import Any, Dict, Iterable, List, Mapping
 
-def _bracket_withholding(gross: float, cfg: Dict[str, Any]) -> float:
-    """Generic progressive bracket formula: tax = a*gross - b + fixed (per period)."""
-    brs = cfg.get("brackets", [])
-    for br in brs:
-        if gross <= float(br.get("up_to", 9e9)):
-            a = float(br.get("a", 0.0)); b = float(br.get("b", 0.0)); fixed = float(br.get("fixed", 0.0))
-            return max(0.0, a * gross - b + fixed)
-    return 0.0
+from .utils import round_cents, to_decimal
 
-def _percent_simple(gross: float, rate: float) -> float:
-    return max(0.0, gross * rate)
 
-def _flat_plus_percent(gross: float, rate: float, extra: float) -> float:
-    return max(0.0, gross * rate + extra)
+@dataclass(frozen=True)
+class TableEntry:
+    lower: Decimal
+    upper: Decimal | None
+    rate: Decimal
+    base: Decimal
 
-def _bonus_marginal(regular_gross: float, bonus: float, cfg: Dict[str, Any]) -> float:
-    base = _bracket_withholding(regular_gross + bonus, cfg)
-    only_base = _bracket_withholding(regular_gross, cfg)
-    return max(0.0, base - only_base)
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> "TableEntry":
+        return cls(
+            lower=to_decimal(mapping["lower"]),
+            upper=to_decimal(mapping["upper"]) if mapping.get("upper") is not None else None,
+            rate=to_decimal(mapping["rate"]),
+            base=to_decimal(mapping.get("base", 0)),
+        )
 
-def _solve_net_to_gross(target_net: float, method_cfg: Tuple[str, Dict[str, Any]]) -> Tuple[float,float]:
-    mname, params = method_cfg
-    lo, hi = 0.0, max(1.0, target_net * 3.0)
-    for _ in range(60):
-        mid = (lo+hi)/2
-        w = compute_withholding_for_gross(mid, mname, params)
-        net = mid - w
-        if net > target_net: hi = mid
-        else: lo = mid
-    gross = (lo+hi)/2
-    w = compute_withholding_for_gross(gross, mname, params)
-    return gross, w
 
-def compute_withholding_for_gross(gross: float, method: str, params: Dict[str, Any]) -> float:
-    if method == "formula_progressive":
-        return _bracket_withholding(gross, params.get("formula_progressive", {}))
-    if method == "percent_simple":
-        return _percent_simple(gross, float(params.get("percent", 0.0)))
-    if method == "flat_plus_percent":
-        return _flat_plus_percent(gross, float(params.get("percent", 0.0)), float(params.get("extra", 0.0)))
-    if method == "bonus_marginal":
-        return _bonus_marginal(float(params.get("regular_gross", 0.0)), float(params.get("bonus", 0.0)), params.get("formula_progressive", {}))
-    if method == "table_ato":
-        # Placeholder: replace with exact ATO schedule logic per period & flags.
-        return _bracket_withholding(gross, params.get("formula_progressive", {}))
-    return 0.0
+def _select_table(rules: Mapping[str, Any], period: str, residency: str, tfn_provided: bool, tax_free_threshold: bool) -> List[TableEntry]:
+    tables = rules.get("period_tables", {})
+    if period not in tables:
+        raise KeyError(f"Unsupported PAYGW period '{period}'")
 
-def compute(event: Dict[str, Any], rules: Dict[str, Any]) -> Dict[str, Any]:
-    pw = event.get("payg_w", {}) or {}
-    method = (pw.get("method") or "table_ato")
-    period = (pw.get("period") or "weekly")
-    params = {
-        "period": period,
-        "tax_free_threshold": bool(pw.get("tax_free_threshold", True)),
-        "stsl": bool(pw.get("stsl", False)),
-        "percent": float(pw.get("percent", 0.0)),
-        "extra": float(pw.get("extra", 0.0)),
-        "regular_gross": float(pw.get("regular_gross", 0.0)),
-        "bonus": float(pw.get("bonus", 0.0)),
-        "formula_progressive": (rules.get("formula_progressive") or {})
-    }
-    explain = [f"method={method} period={period} TFT={params['tax_free_threshold']} STSL={params['stsl']}"]
-    gross = float(pw.get("gross", 0.0) or 0.0)
-    target_net = pw.get("target_net")
+    per_period = tables[period]
+    residency = residency.lower()
 
-    if method == "net_to_gross" and target_net is not None:
-        gross, w = _solve_net_to_gross(float(target_net), ("formula_progressive", params))
-        net = gross - w
-        return {"method": method, "gross": _round(gross), "withholding": _round(w), "net": _round(net), "explain": explain + [f"solved net_to_gross target_net={target_net}"]}
+    if residency not in per_period:
+        raise KeyError(f"Unsupported residency '{residency}' for PAYGW")
+
+    res_rules = per_period[residency]
+
+    if not tfn_provided:
+        source = res_rules.get("no_tfn") or res_rules.get("with_tfn")
     else:
-        w = compute_withholding_for_gross(gross, method, params)
-        net = gross - w
-        return {"method": method, "gross": _round(gross), "withholding": _round(w), "net": _round(net), "explain": explain + [f"computed from gross={gross}"]}
+        source = res_rules.get("with_tfn")
+
+    if source is None:
+        raise KeyError(f"No tables for residency '{residency}' and TFN flag {tfn_provided}")
+
+    if isinstance(source, Mapping) and "tax_free_threshold" in source:
+        key = "tax_free_threshold" if tax_free_threshold else "no_tax_free_threshold"
+        table_data = source.get(key)
+    else:
+        table_data = source
+
+    if not table_data:
+        raise KeyError(f"Missing PAYGW table data for residency '{residency}' and period '{period}'")
+
+    return [TableEntry.from_mapping(entry) for entry in table_data]
+
+
+def compute_bracket(gross: Decimal, table: Iterable[TableEntry]) -> Decimal:
+    for entry in table:
+        if entry.upper is None or gross <= entry.upper:
+            taxable = gross - entry.lower
+            if taxable < Decimal("0"):
+                taxable = Decimal("0")
+            return entry.base + taxable * entry.rate
+    # Should not happen as last bracket upper should be None
+    return Decimal("0")
+
+
+def _offset_total(rules: Mapping[str, Any], codes: Iterable[str]) -> Decimal:
+    offsets = rules.get("offsets", {})
+    total = Decimal("0")
+    for code in codes:
+        if code in offsets:
+            total += to_decimal(offsets[code])
+    return total
+
+
+def compute(event: Dict[str, Any], rules: Mapping[str, Any]) -> Dict[str, Any]:
+    paygw = event.get("payg_w") or {}
+    gross = round_cents(paygw.get("gross", 0))
+    period = (paygw.get("period") or "weekly").lower()
+    residency = (paygw.get("residency") or "resident").lower()
+    tfn_provided = bool(paygw.get("tfn_provided", True))
+    tax_free_threshold = bool(paygw.get("tax_free_threshold", True))
+    additional = round_cents(paygw.get("additional_withholding", 0))
+    offset_codes: Iterable[str] = paygw.get("offset_codes") or []
+
+    rounding_mode = rules.get("rounding", "HALF_UP")
+    if rounding_mode != "HALF_UP":  # pragma: no cover - defensive (rules are HALF_UP)
+        raise ValueError("Only HALF_UP rounding is supported")
+
+    explain: List[str] = [
+        f"period={period}",
+        f"residency={residency}",
+        f"tfn_provided={tfn_provided}",
+        f"tax_free_threshold={tax_free_threshold}",
+    ]
+
+    if not tfn_provided:
+        top_rate = to_decimal(rules.get("top_withholding_rate", 0.47))
+        withholding = gross * top_rate
+        explain.append("no_tfn_top_rate")
+    else:
+        table = _select_table(rules, period, residency, tfn_provided, tax_free_threshold)
+        withholding = compute_bracket(gross, table)
+
+    offsets = _offset_total(rules, offset_codes)
+    if offsets:
+        explain.append(f"offsets={round_cents(offsets)}")
+    withholding -= offsets
+    if withholding < Decimal("0"):
+        withholding = Decimal("0")
+    if additional:
+        explain.append(f"additional={additional}")
+    withholding += additional
+
+    withholding = round_cents(withholding)
+
+    return {
+        "gross": float(gross),
+        "withholding": float(withholding),
+        "net": float(gross - withholding),
+        "explain": explain,
+    }
+
+
+def compute_withholding_for_gross(gross: float, method: str, params: Mapping[str, Any]) -> float:
+    # Backwards compatibility shim for existing tests/tools expecting this helper.
+    if method != "table_ato":
+        raise ValueError("Only table_ato method is supported in the new PAYGW engine")
+
+    rules = params.get("rules") or {}
+    event = {
+        "payg_w": {
+            "gross": gross,
+            "period": params.get("period", "weekly"),
+            "residency": params.get("residency", "resident"),
+            "tax_free_threshold": params.get("tax_free_threshold", True),
+            "tfn_provided": params.get("tfn_provided", True),
+            "offset_codes": params.get("offset_codes", []),
+            "additional_withholding": params.get("additional_withholding", 0),
+        }
+    }
+    return compute(event, rules)["withholding"]
