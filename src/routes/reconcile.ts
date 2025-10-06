@@ -1,9 +1,10 @@
-﻿import { issueRPT } from "../rpt/issuer";
+import { issueRPT } from "../rpt/issuer";
 import { buildEvidenceBundle } from "../evidence/bundle";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
+import { appendAudit } from "../audit/appendOnly";
 const pool = new Pool();
 
 export async function closeAndIssue(req:any, res:any) {
@@ -12,6 +13,8 @@ export async function closeAndIssue(req:any, res:any) {
   const thr = thresholds || { epsilon_cents: 50, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
   try {
     const rpt = await issueRPT(abn, taxType, periodId, thr);
+    await appendAudit("portal", "close", { abn, taxType, periodId, thresholds: thr }, `${abn}:${taxType}:${periodId}`);
+    await appendAudit("portal", "issueRPT", { abn, taxType, periodId }, `${abn}:${taxType}:${periodId}`);
     return res.json(rpt);
   } catch (e:any) {
     return res.status(400).json({ error: e.message });
@@ -27,6 +30,7 @@ export async function payAto(req:any, res:any) {
     await resolveDestination(abn, rail, payload.reference);
     const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
     await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
+    await appendAudit("portal", "release", { abn, taxType, periodId, rail }, `${abn}:${taxType}:${periodId}`);
     return res.json(r);
   } catch (e:any) {
     return res.status(400).json({ error: e.message });
@@ -48,5 +52,7 @@ export async function settlementWebhook(req:any, res:any) {
 
 export async function evidence(req:any, res:any) {
   const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
+  const bundle = await buildEvidenceBundle(abn, taxType, periodId);
+  await appendAudit("portal", "evidence-export", { abn, taxType, periodId }, `${abn}:${taxType}:${periodId}`);
+  res.json(bundle);
 }
