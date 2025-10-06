@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { integrationsTelemetry } from "./ops/integrationsTelemetry";
 
 dotenv.config();
 
@@ -17,6 +18,9 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// Ops telemetry
+app.get("/ops/integrations/telemetry", integrationsTelemetry);
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
