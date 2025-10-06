@@ -1,0 +1,30 @@
+{
+  "updated": "2025-03-31",
+  "reasons": [
+    {
+      "code": "VAR_REDUCED_PROFIT",
+      "label": "Reduced instalment income",
+      "predicate": "income_decline",
+      "hint": "Provide year-to-date management accounts showing the decline in instalment income."
+    },
+    {
+      "code": "VAR_CAPITAL_EXPENSE",
+      "label": "Large deductible expense",
+      "predicate": "deductible_investment",
+      "hint": "Attach evidence of the deductible capital expenditure and its timing."
+    },
+    {
+      "code": "VAR_NEW_BUSINESS",
+      "label": "New business with lower profits",
+      "predicate": "new_business",
+      "hint": "Upload business plan or forecast demonstrating the lower taxable income."
+    }
+  ],
+  "safe_harbour": {
+    "min_ratio": 0.85,
+    "max_reduction": 0.15,
+    "pass_reason": "Variation satisfies the 85% safe harbour threshold.",
+    "fail_reason": "Variation falls outside the 85% safe harbour threshold and may attract penalties.",
+    "calculation_hint": "Ensure varied instalments cover at least 85% of the baseline amount or reduce by no more than 15%."
+  }
+}
