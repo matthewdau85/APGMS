@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { errorHandler } from "./http/errors";
 
 dotenv.config();
 
@@ -31,8 +32,11 @@ app.use("/api", paymentsApi);
 // Existing API router(s) after
 app.use("/api", api);
 
-// 404 fallback (must be last)
+// 404 fallback for unmatched routes
 app.use((_req, res) => res.status(404).send("Not found"));
+
+// Centralized error handler
+app.use(errorHandler);
 
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => console.log("APGMS server listening on", port));
