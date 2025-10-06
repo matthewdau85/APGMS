@@ -4,6 +4,9 @@ import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
+import { sendError, HttpError } from "../http/error";
+import { ensureRealRailsAllowed } from "../rails/mode";
+
 const pool = new Pool();
 
 export async function closeAndIssue(req:any, res:any) {
@@ -14,22 +17,26 @@ export async function closeAndIssue(req:any, res:any) {
     const rpt = await issueRPT(abn, taxType, periodId, thr);
     return res.json(rpt);
   } catch (e:any) {
-    return res.status(400).json({ error: e.message });
+    return sendError(res, 400, "CloseIssueFailed", e.message);
   }
 }
 
 export async function payAto(req:any, res:any) {
   const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
   const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
-  if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
+  if (pr.rowCount === 0) return sendError(res, 400, "NoRpt", "No RPT token available");
   const payload = pr.rows[0].payload;
   try {
+    await ensureRealRailsAllowed();
     await resolveDestination(abn, rail, payload.reference);
     const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
     await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
     return res.json(r);
   } catch (e:any) {
-    return res.status(400).json({ error: e.message });
+    const detail = e instanceof HttpError ? e.detail ?? e.message : e.message;
+    const title = e instanceof HttpError ? e.title : "PayAtoFailed";
+    const status = e instanceof HttpError ? e.status : 400;
+    return sendError(res, status, title, detail);
   }
 }
 

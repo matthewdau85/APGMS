@@ -1,16 +1,19 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
 import { randomUUID } from "node:crypto";
+import { sendError } from "../http/error";
+import { Pool } from "pg";
+
+const pool = new Pool();
 
 export async function deposit(req: Request, res: Response) {
   try {
     const { abn, taxType, periodId, amountCents } = req.body || {};
     if (!abn || !taxType || !periodId) {
-      return res.status(400).json({ error: "Missing abn/taxType/periodId" });
+      return sendError(res, 400, "BadRequest", "Missing abn/taxType/periodId");
     }
     const amt = Number(amountCents);
     if (!Number.isFinite(amt) || amt <= 0) {
-      return res.status(400).json({ error: "amountCents must be positive for a deposit" });
+      return sendError(res, 400, "BadRequest", "amountCents must be positive for a deposit");
     }
 
     const client = await pool.connect();
@@ -44,11 +47,12 @@ export async function deposit(req: Request, res: Response) {
 
     } catch (e:any) {
       await client.query("ROLLBACK");
-      return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
+      const detail = String(e.message || e);
+      return sendError(res, 500, "DepositFailed", detail);
     } finally {
       client.release();
     }
   } catch (e:any) {
-    return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
+    return sendError(res, 500, "DepositError", String(e.message || e));
   }
 }
