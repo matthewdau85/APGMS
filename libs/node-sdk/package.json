@@ -2,6 +2,6 @@
   "name": "@apgms/sdk",
   "version": "0.1.0",
   "private": true,
-  "types": "index.d.ts",
-  "main": "index.js"
+  "types": "index.ts",
+  "main": "index.ts"
 }
