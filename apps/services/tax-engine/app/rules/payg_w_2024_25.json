@@ -1,6 +1,8 @@
-﻿{
+{
   "version": "2024-25",
   "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
+  "source_url": "https://www.ato.gov.au/forms/tax-tables/weekly-tax-table/",
+  "last_reviewed": "2025-07-01",
   "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
   "formula_progressive": {
     "period": "weekly",

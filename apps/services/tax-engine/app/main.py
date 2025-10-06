@@ -28,10 +28,14 @@ import asyncio
 import os
 from typing import Optional
 
+import orjson
 from fastapi import FastAPI, Response, status
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
+
+from .engine import compute_payg_withholding, compute_tax_event
+from .rules.loader import build_rules_version_payload
 
 try:
     app  # reuse if exists
@@ -65,6 +69,13 @@ def readyz():
         return {"ready": True}
     return Response('{"ready": false}', status_code=status.HTTP_503_SERVICE_UNAVAILABLE, media_type="application/json")
 
+
+@app.get("/rules/version")
+def rules_version():
+    """Expose the current rule manifest for auditability."""
+
+    return build_rules_version_payload()
+
 async def _connect_nats_with_retry() -> NATS:
     backoff, max_backoff = 0.5, 8.0
     while True:
@@ -84,9 +95,26 @@ async def _subscribe_and_run(nc: NATS):
     async def _on_msg(msg):
         with CALC_LAT.time():
             TAX_REQS.inc()
-            data = msg.data or b"{}"
-            # TODO: real calc -> publish real result
-            await nc.publish(SUBJECT_OUTPUT, data)
+            payload_bytes = msg.data or b"{}"
+            try:
+                event = orjson.loads(payload_bytes)
+            except Exception:
+                result = {
+                    "outcome": "error",
+                    "error": "INVALID_PAYLOAD",
+                    "rules": build_rules_version_payload(),
+                }
+            else:
+                try:
+                    result = compute_tax_event(event)
+                except Exception as exc:  # pragma: no cover - defensive
+                    result = {
+                        "outcome": "error",
+                        "error": "CALCULATION_FAILED",
+                        "detail": str(exc),
+                        "rules": build_rules_version_payload(),
+                    }
+            await nc.publish(SUBJECT_OUTPUT, orjson.dumps(result))
             TAX_OUT.inc()
     await nc.subscribe(SUBJECT_INPUT, cb=_on_msg)
     _ready.set()
@@ -144,40 +172,81 @@ except Exception:
 
 # --- BEGIN MINI_UI ---
 from fastapi import Request
-from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
-from .domains import payg_w as payg_w_mod
-import os, json
 
-TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
-app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+templates_available = False
 
-@app.get("/ui")
-def ui_index(request: Request):
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge":"demo"})
+try:
+    from fastapi.templating import Jinja2Templates  # type: ignore
+    from fastapi.staticfiles import StaticFiles  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    Jinja2Templates = None  # type: ignore
+    StaticFiles = None  # type: ignore
+else:
+    import os
 
-@app.post("/ui/calc")
-async def ui_calc(request: Request):
-    form = await request.form()
-    pw = {
-        "method": form.get("method"),
-        "period": form.get("period"),
-        "gross": float(form.get("gross") or 0),
-        "percent": float(form.get("percent") or 0),
-        "extra": float(form.get("extra") or 0),
-        "regular_gross": float(form.get("gross") or 0),
-        "bonus": float(form.get("bonus") or 0),
-        "tax_free_threshold": form.get("tft") == "true",
-        "stsl": form.get("stsl") == "true",
-        "target_net": float(form.get("target_net")) if form.get("target_net") else None
-    }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
-        rules = json.load(f)
-    res = payg_w_mod.compute({"payg_w": pw}, rules)
-    return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})
+    try:
+        TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+        app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+        templates_available = True
+    except AssertionError:  # pragma: no cover - optional dependency missing
+        templates_available = False
 
-@app.get("/ui/help")
-def ui_help(request: Request):
-    return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge":"demo"})
+if templates_available:
+
+    @app.get("/ui")
+    def ui_index(request: Request):
+        return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "badge": "demo"})
+
+    @app.post("/ui/calc")
+    async def ui_calc(request: Request):
+        form = await request.form()
+        pw = {
+            "method": form.get("method"),
+            "period": form.get("period"),
+            "gross": float(form.get("gross") or 0),
+            "percent": float(form.get("percent") or 0),
+            "extra": float(form.get("extra") or 0),
+            "regular_gross": float(form.get("gross") or 0),
+            "bonus": float(form.get("bonus") or 0),
+            "tax_free_threshold": form.get("tft") == "true",
+            "stsl": form.get("stsl") == "true",
+            "target_net": float(form.get("target_net")) if form.get("target_net") else None,
+        }
+        res = compute_payg_withholding({"payg_w": pw})
+        return TEMPLATES.TemplateResponse(
+            "index.html",
+            {"request": request, "title": "PAYG-W Calculator", "result": res, "badge": "demo"},
+        )
+
+    @app.get("/ui/help")
+    def ui_help(request: Request):
+        return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge": "demo"})
+else:
+
+    @app.get("/ui")
+    def ui_index(_: Request):
+        return {"title": "PAYG-W Calculator", "badge": "demo"}
+
+    @app.post("/ui/calc")
+    async def ui_calc(request: Request):
+        form = await request.form()
+        pw = {
+            "method": form.get("method"),
+            "period": form.get("period"),
+            "gross": float(form.get("gross") or 0),
+            "percent": float(form.get("percent") or 0),
+            "extra": float(form.get("extra") or 0),
+            "regular_gross": float(form.get("gross") or 0),
+            "bonus": float(form.get("bonus") or 0),
+            "tax_free_threshold": form.get("tft") == "true",
+            "stsl": form.get("stsl") == "true",
+            "target_net": float(form.get("target_net")) if form.get("target_net") else None,
+        }
+        res = compute_payg_withholding({"payg_w": pw})
+        return {"title": "PAYG-W Calculator", "result": res, "badge": "demo"}
+
+    @app.get("/ui/help")
+    def ui_help(_: Request):
+        return {"title": "Help", "badge": "demo"}
 # --- END MINI_UI ---
 

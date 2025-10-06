@@ -1,0 +1,43 @@
+{
+  "name": "Regime calendars",
+  "version": "2025-10",
+  "notes": "Canonical tax obligation calendars used when computing evidence segments.",
+  "source_url": "https://www.ato.gov.au/businesses-and-organisations/key-dates",
+  "last_reviewed": "2025-10-05",
+  "calendars": {
+    "bas": {
+      "monthly": {
+        "regime": "BAS",
+        "frequency": "monthly",
+        "period_pattern": "^\\d{4}-\\d{2}$",
+        "start_day": 1,
+        "end": "end_of_month",
+        "description": "Business Activity Statement monthly lodgement periods"
+      },
+      "quarterly": {
+        "regime": "BAS",
+        "frequency": "quarterly",
+        "period_pattern": "^\\d{4}-Q[1-4]$",
+        "quarters": {
+          "Q1": { "start_month": 7,  "start_day": 1,  "end_month": 9,  "end_day": 30 },
+          "Q2": { "start_month": 10, "start_day": 1,  "end_month": 12, "end_day": 31 },
+          "Q3": { "start_month": 1,  "start_day": 1,  "end_month": 3,  "end_day": 31 },
+          "Q4": { "start_month": 4,  "start_day": 1,  "end_month": 6,  "end_day": 30 }
+        },
+        "description": "Business Activity Statement quarterly lodgement periods"
+      }
+    },
+    "fbt": {
+      "annual": {
+        "regime": "FBT",
+        "frequency": "annual",
+        "period_pattern": "^\\d{4}-FBT$",
+        "start_month": 4,
+        "start_day": 1,
+        "end_month": 3,
+        "end_day": 31,
+        "description": "Fringe Benefits Tax year running from 1 April to 31 March"
+      }
+    }
+  }
+}
