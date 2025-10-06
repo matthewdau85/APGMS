@@ -1,0 +1,14 @@
+{
+  "PAYG-W": {
+    "short": "Pay As You Go – tax you withhold from wages.",
+    "more": "/help/paygw"
+  },
+  "RPT": {
+    "short": "Release token that proves a period is ready to pay.",
+    "more": "/help/rpt"
+  },
+  "PayTo": {
+    "short": "Pre-approved bank payment instruction.",
+    "more": "/help/payto"
+  }
+}
