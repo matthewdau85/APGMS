@@ -8,6 +8,14 @@ node_modules/
 dist/
 .next/
 coverage/
+apps/services/ml-assist/feature_store/*.sqlite
+apps/services/ml-assist/feature_store/baselines.json
+apps/services/ml-assist/training_summary.json
+apps/services/ml-assist/drift/reports/
+apps/services/ml-assist/drift/issues/
+models/*
+!models/metadata.json
+!models/README.md
 
 # OS noise
 Thumbs.db

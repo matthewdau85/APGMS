@@ -4,7 +4,12 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "build_features:recon": "tsx apps/services/ml-assist/src/jobs/build_features_recon.ts",
+        "build_features:bank": "tsx apps/services/ml-assist/src/jobs/build_features_bank.ts",
+        "build_features:liability": "tsx apps/services/ml-assist/src/jobs/build_features_liability.ts",
+        "ml:train:quick": "tsx apps/services/ml-assist/src/jobs/train_quick.ts",
+        "ml:drift:nightly": "tsx apps/services/ml-assist/src/jobs/drift_monitor.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
