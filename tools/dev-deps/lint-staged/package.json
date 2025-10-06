@@ -1,0 +1,9 @@
+{
+  "name": "lint-staged",
+  "version": "0.0.0-local",
+  "description": "Local lint-staged runner for enforcing Pool usage.",
+  "bin": {
+    "lint-staged": "bin/lint-staged.js"
+  },
+  "license": "MIT"
+}

@@ -13,6 +13,11 @@
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
+        "@typescript-eslint/eslint-plugin": "file:tools/dev-deps/typescript-eslint-plugin",
+        "@typescript-eslint/parser": "file:tools/dev-deps/typescript-eslint-parser",
+        "eslint": "file:tools/dev-deps/eslint",
+        "husky": "file:tools/dev-deps/husky",
+        "lint-staged": "file:tools/dev-deps/lint-staged",
         "ts-node": "^10.9.2",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3"
@@ -24,5 +29,13 @@
         "pg": "^8.16.3",
         "tweetnacl": "^1.0.3",
         "uuid": "^13.0.0"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "lint-staged"
+        }
+    },
+    "lint-staged": {
+        "*.{ts,tsx,js}": "eslint --fix"
     }
 }

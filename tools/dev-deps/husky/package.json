@@ -1,0 +1,9 @@
+{
+  "name": "husky",
+  "version": "0.0.0-local",
+  "description": "Local stub husky that delegates to .husky hooks.",
+  "bin": {
+    "husky": "bin/husky.js"
+  },
+  "license": "MIT"
+}
