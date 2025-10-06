@@ -1,0 +1,47 @@
+{
+  "version": "1.0",
+  "prototype": {
+    "weights": {
+      "rails_sim": 2,
+      "evidence_v2": 2,
+      "rules_correct": 2,
+      "security_thin": 1,
+      "observability": 1,
+      "seed_smoke": 1,
+      "help_docs": 1
+    },
+    "descriptions": {
+      "rails_sim": "sim rail + idempotency + provider_ref + recon import",
+      "evidence_v2": "rules hash + settlement + narrative + approvals",
+      "rules_correct": "PAYGW/GST golden tests + RATES_VERSION + manifest sha",
+      "security_thin": "JWT+roles + MFA on mode/release + dual approval",
+      "observability": "healthz, metrics, and request-id logging",
+      "seed_smoke": "seed + smoke pass",
+      "help_docs": "in-app Help with coverage check"
+    },
+    "thresholds": {
+      "pass": 6,
+      "max": 10
+    }
+  },
+  "real": {
+    "weights": {
+      "kms_rpt": 2,
+      "sandbox_rail": 2,
+      "security_controls": 2,
+      "assurance": 2,
+      "pilot_ops": 2
+    },
+    "descriptions": {
+      "kms_rpt": "KMS Ed25519 + kid + rotation artifacts",
+      "sandbox_rail": "mTLS sandbox rail + receipts + recon import",
+      "security_controls": "MFA, dual approval, headers, rate limit, logs",
+      "assurance": "CI drift gate, vuln scan, basic IR/DR notes",
+      "pilot_ops": "SLO dashboard + DLQ replay + proofs endpoint"
+    },
+    "thresholds": {
+      "pass": 6,
+      "max": 10
+    }
+  }
+}
