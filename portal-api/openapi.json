@@ -1,0 +1,244 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS Portal API",
+    "version": "0.1.0",
+    "description": "APGMS portal endpoints that power the customer dashboard."
+  },
+  "paths": {
+    "/readyz": {
+      "get": {
+        "summary": "Readiness probe",
+        "x-internal": true,
+        "responses": {
+          "200": {
+            "description": "Service is ready"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Prometheus metrics",
+        "x-internal": true,
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics payload"
+          }
+        }
+      }
+    },
+    "/dashboard/yesterday": {
+      "get": {
+        "summary": "Summary of yesterday's performance",
+        "responses": {
+          "200": {
+            "description": "Metrics for the most recent day"
+          }
+        }
+      }
+    },
+    "/normalize": {
+      "post": {
+        "summary": "Normalise a payload",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Echo of the received payload"
+          }
+        }
+      }
+    },
+    "/connections": {
+      "get": {
+        "summary": "List existing data connections",
+        "responses": {
+          "200": {
+            "description": "Current connection metadata"
+          }
+        }
+      }
+    },
+    "/connections/start": {
+      "post": {
+        "summary": "Start a new external connection",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Redirect URL to continue authorisation"
+          }
+        }
+      }
+    },
+    "/connections/{conn_id}": {
+      "delete": {
+        "summary": "Remove a connection",
+        "parameters": [
+          {
+            "name": "conn_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deletion confirmation"
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "Search recent transactions",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Filtered transaction list"
+          }
+        }
+      }
+    },
+    "/ato/status": {
+      "get": {
+        "summary": "ATO connection status",
+        "responses": {
+          "200": {
+            "description": "Current ATO status"
+          }
+        }
+      }
+    },
+    "/bas/validate": {
+      "post": {
+        "summary": "Validate the draft BAS",
+        "responses": {
+          "200": {
+            "description": "Validation result"
+          }
+        }
+      }
+    },
+    "/bas/lodge": {
+      "post": {
+        "summary": "Lodge the BAS",
+        "responses": {
+          "200": {
+            "description": "Submission result"
+          }
+        }
+      }
+    },
+    "/bas/preview": {
+      "get": {
+        "summary": "Preview the BAS",
+        "responses": {
+          "200": {
+            "description": "Preview payload"
+          }
+        }
+      }
+    },
+    "/settings": {
+      "post": {
+        "summary": "Update workspace settings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Settings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Save confirmation"
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "OpenAPI definition",
+        "x-internal": true,
+        "responses": {
+          "200": {
+            "description": "The OpenAPI schema"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConnStart": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "provider"
+        ]
+      },
+      "Settings": {
+        "type": "object",
+        "properties": {
+          "retentionMonths": {
+            "type": "integer"
+          },
+          "piiMask": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "retentionMonths",
+          "piiMask"
+        ]
+      }
+    }
+  }
+}

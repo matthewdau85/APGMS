@@ -1,9 +1,11 @@
 # Help Centre
 
-Welcome! This portal lets you:
-- **Connect your bank** (read-only) to import transactions.
-- **Connect the ATO** to prepare and (with your explicit approval) send activity statements.
-- **Clean** and categorise transactions (we explain every suggestion).
-- **Review & send**: nothing is submitted without your review.
+Use this portal to:
+- Connect your bank to import read-only transactions.
+- Connect the Australian Taxation Office (ATO) to prepare activity statements.
+- Clean and categorise transactions with clear suggestions.
+- Review each submission before it is sent.
 
-See **Privacy**, **Security**, and **Accessibility** for more.
+See **Privacy**, **Security**, **Accessibility**, and the **API Guide** for more detail.
+
+_Last updated: 2025-10-06_
