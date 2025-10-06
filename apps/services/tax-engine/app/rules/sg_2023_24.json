@@ -1,0 +1,95 @@
+{
+  "financial_year": "2023-24",
+  "ote_inclusions": [
+    "salary",
+    "allowance",
+    "bonus",
+    "leave_loading",
+    "commission"
+  ],
+  "ote_exclusions": [
+    "overtime",
+    "reimbursement",
+    "redundancy",
+    "expense_refund"
+  ],
+  "quarters": [
+    {
+      "quarter": "2023Q1",
+      "sg_percent": 0.11,
+      "max_contribution_base": 62270,
+      "ote_inclusions": [
+        "salary",
+        "allowance",
+        "bonus",
+        "leave_loading",
+        "commission"
+      ],
+      "ote_exclusions": [
+        "overtime",
+        "reimbursement",
+        "redundancy",
+        "expense_refund"
+      ]
+    },
+    {
+      "quarter": "2023Q2",
+      "sg_percent": 0.11,
+      "max_contribution_base": 62270,
+      "ote_inclusions": [
+        "salary",
+        "allowance",
+        "bonus",
+        "leave_loading",
+        "commission"
+      ],
+      "ote_exclusions": [
+        "overtime",
+        "reimbursement",
+        "redundancy",
+        "expense_refund"
+      ]
+    },
+    {
+      "quarter": "2023Q3",
+      "sg_percent": 0.11,
+      "max_contribution_base": 62270,
+      "ote_inclusions": [
+        "salary",
+        "allowance",
+        "bonus",
+        "leave_loading",
+        "commission"
+      ],
+      "ote_exclusions": [
+        "overtime",
+        "reimbursement",
+        "redundancy",
+        "expense_refund"
+      ]
+    },
+    {
+      "quarter": "2023Q4",
+      "sg_percent": 0.11,
+      "max_contribution_base": 62270,
+      "ote_inclusions": [
+        "salary",
+        "allowance",
+        "bonus",
+        "leave_loading",
+        "commission"
+      ],
+      "ote_exclusions": [
+        "overtime",
+        "reimbursement",
+        "redundancy",
+        "expense_refund"
+      ]
+    }
+  ],
+  "roadmap": [
+    {"effective_from": "2023-07-01", "sg_percent": 0.11},
+    {"effective_from": "2024-07-01", "sg_percent": 0.115},
+    {"effective_from": "2025-07-01", "sg_percent": 0.12}
+  ]
+}
