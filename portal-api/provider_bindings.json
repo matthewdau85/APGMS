@@ -1,0 +1,16 @@
+{
+  "blue": {
+    "providers": {
+      "auth": "https://auth-blue.apgms.internal",
+      "banking": "https://bank-blue.apgms.internal",
+      "ledger": "https://ledger-blue.apgms.internal"
+    }
+  },
+  "green": {
+    "providers": {
+      "auth": "https://auth-green.apgms.internal",
+      "banking": "https://bank-green.apgms.internal",
+      "ledger": "https://ledger-green.apgms.internal"
+    }
+  }
+}
