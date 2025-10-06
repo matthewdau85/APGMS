@@ -24,9 +24,17 @@ export async function payAto(req:any, res:any) {
   if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
   const payload = pr.rows[0].payload;
   try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
+    const idemKey = (req as any).idempotencyKey || req.header("Idempotency-Key") || undefined;
+    const normalizedRail = (rail || payload?.rail_id || "EFT").toUpperCase();
+    await resolveDestination(abn, normalizedRail, payload.reference);
+    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, normalizedRail, payload.reference, idemKey);
     await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
+    if (idemKey) {
+      await pool.query(
+        "update idempotency_keys set last_status=$1, response_hash=$2 where key=$3",
+        ["DONE", JSON.stringify(r), idemKey]
+      );
+    }
     return res.json(r);
   } catch (e:any) {
     return res.status(400).json({ error: e.message });
