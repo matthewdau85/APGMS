@@ -5,6 +5,10 @@ __pycache__/
 
 # Node / builds
 node_modules/
+!apps/services/payments/node_modules/
+apps/services/payments/node_modules/*
+!apps/services/payments/node_modules/opossum/
+!apps/services/payments/node_modules/opossum/**
 dist/
 .next/
 coverage/
