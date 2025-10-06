@@ -3,7 +3,7 @@ import 'dotenv/config';
 import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 
 import express from 'express';
-import pg from 'pg'; const { Pool } = pg;
+import { createPgPool } from '../../../libs/db/pool';
 
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
@@ -21,7 +21,7 @@ const connectionString =
   `@${process.env.PGHOST || '127.0.0.1'}:${process.env.PGPORT || '5432'}/${process.env.PGDATABASE || 'apgms'}`;
 
 // Export pool for other modules
-export const pool = new Pool({ connectionString });
+export const pool = createPgPool('payments-core', { connectionString });
 
 const app = express();
 app.use(express.json());
