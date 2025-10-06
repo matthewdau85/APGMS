@@ -19,6 +19,8 @@
     },
     "dependencies": {
         "csv-parse": "^6.1.0",
+        "@aws-sdk/client-kms": "^3.645.0",
+        "@google-cloud/kms": "^3.1.0",
         "dotenv": "^17.2.3",
         "express": "^5.1.0",
         "pg": "^8.16.3",

@@ -10,6 +10,9 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { requestContext } from './middleware/requestContext.js';
+import { auditLogger } from './middleware/auditLogger.js';
+import { optionalAuth, requireAccess } from './middleware/authz.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -25,13 +28,31 @@ export const pool = new Pool({ connectionString });
 
 const app = express();
 app.use(express.json());
+app.use(requestContext);
+app.use(optionalAuth);
+app.use(auditLogger);
+
+const depositGuard = requireAccess({
+  anyRoles: ['payments:owa:credit', 'payments:treasury:deposit'],
+  minAssurance: 'aal2',
+  stepUp: { requiredLevel: 'aal2', maxAgeSeconds: 300, methods: ['otp', 'totp', 'fido2'] },
+});
+
+const releaseGuard = requireAccess({
+  anyRoles: ['payments:release:execute'],
+  minAssurance: 'aal3',
+  stepUp: { requiredLevel: 'aal3', maxAgeSeconds: 120, methods: ['fido2', 'hardware-token'] },
+  requireApprover: true,
+  approverRoles: ['payments:release:approve'],
+  disallowSubjectRoles: ['payments:release:approve'],
+});
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // Endpoints
-app.post('/deposit', deposit);
-app.post('/payAto', rptGate, payAtoRelease);
+app.post('/deposit', depositGuard, deposit);
+app.post('/payAto', releaseGuard, rptGate, payAtoRelease);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
 
