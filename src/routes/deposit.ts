@@ -1,5 +1,5 @@
 ﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { pool } from "../db/pool";
 import { randomUUID } from "node:crypto";
 
 export async function deposit(req: Request, res: Response) {
