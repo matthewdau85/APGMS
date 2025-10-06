@@ -1,0 +1,19 @@
+name: readiness-scorecard
+
+on:
+  push:
+    branches: ["main", "work", "develop"]
+  pull_request:
+
+jobs:
+  guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --production=false
+        env:
+          NODE_ENV: development
+      - run: npm run lint:dod

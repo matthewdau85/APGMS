@@ -1,0 +1,9 @@
+{
+  "dimensions": {
+    "evidence_integrity": { "score": 0.7, "weight": 0.25, "notes": "Payload hashing, ledger parity checks, recon imports captured" },
+    "security_rails": { "score": 0.7, "weight": 0.2, "notes": "Idempotency persistence, rate limiting, hardened headers" },
+    "rules_fidelity": { "score": 0.7, "weight": 0.2, "notes": "Rules manifest tracked with version + hash" },
+    "operational_readiness": { "score": 0.7, "weight": 0.2, "notes": "Structured logs and readiness rubric" },
+    "testing_linting": { "score": 0.8, "weight": 0.15, "notes": "Smoke path + DoD lint coverage stub" }
+  }
+}
