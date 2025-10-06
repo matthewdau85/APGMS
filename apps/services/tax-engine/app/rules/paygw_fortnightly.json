@@ -1,0 +1,14 @@
+{
+  "version": "2024-25",
+  "period": "fortnightly",
+  "rounding": "HALF_UP",
+  "notes": "ATO 2024-25 Schedule 1 fortnightly calculations with tax-free threshold",
+  "brackets": [
+    { "up_to_cents": 71800, "a": 0.0, "b": 0.0, "fixed": 0.0 },
+    { "up_to_cents": 87600, "a": 0.19, "b": 136.0, "fixed": 0.0 },
+    { "up_to_cents": 109600, "a": 0.234, "b": 175.64, "fixed": 0.0 },
+    { "up_to_cents": 144200, "a": 0.347, "b": 297.0, "fixed": 0.0 },
+    { "up_to_cents": 173000, "a": 0.345, "b": 294.0, "fixed": 0.0 },
+    { "up_to_cents": 199999800, "a": 0.39, "b": 366.0, "fixed": 0.0 }
+  ]
+}

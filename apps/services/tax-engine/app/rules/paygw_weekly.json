@@ -1,0 +1,14 @@
+{
+  "version": "2024-25",
+  "period": "weekly",
+  "rounding": "HALF_UP",
+  "notes": "ATO 2024-25 Schedule 1 pay as you go withholding weekly calculations with tax-free threshold",
+  "brackets": [
+    { "up_to_cents": 35900, "a": 0.0, "b": 0.0, "fixed": 0.0 },
+    { "up_to_cents": 43800, "a": 0.19, "b": 68.0, "fixed": 0.0 },
+    { "up_to_cents": 54800, "a": 0.234, "b": 87.82, "fixed": 0.0 },
+    { "up_to_cents": 72100, "a": 0.347, "b": 148.5, "fixed": 0.0 },
+    { "up_to_cents": 86500, "a": 0.345, "b": 147.0, "fixed": 0.0 },
+    { "up_to_cents": 9.0e9, "a": 0.39, "b": 183.0, "fixed": 0.0 }
+  ]
+}

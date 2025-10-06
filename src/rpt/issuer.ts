@@ -2,8 +2,11 @@
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
 import { exceeds } from "../anomaly/deterministic";
+import { manifestVersion } from "../tax/paygw";
 const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
+const kid = process.env.RPT_KID || process.env.AUTH_JWT_KID || "apgms-rpt";
+const ratesVersion = process.env.RATES_VERSION || manifestVersion();
 
 export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
   const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
@@ -27,11 +30,13 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     amount_cents: Number(row.final_liability_cents),
     merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
     anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
+    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID(),
+    kid,
+    rates_version: ratesVersion
   };
   const signature = signRpt(payload, new Uint8Array(secretKey));
   await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
     [abn, taxType, periodId, payload, signature]);
   await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
-  return { payload, signature };
+  return { payload, signature, kid, rates_version: ratesVersion };
 }
