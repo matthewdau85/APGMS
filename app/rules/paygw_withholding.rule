@@ -1,0 +1,4 @@
+# PAYGW withholding rule
+When PAYGW wages are credited to the operating account, retain withheld amounts until RPT issuance.
+- Source: Taxation Administration Act 1953 Sch 1 s16-70
+- Control: Debit only after READY_RPT gate and RPT verified.

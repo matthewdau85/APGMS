@@ -1,0 +1,18 @@
+[
+  {
+    "file": "gst_settlement.rule",
+    "effective_from": "2024-07-01",
+    "effective_to": null,
+    "source_url": "https://www.legislation.gov.au/Details/C2024C00234",
+    "version": "1.0.0",
+    "sha256": "d4e15560f19e64b9e80fef4f6ac72b09130580155661d3598279f464b61118d9"
+  },
+  {
+    "file": "paygw_withholding.rule",
+    "effective_from": "2024-07-01",
+    "effective_to": null,
+    "source_url": "https://www.legislation.gov.au/Details/C2024C00123",
+    "version": "1.0.0",
+    "sha256": "9b755940555500dc77aef54c98f31585b28ced2faecc31474e092ebbc5f5c916"
+  }
+]

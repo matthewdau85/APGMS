@@ -5,6 +5,7 @@ import atoLogo from "../assets/ato-logo.svg";
 const navLinks = [
   { to: "/", label: "Dashboard" },
   { to: "/bas", label: "BAS" },
+  { to: "/evidence", label: "Evidence" },
   { to: "/settings", label: "Settings" },
   { to: "/wizard", label: "Wizard" },
   { to: "/audit", label: "Audit" },
