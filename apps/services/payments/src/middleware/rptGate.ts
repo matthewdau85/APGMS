@@ -19,7 +19,7 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
       SELECT id as rpt_id, payload_c14n, payload_sha256, signature, expires_at, status, nonce
       FROM rpt_tokens
       WHERE abn = $1 AND tax_type = $2 AND period_id = $3
-        AND status IN ('pending','active')
+        AND status IN ('active')
       ORDER BY created_at DESC
       LIMIT 1
     `;
@@ -38,12 +38,39 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
     }
 
     // Signature verify (signature is stored as base64 text in your seed)
-    const payload = Buffer.from(r.payload_c14n);
+    const payloadBuf = Buffer.from(r.payload_c14n);
     const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
+    const ok = await kms.verify(payloadBuf, sig);
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(r.payload_c14n);
+    } catch {
+      return res.status(400).json({ error: "Invalid RPT payload" });
+    }
+
+    if (parsed.abn && parsed.abn !== abn) {
+      return res.status(403).json({ error: "RPT ABN mismatch" });
+    }
+    if (parsed.tax_type && parsed.tax_type !== taxType) {
+      return res.status(403).json({ error: "RPT taxType mismatch" });
+    }
+    if (parsed.period_id && parsed.period_id !== periodId) {
+      return res.status(403).json({ error: "RPT period mismatch" });
+    }
+
+    const expectedRates = process.env.RPT_EXPECTED_RATES_VERSION || "2024-25";
+    if (parsed.rates_version && parsed.rates_version !== expectedRates) {
+      return res.status(403).json({ error: "RPT rates_version mismatch" });
+    }
+
+    (req as any).rpt = {
+      rpt_id: r.rpt_id,
+      nonce: r.nonce,
+      payload_sha256: r.payload_sha256,
+      payload: parsed
+    };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });
