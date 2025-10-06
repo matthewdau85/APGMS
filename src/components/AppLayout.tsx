@@ -13,13 +13,43 @@ const navLinks = [
   { to: "/help", label: "Help" },
 ];
 
+const runtimeEnv: Record<string, string | undefined> = (() => {
+  const meta =
+    typeof import.meta !== "undefined"
+      ? (import.meta as unknown as { env?: Record<string, string | undefined> })
+      : undefined;
+  if (meta?.env) {
+    return meta.env;
+  }
+  if (typeof process !== "undefined" && process?.env) {
+    return process.env as Record<string, string | undefined>;
+  }
+  if (typeof window !== "undefined") {
+    return (
+      (window as unknown as { __APP_ENV__?: Record<string, string | undefined> }).__APP_ENV__ ??
+      {}
+    );
+  }
+  return {};
+})();
+
+const normalize = (value: string | undefined) => (value ?? "").toLowerCase();
+const isTruthy = (value: string | undefined) => {
+  const normalized = normalize(value);
+  return normalized === "true" || normalized === "1" || normalized === "yes";
+};
+
+const appMode = normalize(runtimeEnv.VITE_APP_MODE ?? runtimeEnv.APP_MODE);
+const dspOk = isTruthy(runtimeEnv.VITE_DSP_OK ?? runtimeEnv.DSP_OK);
+const showPrototypeBanner = !(appMode === "real" && dspOk);
+
 export default function AppLayout() {
   return (
     <div>
       <header className="app-header">
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
-        <p>ATO-Compliant Tax Management System</p>
+        <p>Operational prototype under DSP accreditation review.</p>
         <nav style={{ marginTop: 16 }}>
           {navLinks.map((link) => (
             <NavLink
@@ -44,13 +74,18 @@ export default function AppLayout() {
         </nav>
       </header>
 
-      {/* 👇 This tells React Router where to render the child pages */}
+      {showPrototypeBanner && (
+        <div className="prototype-banner" role="status">
+          Prototype only – controls in validation. Confirm obligations with the ATO before acting.
+        </div>
+      )}
+
       <main style={{ padding: 20 }}>
         <Outlet />
       </main>
 
       <footer className="app-footer">
-        <p>© 2025 APGMS | Compliant with Income Tax Assessment Act 1997 & GST Act 1999</p>
+        <p>© 2025 APGMS | Prototype platform – DSP alignment in progress.</p>
       </footer>
     </div>
   );

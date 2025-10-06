@@ -17,11 +17,27 @@ export default function Help() {
         </ul>
       </div>
       <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">ATO Compliance</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li>Use one-way tax accounts to prevent accidental use of withheld/collected funds.</li>
-          <li>Audit trail with timestamped actions supports legal protection and evidence.</li>
-          <li>Helps avoid wind-up notices, director penalties, and late lodgment fines.</li>
+        <h2 className="text-lg font-semibold">Compliance Status</h2>
+        <p className="text-sm">
+          APGMS is currently a prototype and undergoing DSP Operational Framework alignment. Use
+          the artefacts below and confirm requirements directly with the ATO before lodging or
+          making payments based on system outputs.
+        </p>
+        <ul className="list-disc pl-5 text-sm space-y-1">
+          <li>Prototype dashboards provide guidance but are not a substitute for official ATO systems.</li>
+          <li>Security controls (MFA, SoD, logging, IR) are documented and being validated.</li>
+          <li>Incident, DR, and access review runbooks are available for rehearsal and evidence capture.</li>
+        </ul>
+      </div>
+      <div className="bg-card p-4 rounded-xl shadow space-y-2">
+        <h2 className="text-lg font-semibold">DSP Accreditation Artefacts</h2>
+        <ul className="list-disc pl-5 text-sm space-y-1">
+          <li><a className="text-blue-600" href="/docs/dsp/operational_framework_gap_analysis.md">Operational framework gap analysis</a></li>
+          <li><a className="text-blue-600" href="/docs/dsp/security_controls_matrix.md">Security controls matrix (MFA, SoD, KMS, logging, IR)</a></li>
+          <li><a className="text-blue-600" href="/docs/dsp/privacy_impact_assessment.md">Privacy impact assessment</a></li>
+          <li><a className="text-blue-600" href="/docs/dsp/runbooks/incident_response.md">Incident response runbook</a></li>
+          <li><a className="text-blue-600" href="/docs/dsp/runbooks/disaster_recovery.md">Disaster recovery runbook</a></li>
+          <li><a className="text-blue-600" href="/docs/dsp/runbooks/access_reviews.md">Access review runbook</a></li>
         </ul>
       </div>
       <div className="bg-card p-4 rounded-xl shadow space-y-2">
