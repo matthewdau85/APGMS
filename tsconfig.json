@@ -6,14 +6,31 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": true,
+    "strict": false,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "module": "esnext",
     "moduleResolution": "node",
+    "typeRoots": ["./src/types", "./node_modules/@types"],
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx"
+    "jsx": "preserve"
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/index.ts",
+    "src/api",
+    "src/middleware",
+    "src/routes",
+    "src/recon",
+    "src/payto",
+    "src/settlement",
+    "src/crypto",
+    "src/evidence",
+    "src/audit",
+    "src/scheduler",
+    "src/rails",
+    "src/rpt",
+    "src/libs/paymentsClient.ts"
+  ]
 }

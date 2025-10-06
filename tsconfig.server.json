@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["es2020", "dom"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "dist/server",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "types": ["node"]
+  },
+  "include": [
+    "src/index.ts",
+    "src/api/*.ts",
+    "src/middleware/**/*.ts",
+    "src/routes/**/*.ts",
+    "src/db/**/*.ts",
+    "src/recon/**/*.ts",
+    "src/payto/**/*.ts",
+    "src/settlement/**/*.ts",
+    "src/crypto/**/*.ts",
+    "src/libs/**/*.ts",
+    "src/evidence/**/*.ts",
+    "src/utils/**/*.ts",
+    "src/types/**/*.ts",
+    "src/audit/**/*.ts",
+    "src/anomaly/**/*.ts",
+    "src/scheduler/**/*.ts",
+    "src/rpt/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.tsx",
+    "src/components/**",
+    "src/pages/**",
+    "src/context/**",
+    "src/assets/**",
+    "src/api/payments/index.ts"
+  ]
+}

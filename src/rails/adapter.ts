@@ -27,8 +27,8 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
   const { rows } = await pool.query(
     "select balance_after_cents, hash_after from owa_ledger where abn= and tax_type= and period_id= order by id desc limit 1",
     [abn, taxType, periodId]);
-  const prevBal = rows[0]?.balance_after_cents ?? 0;
-  const prevHash = rows[0]?.hash_after ?? "";
+  const prevBal = Number(rows[0]?.balance_after_cents ?? 0);
+  const prevHash = String(rows[0]?.hash_after ?? "");
   const newBal = prevBal - amountCents;
   const hashAfter = sha256Hex(prevHash + bank_receipt_hash + String(newBal));
 

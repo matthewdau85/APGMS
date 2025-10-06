@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/client",
+    "rootDir": "src",
+    "module": "esnext",
+    "target": "es2019",
+    "jsx": "react",
+    "noEmit": false,
+    "declaration": false,
+    "emitDeclarationOnly": false
+  }
+}

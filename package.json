@@ -1,10 +1,21 @@
 {
     "scripts": {
-        "start": "node dist/index.js",
-        "build": "echo build root",
-        "typecheck": "echo typecheck root",
-        "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true });\"",
+        "prestart": "npm run build",
+        "start": "node dist/server/index.js",
+        "build": "npm run clean && npm run build:server && npm run build:client",
+        "build:server": "tsc -p tsconfig.server.json",
+        "build:client": "npm run build:client:ts && npm run build:client:assets",
+        "build:client:ts": "tsc -p tsconfig.client.build.json",
+        "build:client:assets": "node scripts/copy-client-assets.cjs",
+        "typecheck": "npm run typecheck:server && npm run typecheck:client",
+        "typecheck:server": "tsc --noEmit -p tsconfig.server.json",
+        "typecheck:client": "tsc --noEmit -p tsconfig.json",
+        "dev": "tsx watch src/index.ts",
+        "dev:client": "echo 'Client dev server not configured; use your preferred tooling.'",
+        "dev:server": "tsx watch src/index.ts",
+        "lint": "echo lint root",
+        "test": "npm run typecheck"
     },
     "version": "0.1.0",
     "name": "apgms",
@@ -22,6 +33,8 @@
         "dotenv": "^17.2.3",
         "express": "^5.1.0",
         "pg": "^8.16.3",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
         "tweetnacl": "^1.0.3",
         "uuid": "^13.0.0"
     }

@@ -1,6 +1,6 @@
 // src/api/payments.ts
 import express from "express";
-import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { Payments } from "../libs/paymentsClient";
 
 export const paymentsApi = express.Router();
 
