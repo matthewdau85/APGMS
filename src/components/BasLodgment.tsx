@@ -6,6 +6,7 @@ import { calculatePenalties } from '../utils/penalties';
 export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gstDue: number }) {
   const { basHistory, setBasHistory, auditLog, setAuditLog } = useContext(AppContext);
   const [isProcessing, setIsProcessing] = useState(false);
+  const penaltyPreview = calculatePenalties(7, paygwDue + gstDue);
 
   async function handleLodgment() {
     setIsProcessing(true);
@@ -19,7 +20,7 @@ export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gs
             gstPaid: 0,
             status: "Late",
             daysLate: 7,
-            penalties: calculatePenalties(7, paygwDue + gstDue)
+            penalties: penaltyPreview.total
           },
           ...basHistory
         ]);
@@ -52,6 +53,9 @@ export default function BasLodgment({ paygwDue, gstDue }: { paygwDue: number, gs
       <div>PAYGW: ${paygwDue.toFixed(2)}</div>
       <div>GST: ${gstDue.toFixed(2)}</div>
       <div className="total">Total: ${(paygwDue + gstDue).toFixed(2)}</div>
+      <div style={{ fontSize: "0.9em", marginTop: "0.4em", color: "#92400e" }}>
+        Potential 7-day late penalty: ${penaltyPreview.total.toFixed(2)} (GIC ${penaltyPreview.generalInterestCharge.toFixed(2)} + FTL ${penaltyPreview.failureToLodgePenalty.toFixed(2)})
+      </div>
       <button onClick={handleLodgment} disabled={isProcessing}>
         {isProcessing ? "Processing..." : "Lodge BAS & Transfer Funds"}
       </button>
