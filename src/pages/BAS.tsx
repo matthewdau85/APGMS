@@ -1,18 +1,49 @@
 import React from 'react';
+import { useCompliance } from '../context/ComplianceContext';
 
 export default function BAS() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65, // percentage from 0 to 100
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { snapshot, refresh } = useCompliance();
+  const { status, summary, error } = snapshot;
+
+  if (status === 'loading' && !summary) {
+    return (
+      <div className="main-card">
+        <p className="text-sm text-gray-600">Loading BAS compliance data…</p>
+      </div>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="main-card space-y-4">
+        <div className="bg-red-100 border border-red-200 text-red-700 p-4 rounded-lg">
+          <p className="font-semibold">Unable to load BAS overview.</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            type="button"
+            onClick={refresh}
+            className="mt-3 inline-flex items-center rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return null;
+  }
+
+  const complianceStatus = summary;
 
   return (
     <div className="main-card">
+      {status === 'loading' && (
+        <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700">
+          Refreshing BAS metrics…
+        </div>
+      )}
       <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
       <p className="text-sm text-muted-foreground mb-4">
         Lodge your BAS on time and accurately. Below is a summary of your current obligations.
