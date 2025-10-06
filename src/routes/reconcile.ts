@@ -1,52 +1,183 @@
-﻿import { issueRPT } from "../rpt/issuer";
-import { buildEvidenceBundle } from "../evidence/bundle";
+import { Request, Response } from "express";
+import { createHash } from "node:crypto";
+
+import { issueRPT } from "../rpt/issuer";
 import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
-import { parseSettlementCSV } from "../settlement/splitParser";
-import { Pool } from "pg";
-const pool = new Pool();
+import { buildEvidenceDetails } from "../evidence/bundle";
+import { getPool } from "../db/pool";
 
-export async function closeAndIssue(req:any, res:any) {
-  const { abn, taxType, periodId, thresholds } = req.body;
-  // TODO: set state -> CLOSING, compute final_liability_cents, merkle_root, running_balance_hash beforehand
-  const thr = thresholds || { epsilon_cents: 50, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
+const pool = getPool();
+
+function coerceNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function deriveAnomalyHash(row: any): string {
+  const direct = typeof row?.anomaly_hash === "string" && row.anomaly_hash.length > 0 ? row.anomaly_hash : null;
+  if (direct) return direct;
+
+  if (row?.anomaly_vector) {
+    try {
+      const canonical = JSON.stringify(row.anomaly_vector);
+      return createHash("sha256").update(canonical).digest("hex");
+    } catch (_) {
+      // fall through
+    }
+  }
+  return "unknown";
+}
+
+export async function closeAndIssue(req: Request, res: Response) {
+  const { abn, taxType, periodId, thresholds } = req.body ?? {};
+  if (!abn || !taxType || !periodId) {
+    return res.status(400).json({ error: "missing abn/taxType/periodId" });
+  }
+
+  const client = await pool.connect();
   try {
-    const rpt = await issueRPT(abn, taxType, periodId, thr);
-    return res.json(rpt);
-  } catch (e:any) {
-    return res.status(400).json({ error: e.message });
+    await client.query("BEGIN");
+
+    const { rows: periodRows } = await client.query<{
+      final_liability_cents: number | string | null;
+      credited_to_owa_cents: number | string | null;
+      anomaly_hash?: string | null;
+      anomaly_vector?: unknown;
+    }>(
+      `select final_liability_cents, credited_to_owa_cents, anomaly_hash, anomaly_vector
+         from periods
+        where abn=$1 and tax_type=$2 and period_id=$3
+        for update`,
+      [abn, taxType, periodId]
+    );
+
+    if (!periodRows.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "PERIOD_NOT_FOUND" });
+    }
+
+    const period = periodRows[0];
+    const expC = coerceNumber(period.final_liability_cents);
+    const actC = coerceNumber(period.credited_to_owa_cents);
+    const anomalyHash = deriveAnomalyHash(period);
+
+    const labels = await client.query<{ label: string; valueCents: number }>(
+      `select label, value_cents as "valueCents"
+         from bas_labels
+        where abn=$1 and period_id=$2
+        order by label`,
+      [abn, periodId]
+    );
+
+    const details = buildEvidenceDetails(labels.rows, expC, actC, anomalyHash);
+
+    const evidenceSql = `
+      insert into evidence_bundles (abn, tax_type, period_id, details, created_at)
+      values ($1,$2,$3,$4::jsonb, now())
+      on conflict (abn, tax_type, period_id)
+      do update set details = excluded.details
+      returning id
+    `;
+    const evidenceParams = [abn, taxType, periodId, JSON.stringify(details)];
+    const { rows: evidenceRows } = await client.query<{ id: number }>(evidenceSql, evidenceParams);
+
+    await client.query("COMMIT");
+
+    const rpt = await issueRPT(abn, taxType, periodId, thresholds ?? {});
+
+    return res.json({ ok: true, bundleId: evidenceRows[0]?.id ?? null, rpt, details });
+  } catch (e: any) {
+    await client.query("ROLLBACK");
+    return res.status(500).json({ error: e?.message ?? "closeAndIssue failed" });
+  } finally {
+    client.release();
   }
 }
 
-export async function payAto(req:any, res:any) {
-  const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
-  const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
-  if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
-  const payload = pr.rows[0].payload;
+export async function payAto(req: Request, res: Response) {
+  const { abn, taxType, periodId, rail } = req.body ?? {};
+  if (!abn || !taxType || !periodId) {
+    return res.status(400).json({ error: "missing abn/taxType/periodId" });
+  }
+
+  const client = await pool.connect();
   try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
-    await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
+    const { rows } = await client.query<{ payload: any }>(
+      `select payload
+         from rpt_tokens
+        where abn=$1 and tax_type=$2 and period_id=$3
+        order by created_at desc
+        limit 1`,
+      [abn, taxType, periodId]
+    );
+    if (!rows.length) {
+      return res.status(400).json({ error: "NO_RPT" });
+    }
+    const payload = rows[0].payload;
+    const releaseRail = (rail ?? payload?.rail_id ?? "EFT") as "EFT" | "BPAY";
+
+    await resolveDestination(abn, releaseRail, payload?.reference ?? "");
+    const release = await releasePayment(
+      abn,
+      taxType,
+      periodId,
+      coerceNumber(payload?.amount_cents),
+      releaseRail,
+      payload?.reference ?? ""
+    );
+
+    await client.query(
+      `update periods set state='RELEASED'
+        where abn=$1 and tax_type=$2 and period_id=$3`,
+      [abn, taxType, periodId]
+    );
+
+    return res.json({ ok: true, release });
+  } catch (e: any) {
+    return res.status(400).json({ error: e?.message ?? "release failed" });
+  } finally {
+    client.release();
+  }
+}
+
+export async function paytoSweep(req: Request, res: Response) {
+  const { abn, amount_cents, reference } = req.body ?? {};
+  if (!abn) {
+    return res.status(400).json({ error: "missing abn" });
+  }
+  try {
+    const amt = coerceNumber(amount_cents);
+    const r = await paytoDebit(abn, amt, reference ?? "");
     return res.json(r);
-  } catch (e:any) {
-    return res.status(400).json({ error: e.message });
+  } catch (e: any) {
+    return res.status(400).json({ error: e?.message ?? "payto sweep failed" });
   }
 }
 
-export async function paytoSweep(req:any, res:any) {
-  const { abn, amount_cents, reference } = req.body;
-  const r = await paytoDebit(abn, amount_cents, reference);
-  return res.json(r);
-}
+export async function evidence(req: Request, res: Response) {
+  const { abn, taxType, periodId } = req.query as Record<string, string>;
+  if (!abn || !taxType || !periodId) {
+    return res.status(400).json({ error: "missing abn/taxType/periodId" });
+  }
 
-export async function settlementWebhook(req:any, res:any) {
-  const csvText = req.body?.csv || "";
-  const rows = parseSettlementCSV(csvText);
-  // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
-  return res.json({ ingested: rows.length });
-}
-
-export async function evidence(req:any, res:any) {
-  const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query<{ id: number; details: unknown }>(
+      `select id, details
+         from evidence_bundles
+        where abn=$1 and tax_type=$2 and period_id=$3
+        order by created_at desc
+        limit 1`,
+      [abn, taxType, periodId]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: "NOT_FOUND" });
+    }
+    return res.json(rows[0]);
+  } catch (e: any) {
+    return res.status(500).json({ error: e?.message ?? "failed to load evidence" });
+  } finally {
+    client.release();
+  }
 }
