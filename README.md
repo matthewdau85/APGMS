@@ -41,6 +41,17 @@ Build for Production
 
 npm run build
 
+Generate API Schema & Typed Client
+
+The console APIs are documented via a generated OpenAPI spec so the front-end and back-end stay in sync.
+
+```
+npm run openapi
+npm run client:gen
+```
+
+`npm run openapi` merges the annotated Express routes with the FastAPI schema (when available) and writes `openapi.json`. `npm run client:gen` consumes that schema to regenerate the typed API client used by React Query hooks.
+
 Project Structure
 apgms/
 ├── public/ # Static assets and HTML
@@ -51,6 +62,7 @@ apgms/
 │ ├── App.tsx # Main application component
 │ ├── index.tsx # Entry point
 │ └── index.css # App-wide styles
+├── scripts/ # Build-time utilities (openapi + client generation)
 ├── package.json
 ├── tsconfig.json
 └── README.md
