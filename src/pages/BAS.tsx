@@ -1,6 +1,21 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 
 export default function BAS() {
+  const mlForecast = useMemo(
+    () => ({
+      period: '2025-Q4',
+      point: 3850,
+      interval: [3425, 4260],
+      explainability: {
+        periods: ['2025-Q1', '2025-Q2', '2025-Q3'],
+        mean: 3825,
+      },
+    }),
+    []
+  );
+  const [forecastConfirmed, setForecastConfirmed] = useState(false);
+  const [forecastOverride, setForecastOverride] = useState('');
+
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
@@ -37,6 +52,51 @@ export default function BAS() {
         <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
           Review & Lodge
         </button>
+      </div>
+
+      <div className="mt-6 rounded-xl border border-emerald-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-emerald-800">Advisory BAS Forecast</h2>
+            <p className="text-sm text-gray-600">
+              ML Assist estimates the {mlForecast.period} liability at ${mlForecast.point.toLocaleString()} with a
+              confidence band of ${mlForecast.interval[0].toLocaleString()} – ${mlForecast.interval[1].toLocaleString()}.
+            </p>
+            <p className="text-xs text-gray-500">
+              Deterministic PAYGW/GST calculations remain in the tax engine. This forecast only guides cash
+              planning and requires operator approval.
+            </p>
+            <p className="mt-2 text-xs text-gray-500">
+              Recent periods considered: {mlForecast.explainability.periods.join(', ')} (mean {mlForecast.explainability.mean}).
+            </p>
+          </div>
+          <span className="inline-flex h-8 items-center rounded-full bg-amber-100 px-3 text-xs font-semibold text-amber-700">
+            Advisory
+          </span>
+        </div>
+        <textarea
+          className="mt-3 w-full rounded border border-gray-300 p-3 text-sm"
+          placeholder="Document any override notes (stored with the ML override log)"
+          value={forecastOverride}
+          onChange={event => setForecastOverride(event.target.value)}
+        />
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <button
+            type="button"
+            onClick={() => setForecastConfirmed(true)}
+            className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+              forecastConfirmed
+                ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+            }`}
+            disabled={forecastConfirmed}
+          >
+            {forecastConfirmed ? 'Decision logged' : 'Confirm cash sweep plan'}
+          </button>
+          <span className="text-xs text-gray-500">
+            Operator confirmation (or override) is mandatory before any transfer instructions are sent.
+          </span>
+        </div>
       </div>
 
       <div className="bg-green-50 border border-green-200 p-4 rounded-xl shadow-md mt-6">
