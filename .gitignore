@@ -8,6 +8,7 @@ node_modules/
 dist/
 .next/
 coverage/
+/fixtures/
 
 # OS noise
 Thumbs.db

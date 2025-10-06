@@ -1,10 +1,12 @@
-﻿from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response
 from fastapi.responses import PlainTextResponse
 from typing import Optional
 from prometheus_client import REGISTRY, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from libs.fixtures import attach_fixture_recorder
 
 APP_NAME = "event-normalizer"
 app = FastAPI(title=APP_NAME)
+attach_fixture_recorder(app, port_label="event-normalizer")
 
 def _get_or_make_results_gauge() -> Gauge:
     name = "normalizer_tax_results_total"

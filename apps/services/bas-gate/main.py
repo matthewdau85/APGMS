@@ -1,9 +1,11 @@
 ﻿# apps/services/bas-gate/main.py
 from fastapi import FastAPI, HTTPException
+from libs.fixtures import attach_fixture_recorder
 from pydantic import BaseModel
 import os, psycopg2, json, time
 
 app = FastAPI(title="bas-gate")
+attach_fixture_recorder(app)
 
 class TransitionReq(BaseModel):
     period_id: str

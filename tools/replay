@@ -1,0 +1,250 @@
+#!/usr/bin/env node
+/* tools/replay.js - Replay recorded fixtures against alternate providers. */
+
+const fs = require('fs');
+const path = require('path');
+const process = require('process');
+
+if (typeof fetch !== 'function') {
+  console.error('Global fetch is required (Node.js 18+).');
+  process.exit(1);
+}
+
+async function main() {
+  const args = parseArgs(process.argv.slice(2));
+  if (!args.port || !args.fixture) {
+    usage('Missing --port or --fixture');
+    process.exit(1);
+  }
+
+  const repoRoot = findRepoRoot(process.cwd());
+  const fixtureDir = path.join(repoRoot, 'fixtures', args.port, args.fixture);
+  if (!fs.existsSync(fixtureDir) || !fs.statSync(fixtureDir).isDirectory()) {
+    console.error(`Fixture directory not found: ${fixtureDir}`);
+    process.exit(1);
+  }
+
+  const files = fs.readdirSync(fixtureDir).filter((f) => f.endsWith('.jsonl')).sort();
+  if (files.length === 0) {
+    console.error(`No .jsonl files found in ${fixtureDir}`);
+    process.exit(1);
+  }
+
+  const selectors = await loadSelectors(repoRoot, args.port);
+  const diffs = [];
+  let total = 0;
+
+  for (const file of files) {
+    const filePath = path.join(fixtureDir, file);
+    const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/).filter(Boolean);
+    for (const line of lines) {
+      total += 1;
+      let entry;
+      try {
+        entry = JSON.parse(line);
+      } catch (err) {
+        diffs.push({ type: 'parse-error', file: file, detail: err.message });
+        continue;
+      }
+      const diff = await replayEntry(args.port, entry, selectors);
+      if (diff) {
+        diffs.push({ file, entryId: entry.id, ...diff });
+      }
+    }
+  }
+
+  if (diffs.length === 0) {
+    console.log(`✅  Replayed ${total} interactions for port '${args.port}' without diffs.`);
+    return;
+  }
+
+  console.error(`❌  Found ${diffs.length} diffs out of ${total} interactions:`);
+  for (const d of diffs.slice(0, 10)) {
+    console.error(JSON.stringify(d, null, 2));
+  }
+  if (diffs.length > 10) {
+    console.error(`... and ${diffs.length - 10} more`);
+  }
+  process.exit(2);
+}
+
+function usage(msg) {
+  if (msg) console.error(msg);
+  console.error('Usage: tools/replay --port <name> --fixture <YYYYMMDD>');
+  console.error('Environment: set REPLAY_BASE_<PORT>_<ROLE> to target URLs (ROLE = PRIMARY|SECONDARY).');
+}
+
+function parseArgs(argv) {
+  const out = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+    if (arg === '--port' && argv[i + 1]) {
+      out.port = argv[++i];
+    } else if (arg === '--fixture' && argv[i + 1]) {
+      out.fixture = argv[++i];
+    } else if (arg === '--help' || arg === '-h') {
+      usage();
+      process.exit(0);
+    } else {
+      console.error(`Unknown argument: ${arg}`);
+      usage();
+      process.exit(1);
+    }
+  }
+  return out;
+}
+
+async function replayEntry(port, entry, selectors) {
+  const recordedProvider = (entry.provider || 'primary').toLowerCase();
+  const targetProvider = recordedProvider === 'primary' ? 'secondary' : 'primary';
+  const base = resolveReplayBase(port, targetProvider);
+  if (!base) {
+    return { type: 'config', message: `Missing REPLAY_BASE_${port.toUpperCase()}_${targetProvider.toUpperCase()}` };
+  }
+
+  const url = new URL(entry.request?.path || '/', base);
+  const method = (entry.request?.method || 'GET').toUpperCase();
+  const headers = Object.assign({}, entry.request?.headers || {});
+  delete headers['content-length'];
+  delete headers['Content-Length'];
+  delete headers['host'];
+  delete headers['Host'];
+
+  let body = undefined;
+  if (!['GET', 'HEAD'].includes(method)) {
+    body = prepareBody(entry.request?.body, headers);
+  }
+
+  let response;
+  let text;
+  try {
+    response = await fetch(url, { method, headers, body });
+    text = await response.text();
+  } catch (err) {
+    return { type: 'network', message: err.message, url: url.toString() };
+  }
+
+  const replayBody = safeParseJson(text);
+  const recordedSemantic = selectSemantic(entry.response?.body, selectors);
+  const replaySemantic = selectSemantic(replayBody, selectors);
+
+  const statusDiff = entry.response?.status !== response.status;
+  const bodyDiff = !deepEqual(recordedSemantic, replaySemantic);
+  if (!statusDiff && !bodyDiff) {
+    return null;
+  }
+
+  return {
+    type: 'mismatch',
+    url: url.toString(),
+    status_recorded: entry.response?.status,
+    status_replay: response.status,
+    semantic_recorded: recordedSemantic,
+    semantic_replay: replaySemantic,
+  };
+}
+
+function resolveReplayBase(port, providerRole) {
+  const key = `REPLAY_BASE_${port.toUpperCase()}_${providerRole.toUpperCase()}`;
+  return process.env[key] || null;
+}
+
+async function loadSelectors(repoRoot, port) {
+  const perPort = path.join(repoRoot, 'fixtures', port, 'semantic-fields.json');
+  if (fs.existsSync(perPort)) {
+    try {
+      const raw = fs.readFileSync(perPort, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) return data;
+    } catch (err) {
+      console.warn(`Warning: unable to parse semantic fields for ${port}: ${err.message}`);
+    }
+  }
+  return [];
+}
+
+function selectSemantic(body, selectors) {
+  if (!selectors || selectors.length === 0) {
+    return body;
+  }
+  const result = {};
+  for (const selector of selectors) {
+    result[selector] = getByPath(body, selector);
+  }
+  return result;
+}
+
+function getByPath(obj, selector) {
+  if (!selector) return obj;
+  const parts = selector.split('.');
+  let current = obj;
+  for (const part of parts) {
+    if (current && typeof current === 'object' && part in current) {
+      current = current[part];
+    } else {
+      return undefined;
+    }
+  }
+  return current;
+}
+
+function prepareBody(body, headers) {
+  if (body === null || body === undefined) return undefined;
+  if (typeof body === 'string') {
+    return body;
+  }
+  if (Buffer.isBuffer(body)) {
+    return body;
+  }
+  if (typeof body === 'object') {
+    headers['content-type'] = headers['content-type'] || 'application/json';
+    return JSON.stringify(body);
+  }
+  return String(body);
+}
+
+function safeParseJson(text) {
+  if (text === '') return null;
+  try {
+    return JSON.parse(text);
+  } catch (_err) {
+    return text;
+  }
+}
+
+function deepEqual(a, b) {
+  return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
+}
+
+function normalize(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalize(item));
+  }
+  if (value && typeof value === 'object') {
+    const sorted = Object.keys(value).sort();
+    const out = {};
+    for (const key of sorted) {
+      out[key] = normalize(value[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+function findRepoRoot(startDir) {
+  let current = path.resolve(startDir);
+  while (true) {
+    if (fs.existsSync(path.join(current, '.git'))) return current;
+    const parent = path.dirname(current);
+    if (!parent || parent === current) break;
+    current = parent;
+  }
+  return path.resolve(startDir);
+}
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}

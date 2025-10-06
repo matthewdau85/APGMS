@@ -1,8 +1,10 @@
 ﻿# apps/services/audit/main.py
 from fastapi import FastAPI
+from libs.fixtures import attach_fixture_recorder
 import os, psycopg2, json
 
 app = FastAPI(title="audit")
+attach_fixture_recorder(app)
 
 def db():
     return psycopg2.connect(
