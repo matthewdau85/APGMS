@@ -1,7 +1,7 @@
 import { PaygwInput } from "../types/tax";
+import { getRulesEngine } from "../rules/engine";
 
 export function calculatePaygw({ grossIncome, taxWithheld, period, deductions = 0 }: PaygwInput): number {
-  const baseRate = 0.20;
-  const liability = grossIncome * baseRate - deductions - taxWithheld;
-  return Math.max(liability, 0);
+  const engine = getRulesEngine();
+  return engine.calculatePaygwLiability({ grossIncome, taxWithheld, period, deductions }).liability;
 }

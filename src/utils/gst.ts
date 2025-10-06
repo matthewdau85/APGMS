@@ -1,6 +1,7 @@
 import { GstInput } from "../types/tax";
+import { getRulesEngine } from "../rules/engine";
 
 export function calculateGst({ saleAmount, exempt = false }: GstInput): number {
-  if (exempt) return 0;
-  return saleAmount * 0.1;
+  const engine = getRulesEngine();
+  return engine.calculateGstLiability({ saleAmount, exempt }).liability;
 }
