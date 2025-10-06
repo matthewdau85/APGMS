@@ -10,6 +10,19 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     period: "monthly",
     deductions: 0,
   });
+  const [loading, setLoading] = useState(false);
+
+  const handleCalculate = async () => {
+    setLoading(true);
+    try {
+      const liability = await calculatePaygw(form);
+      onResult(liability);
+    } catch (err) {
+      console.error("PAYGW calculation failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="card">
@@ -71,8 +84,8 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
           <option value="quarterly">Quarterly</option>
         </select>
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculatePaygw(form))}>
-        Calculate PAYGW
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate} disabled={loading}>
+        {loading ? "Calculating..." : "Calculate PAYGW"}
       </button>
     </div>
   );

@@ -4,6 +4,19 @@ import { calculateGst } from "../utils/gst";
 
 export default function GstCalculator({ onResult }: { onResult: (liability: number) => void }) {
   const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false });
+  const [loading, setLoading] = useState(false);
+
+  const handleCalculate = async () => {
+    setLoading(true);
+    try {
+      const liability = await calculateGst(form);
+      onResult(liability);
+    } catch (err) {
+      console.error("GST calculation failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="card">
@@ -15,7 +28,7 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
         </span>
       </p>
       <label>
-        Sale Amount (including GST):
+        Sale Amount (excluding GST):
         <input
           type="number"
           placeholder="e.g. 440"
@@ -32,8 +45,8 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
         />
         GST Exempt
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculateGst(form))}>
-        Calculate GST
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate} disabled={loading}>
+        {loading ? "Calculating..." : "Calculate GST"}
       </button>
     </div>
   );
