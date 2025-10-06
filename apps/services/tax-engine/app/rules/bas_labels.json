@@ -1,0 +1,11 @@
+{
+  "mappings": {
+    "sales_gross": "G1",
+    "sales_taxable": "G10",
+    "purchases_creditable": "G11",
+    "gst_on_sales": "1A",
+    "gst_on_purchases": "1B",
+    "wages_gross": "W1",
+    "wages_withheld": "W2"
+  }
+}

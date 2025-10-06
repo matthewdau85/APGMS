@@ -1,0 +1,99 @@
+{
+  "abn": "12345678901",
+  "period": "2025-09",
+  "accounting_method": "accrual",
+  "transactions": [
+    {
+      "id": "INV-001",
+      "kind": "sale",
+      "basis": "accrual",
+      "amount": 550.0,
+      "tax_code": "GST",
+      "invoice_date": "2025-09-05",
+      "payment_date": "2025-09-10"
+    },
+    {
+      "id": "INV-002",
+      "kind": "sale",
+      "basis": "cash",
+      "amount": 1100.0,
+      "tax_code": "GST",
+      "invoice_date": "2025-09-10",
+      "payment_date": "2025-09-25"
+    },
+    {
+      "id": "INV-003",
+      "kind": "sale",
+      "basis": "cash",
+      "amount": 220.0,
+      "tax_code": "GST",
+      "invoice_date": "2025-09-28",
+      "payment_date": "2025-10-02"
+    },
+    {
+      "id": "INV-004",
+      "kind": "sale",
+      "basis": "accrual",
+      "amount": 330.0,
+      "tax_code": "GST_FREE",
+      "invoice_date": "2025-09-12"
+    },
+    {
+      "id": "BILL-001",
+      "kind": "purchase",
+      "basis": "accrual",
+      "amount": 330.0,
+      "tax_code": "GST",
+      "invoice_date": "2025-09-12",
+      "payment_date": "2025-10-01"
+    },
+    {
+      "id": "BILL-002",
+      "kind": "purchase",
+      "basis": "cash",
+      "amount": 440.0,
+      "tax_code": "GST",
+      "invoice_date": "2025-09-20",
+      "payment_date": "2025-09-20"
+    },
+    {
+      "id": "BILL-003",
+      "kind": "purchase",
+      "basis": "cash",
+      "amount": 660.0,
+      "tax_code": "GST",
+      "invoice_date": "2025-08-15",
+      "payment_date": "2025-08-28"
+    },
+    {
+      "id": "BILL-004",
+      "kind": "purchase",
+      "basis": "accrual",
+      "amount": 275.0,
+      "tax_code": "GST_FREE",
+      "invoice_date": "2025-09-14"
+    }
+  ],
+  "payroll": [
+    {
+      "employee": "E1",
+      "period": "weekly",
+      "gross": 1538.46,
+      "residency": "resident",
+      "flags": {
+        "tax_free_threshold": true,
+        "stsl": false
+      }
+    },
+    {
+      "employee": "E2",
+      "period": "fortnightly",
+      "gross": 4615.38,
+      "residency": "resident",
+      "flags": {
+        "tax_free_threshold": true,
+        "stsl": true
+      }
+    }
+  ]
+}

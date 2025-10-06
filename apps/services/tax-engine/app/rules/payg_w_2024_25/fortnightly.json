@@ -1,0 +1,198 @@
+{
+  "period": "fortnightly",
+  "annual_factor": 26,
+  "rounding": {
+    "mode": "NEAREST_DOLLAR"
+  },
+  "scales": {
+    "resident_tft": {
+      "tax_brackets": [
+        {
+          "threshold": 0,
+          "base_tax": 0,
+          "rate": 0.0
+        },
+        {
+          "threshold": 18200,
+          "base_tax": 0,
+          "rate": 0.16
+        },
+        {
+          "threshold": 45000,
+          "base_tax": 4288,
+          "rate": 0.3
+        },
+        {
+          "threshold": 135000,
+          "base_tax": 31288,
+          "rate": 0.37
+        },
+        {
+          "threshold": 190000,
+          "base_tax": 51638,
+          "rate": 0.45
+        }
+      ]
+    },
+    "resident_no_tft": {
+      "tax_brackets": [
+        {
+          "threshold": 0,
+          "base_tax": 0,
+          "rate": 0.16
+        },
+        {
+          "threshold": 45000,
+          "base_tax": 7200,
+          "rate": 0.3
+        },
+        {
+          "threshold": 135000,
+          "base_tax": 34200,
+          "rate": 0.37
+        },
+        {
+          "threshold": 190000,
+          "base_tax": 54550,
+          "rate": 0.45
+        }
+      ]
+    },
+    "foreign": {
+      "tax_brackets": [
+        {
+          "threshold": 0,
+          "base_tax": 0,
+          "rate": 0.3
+        },
+        {
+          "threshold": 135000,
+          "base_tax": 40500,
+          "rate": 0.37
+        },
+        {
+          "threshold": 190000,
+          "base_tax": 60850,
+          "rate": 0.45
+        }
+      ]
+    },
+    "working_holiday": {
+      "tax_brackets": [
+        {
+          "threshold": 0,
+          "base_tax": 0,
+          "rate": 0.15
+        },
+        {
+          "threshold": 45000,
+          "base_tax": 6750,
+          "rate": 0.3
+        },
+        {
+          "threshold": 135000,
+          "base_tax": 33750,
+          "rate": 0.37
+        },
+        {
+          "threshold": 190000,
+          "base_tax": 54100,
+          "rate": 0.45
+        }
+      ]
+    },
+    "no_tfn": {
+      "tax_brackets": [
+        {
+          "threshold": 0,
+          "base_tax": 0,
+          "rate": 0.47
+        }
+      ]
+    }
+  },
+  "lito": {
+    "max_offset": 700,
+    "phase_out_start": 37500,
+    "phase_out_rate": 0.05,
+    "phase_out_end": 45000,
+    "second_phase_rate": 0.015,
+    "second_phase_end": 66667
+  },
+  "stsl": {
+    "thresholds": [
+      {
+        "threshold": 51550,
+        "rate": 0.01
+      },
+      {
+        "threshold": 59518,
+        "rate": 0.02
+      },
+      {
+        "threshold": 63090,
+        "rate": 0.025
+      },
+      {
+        "threshold": 66876,
+        "rate": 0.03
+      },
+      {
+        "threshold": 70889,
+        "rate": 0.035
+      },
+      {
+        "threshold": 75141,
+        "rate": 0.04
+      },
+      {
+        "threshold": 79653,
+        "rate": 0.045
+      },
+      {
+        "threshold": 84433,
+        "rate": 0.05
+      },
+      {
+        "threshold": 89499,
+        "rate": 0.055
+      },
+      {
+        "threshold": 94871,
+        "rate": 0.06
+      },
+      {
+        "threshold": 100561,
+        "rate": 0.065
+      },
+      {
+        "threshold": 106594,
+        "rate": 0.07
+      },
+      {
+        "threshold": 112990,
+        "rate": 0.075
+      },
+      {
+        "threshold": 119765,
+        "rate": 0.08
+      },
+      {
+        "threshold": 126937,
+        "rate": 0.085
+      },
+      {
+        "threshold": 134525,
+        "rate": 0.09
+      },
+      {
+        "threshold": 142546,
+        "rate": 0.095
+      },
+      {
+        "threshold": 151023,
+        "rate": 0.1
+      }
+    ]
+  }
+}

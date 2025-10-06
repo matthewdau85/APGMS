@@ -1,0 +1,11 @@
+{
+  "rate": 0.1,
+  "rounding": {
+    "mode": "NEAREST_CENT"
+  },
+  "defaults": {
+    "accounting_method": "accrual"
+  },
+  "valid_tax_codes": ["GST", "GST_FREE", "INPUT_TAXED", "ZERO_RATED"],
+  "line_rounding": "per_line"
+}
