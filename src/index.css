@@ -197,3 +197,118 @@ th {
   font-weight: 600;
   color: #00205b;
 }
+
+.evidence-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 32, 91, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  transition: opacity 0.25s ease;
+  z-index: 1000;
+}
+
+.evidence-drawer-overlay.hidden {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.evidence-drawer-overlay.visible {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.evidence-drawer {
+  width: min(560px, 100%);
+  background: #fff;
+  height: 100%;
+  box-shadow: -12px 0 24px rgba(0, 32, 91, 0.16);
+  display: flex;
+  flex-direction: column;
+}
+
+.evidence-drawer__header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e5f2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.evidence-drawer__header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.evidence-drawer__meta {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: #4f5a7d;
+}
+
+.evidence-drawer__close {
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+  color: #4f5a7d;
+}
+
+.evidence-drawer__body {
+  flex: 1;
+  overflow: auto;
+  padding: 20px 24px;
+}
+
+.evidence-drawer__code {
+  background: #0b254580;
+  color: #f1f6fa;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.evidence-drawer__status {
+  font-size: 14px;
+  color: #00205b;
+}
+
+.evidence-drawer__error {
+  background: #fdecea;
+  border: 1px solid #f5c0bc;
+  color: #b71c1c;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.evidence-drawer__footer {
+  border-top: 1px solid #e0e5f2;
+  padding: 16px 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.evidence-drawer__button {
+  background: #00716b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.evidence-drawer__button:disabled {
+  background: #b0c4d8;
+  cursor: not-allowed;
+}
+
+.evidence-drawer__button:not(:disabled):hover {
+  background: #005d54;
+}

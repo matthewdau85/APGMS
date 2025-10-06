@@ -1,6 +1,40 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import EvidenceDrawer from '../components/EvidenceDrawer';
+import { mockBasHistory } from '../utils/mockData';
 
 export default function BAS() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<{ periodId: string; abn: string; taxType: string } | null>(null);
+
+  const DEFAULT_ABN = '12345678901';
+  const DEFAULT_TAX_TYPE = 'GST';
+
+  const periodHistory = useMemo(() => {
+    return mockBasHistory.map((entry) => {
+      const periodId = entry.period.toISOString().slice(0, 7);
+      const label = entry.period.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+      return {
+        periodId,
+        label,
+        paygwPaid: entry.paygwPaid,
+        gstPaid: entry.gstPaid,
+        status: entry.status,
+        abn: DEFAULT_ABN,
+        taxType: DEFAULT_TAX_TYPE,
+      };
+    });
+  }, [DEFAULT_ABN, DEFAULT_TAX_TYPE]);
+
+  const handleViewEvidence = (periodId: string, abn: string, taxType: string) => {
+    setSelectedPeriod({ periodId, abn, taxType });
+    setDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setDrawerOpen(false);
+    setSelectedPeriod(null);
+  };
+
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
@@ -111,6 +145,52 @@ export default function BAS() {
           Staying highly compliant may help avoid audits, reduce penalties, and support eligibility for ATO support programs.
         </p>
       </div>
+
+      <div className="bg-white border border-gray-200 p-4 rounded-xl shadow mt-6">
+        <h2 className="text-lg font-semibold mb-2">Recent BAS periods</h2>
+        <p className="text-sm text-gray-600">
+          Download the full evidence package for any period to support audits or internal reviews.
+        </p>
+        <table className="mt-4 text-sm">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Status</th>
+              <th>PAYGW Paid</th>
+              <th>GST Paid</th>
+              <th style={{ width: 140 }}>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {periodHistory.map((period) => (
+              <tr key={period.periodId}>
+                <td>{period.label}</td>
+                <td>{period.status}</td>
+                <td>${period.paygwPaid.toLocaleString()}</td>
+                <td>${period.gstPaid.toLocaleString()}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="evidence-drawer__button"
+                    style={{ padding: '8px 14px', fontSize: 13 }}
+                    onClick={() => handleViewEvidence(period.periodId, period.abn, period.taxType)}
+                  >
+                    View evidence
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <EvidenceDrawer
+        open={drawerOpen}
+        periodId={selectedPeriod?.periodId ?? null}
+        abn={selectedPeriod?.abn ?? null}
+        taxType={selectedPeriod?.taxType ?? null}
+        onClose={handleCloseDrawer}
+      />
     </div>
   );
 }
