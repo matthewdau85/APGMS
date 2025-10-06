@@ -36,7 +36,13 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
     "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values (,,,,,,,,)",
     [abn, taxType, periodId, transfer_uuid, -amountCents, newBal, bank_receipt_hash, prevHash, hashAfter]
   );
-  await appendAudit("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
+  await appendAudit({
+    who: "rails",
+    what: "release",
+    old: null,
+    new: { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash },
+    requestId: transfer_uuid,
+  });
   await pool.query("update idempotency_keys set last_status= where key=", [transfer_uuid, "DONE"]);
   return { transfer_uuid, bank_receipt_hash };
 }
