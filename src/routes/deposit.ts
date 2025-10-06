@@ -1,6 +1,7 @@
-﻿import { Request, Response } from "express";
-import { pool } from "../index.js";
+import { Request, Response } from "express";
+import { pool } from "../db/pool";
 import { randomUUID } from "node:crypto";
+import { sql } from "../db/sql";
 
 export async function deposit(req: Request, res: Response) {
   try {
@@ -17,38 +18,38 @@ export async function deposit(req: Request, res: Response) {
     try {
       await client.query("BEGIN");
 
-      const { rows: last } = await client.query(
-        `SELECT balance_after_cents FROM owa_ledger
-         WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-         ORDER BY id DESC LIMIT 1`,
-        [abn, taxType, periodId]
-      );
+      const lastQuery = sql`
+        SELECT balance_after_cents FROM owa_ledger
+         WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+         ORDER BY id DESC LIMIT 1
+      `;
+      const { rows: last } = await client.query(lastQuery.text, lastQuery.params);
       const prevBal = last[0]?.balance_after_cents ?? 0;
       const newBal = prevBal + amt;
 
-      const { rows: ins } = await client.query(
-        `INSERT INTO owa_ledger
+      const transferUuid = randomUUID();
+      const insertQuery = sql`
+        INSERT INTO owa_ledger
            (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,now())
-         RETURNING id,transfer_uuid,balance_after_cents`,
-        [abn, taxType, periodId, randomUUID(), amt, newBal]
-      );
+         VALUES (${abn},${taxType},${periodId},${transferUuid},${amt},${newBal},now())
+         RETURNING id,transfer_uuid,balance_after_cents
+      `;
+      const { rows: ins } = await client.query(insertQuery.text, insertQuery.params);
 
       await client.query("COMMIT");
       return res.json({
         ok: true,
         ledger_id: ins[0].id,
         transfer_uuid: ins[0].transfer_uuid,
-        balance_after_cents: ins[0].balance_after_cents
+        balance_after_cents: ins[0].balance_after_cents,
       });
-
-    } catch (e:any) {
+    } catch (e: any) {
       await client.query("ROLLBACK");
       return res.status(500).json({ error: "Deposit failed", detail: String(e.message || e) });
     } finally {
       client.release();
     }
-  } catch (e:any) {
+  } catch (e: any) {
     return res.status(500).json({ error: "Deposit error", detail: String(e.message || e) });
   }
 }

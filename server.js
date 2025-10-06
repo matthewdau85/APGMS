@@ -1,59 +1,55 @@
+require('ts-node/register');
 require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Pool } = require('pg');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
+const { pool } = require('./src/db/pool');
+const { sql } = require('./src/db/sql');
+const { idempotency } = require('./src/middleware/idempotency');
+const { createErrorHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
 app.use(bodyParser.json());
 
-const {
-  PGHOST='127.0.0.1', PGUSER='apgms', PGPASSWORD='apgms_pw', PGDATABASE='apgms', PGPORT='5432',
-  RPT_ED25519_SECRET_BASE64, RPT_PUBLIC_BASE64, ATO_PRN='1234567890'
-} = process.env;
+const { RPT_ED25519_SECRET_BASE64, ATO_PRN = '1234567890' } = process.env;
 
-const pool = new Pool({
-  host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
+app.use((req, res, next) => {
+  const requestId = crypto.randomUUID();
+  req.requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+  next();
 });
 
-// small async handler wrapper
-const ah = fn => (req,res)=>fn(req,res).catch(e=>{
-  console.error(e);
-  if (e.code === '08P01') return res.status(500).json({error:'INTERNAL', message:e.message});
-  res.status(400).json({error: e.message || 'BAD_REQUEST'});
-});
+const ah = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-// ---------- HEALTH ----------
-app.get('/health', ah(async (req,res)=>{
-  await pool.query('select now()');
-  res.json(['ok','db', true, 'up']);
+app.get('/health', ah(async (_req, res) => {
+  const query = sql`SELECT 1`;
+  await pool.query(query.text, query.params);
+  res.json(['ok', 'db', true, 'up']);
 }));
 
-// ---------- PERIOD STATUS ----------
-app.get('/period/status', ah(async (req,res)=>{
-  const {abn, taxType, periodId} = req.query;
-  const r = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
-    [abn, taxType, periodId]
-  );
-  if (r.rowCount===0) return res.status(404).json({error:'NOT_FOUND'});
+app.get('/period/status', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.query;
+  const query = sql`
+    SELECT * FROM periods WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+  `;
+  const r = await pool.query(query.text, query.params);
+  if (r.rowCount === 0) return res.status(404).json({ error: 'NOT_FOUND' });
   res.json({ period: r.rows[0] });
 }));
 
-// ---------- RPT ISSUE ----------
-app.post('/rpt/issue', ah(async (req,res)=>{
-  const {abn, taxType, periodId} = req.body;
-  const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
-    [abn, taxType, periodId]
-  );
-  if (pr.rowCount===0) throw new Error('PERIOD_NOT_FOUND');
+app.post('/rpt/issue', idempotency(), ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.body;
+  const periodQuery = sql`
+    SELECT * FROM periods WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+  `;
+  const pr = await pool.query(periodQuery.text, periodQuery.params);
+  if (pr.rowCount === 0) throw new Error('PERIOD_NOT_FOUND');
   const p = pr.rows[0];
 
-  if (p.state !== 'CLOSING') return res.status(409).json({error:'BAD_STATE', state:p.state});
+  if (p.state !== 'CLOSING') return res.status(409).json({ error: 'BAD_STATE', state: p.state });
 
-  // simple anomaly thresholds (demo)
   const thresholds = { epsilon_cents: 0, variance_ratio: 0.25, dup_rate: 0.01, gap_minutes: 60, delta_vs_baseline: 0.2 };
   const v = p.anomaly_vector || {};
   const exceeds =
@@ -63,17 +59,18 @@ app.post('/rpt/issue', ah(async (req,res)=>{
     Math.abs((v.delta_vs_baseline || 0)) > thresholds.delta_vs_baseline;
 
   if (exceeds) {
-    await pool.query(update periods set state='BLOCKED_ANOMALY' where id=, [p.id]);
-    return res.status(409).json({error:'BLOCKED_ANOMALY'});
+    const updateQuery = sql`UPDATE periods SET state='BLOCKED_ANOMALY' WHERE id=${p.id}`;
+    await pool.query(updateQuery.text, updateQuery.params);
+    return res.status(409).json({ error: 'BLOCKED_ANOMALY' });
   }
 
   const epsilon = Math.abs(Number(p.final_liability_cents) - Number(p.credited_to_owa_cents));
   if (epsilon > thresholds.epsilon_cents) {
-    await pool.query(update periods set state='BLOCKED_DISCREPANCY' where id=, [p.id]);
-    return res.status(409).json({error:'BLOCKED_DISCREPANCY', epsilon});
+    const updateQuery = sql`UPDATE periods SET state='BLOCKED_DISCREPANCY' WHERE id=${p.id}`;
+    await pool.query(updateQuery.text, updateQuery.params);
+    return res.status(409).json({ error: 'BLOCKED_DISCREPANCY', epsilon });
   }
 
-  // patent-critical: canonical payload string + sha256 saved alongside signature
   const payload = {
     entity_id: p.abn,
     period_id: p.period_id,
@@ -83,9 +80,9 @@ app.post('/rpt/issue', ah(async (req,res)=>{
     running_balance_hash: p.running_balance_hash || null,
     anomaly_vector: v,
     thresholds,
-    rail_id: "EFT",
+    rail_id: 'EFT',
     reference: ATO_PRN,
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(),
+    expiry_ts: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
     nonce: crypto.randomUUID()
   };
 
@@ -98,107 +95,102 @@ app.post('/rpt/issue', ah(async (req,res)=>{
   const sig = nacl.sign.detached(msg, new Uint8Array(skBuf));
   const signature = Buffer.from(sig).toString('base64');
 
-  // 7 params insert (payload_c14n + payload_sha256)
-  await pool.query(
-    insert into rpt_tokens(abn,tax_type,period_id,payload,signature,payload_c14n,payload_sha256)
-     values (,,,,,,),
-    [abn, taxType, periodId, payload, signature, payloadStr, payloadSha256]
-  );
+  const insertToken = sql`
+    INSERT INTO rpt_tokens(abn,tax_type,period_id,payload,signature,payload_c14n,payload_sha256)
+    VALUES (${abn},${taxType},${periodId},${payload},${signature},${payloadStr},${payloadSha256})
+  `;
+  await pool.query(insertToken.text, insertToken.params);
 
-  await pool.query(update periods set state='READY_RPT' where id=, [p.id]);
+  const updatePeriod = sql`UPDATE periods SET state='READY_RPT' WHERE id=${p.id}`;
+  await pool.query(updatePeriod.text, updatePeriod.params);
   res.json({ payload, signature, payload_sha256: payloadSha256 });
 }));
 
-// ---------- RELEASE (debit from OWA; uses owa_append OUT cols) ----------
-app.post('/release', ah(async (req,res)=>{
-  const {abn, taxType, periodId} = req.body;
+app.post('/release', idempotency(), ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.body;
 
-  const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
-    [abn, taxType, periodId]
-  );
-  if (pr.rowCount===0) throw new Error('PERIOD_NOT_FOUND');
+  const periodQuery = sql`
+    SELECT * FROM periods WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+  `;
+  const pr = await pool.query(periodQuery.text, periodQuery.params);
+  if (pr.rowCount === 0) throw new Error('PERIOD_NOT_FOUND');
   const p = pr.rows[0];
 
-  // need latest token
-  const rr = await pool.query(
-    select payload, signature from rpt_tokens
-     where abn= and tax_type= and period_id=
-     order by id desc limit 1,
-    [abn, taxType, periodId]
-  );
-  if (rr.rowCount===0) return res.status(400).json({error:'NO_RPT'});
+  const rptQuery = sql`
+    SELECT payload, signature FROM rpt_tokens
+     WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+     ORDER BY id DESC LIMIT 1
+  `;
+  const rr = await pool.query(rptQuery.text, rptQuery.params);
+  if (rr.rowCount === 0) return res.status(400).json({ error: 'NO_RPT' });
 
-  // ensure funds exist
-  const lr = await pool.query(
-    select balance_after_cents from owa_ledger
-       where abn= and tax_type= and period_id=
-       order by id desc limit 1,
-    [abn, taxType, periodId]
-  );
+  const ledgerQuery = sql`
+    SELECT balance_after_cents FROM owa_ledger
+     WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+     ORDER BY id DESC LIMIT 1
+  `;
+  const lr = await pool.query(ledgerQuery.text, ledgerQuery.params);
   const prevBal = lr.rows[0]?.balance_after_cents ?? 0;
   const amt = Number(p.final_liability_cents);
-  if (prevBal < amt) return res.status(422).json({error:'INSUFFICIENT_OWA', prevBal: String(prevBal), needed: amt});
+  if (prevBal < amt) return res.status(422).json({ error: 'INSUFFICIENT_OWA', prevBal: String(prevBal), needed: amt });
 
-  // do the debit
-  const synthetic = 'rpt_debit:' + crypto.randomUUID().slice(0,12);
-  const r = await pool.query(select * from owa_append(,,,,),
-    [abn, taxType, periodId, -amt, synthetic]);
+  const synthetic = 'rpt_debit:' + crypto.randomUUID().slice(0, 12);
+  const appendQuery = sql`SELECT * FROM owa_append(${abn},${taxType},${periodId},${-amt},${synthetic})`;
+  const r = await pool.query(appendQuery.text, appendQuery.params);
 
   let newBalance = null;
   if (r.rowCount && r.rows[0] && r.rows[0].out_balance_after != null) {
     newBalance = r.rows[0].out_balance_after;
   } else {
-    // fallback: read back most recent balance if no row returned
-    const fr = await pool.query(
-      select balance_after_cents as bal from owa_ledger
-       where abn= and tax_type= and period_id=
-       order by id desc limit 1,
-      [abn, taxType, periodId]
-    );
+    const fallbackQuery = sql`
+      SELECT balance_after_cents AS bal FROM owa_ledger
+       WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+       ORDER BY id DESC LIMIT 1
+    `;
+    const fr = await pool.query(fallbackQuery.text, fallbackQuery.params);
     newBalance = fr.rows[0]?.bal ?? (prevBal - amt);
   }
 
-  await pool.query(update periods set state='RELEASED' where id=, [p.id]);
+  const updatePeriod = sql`UPDATE periods SET state='RELEASED' WHERE id=${p.id}`;
+  await pool.query(updatePeriod.text, updatePeriod.params);
   res.json({ released: true, bank_receipt_hash: synthetic, new_balance: newBalance });
 }));
 
-// ---------- EVIDENCE ----------
-app.get('/evidence', ah(async (req,res)=>{
-  const {abn, taxType, periodId} = req.query;
-  const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
-    [abn, taxType, periodId]
-  );
-  if (pr.rowCount===0) return res.status(404).json({error:'NOT_FOUND'});
+app.get('/evidence', ah(async (req, res) => {
+  const { abn, taxType, periodId } = req.query;
+  const periodQuery = sql`
+    SELECT * FROM periods WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+  `;
+  const pr = await pool.query(periodQuery.text, periodQuery.params);
+  if (pr.rowCount === 0) return res.status(404).json({ error: 'NOT_FOUND' });
   const p = pr.rows[0];
 
-  const rr = await pool.query(
-    select payload, payload_c14n, payload_sha256, signature, created_at
-       from rpt_tokens
-      where abn= and tax_type= and period_id=
-      order by id desc limit 1,
-    [abn, taxType, periodId]
-  );
+  const rptQuery = sql`
+    SELECT payload, payload_c14n, payload_sha256, signature, created_at
+      FROM rpt_tokens
+     WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+     ORDER BY id DESC LIMIT 1
+  `;
+  const rr = await pool.query(rptQuery.text, rptQuery.params);
   const rpt = rr.rows[0] || null;
 
-  const lr = await pool.query(
-    select id, amount_cents, balance_after_cents, bank_receipt_hash, prev_hash, hash_after, created_at
-       from owa_ledger
-      where abn= and tax_type= and period_id=
-      order by id,
-    [abn, taxType, periodId]
-  );
+  const ledgerQuery = sql`
+    SELECT id, amount_cents, balance_after_cents, bank_receipt_hash, prev_hash, hash_after, created_at
+      FROM owa_ledger
+     WHERE abn=${abn} AND tax_type=${taxType} AND period_id=${periodId}
+     ORDER BY id
+  `;
+  const lr = await pool.query(ledgerQuery.text, ledgerQuery.params);
 
-  const basLabels = { W1:null, W2:null, "1A":null, "1B":null };
+  const basLabels = { W1: null, W2: null, '1A': null, '1B': null };
 
   res.json({
     meta: { generated_at: new Date().toISOString(), abn, taxType, periodId },
     period: {
       state: p.state,
-      accrued_cents: Number(p.accrued_cents||0),
-      credited_to_owa_cents: Number(p.credited_to_owa_cents||0),
-      final_liability_cents: Number(p.final_liability_cents||0),
+      accrued_cents: Number(p.accrued_cents || 0),
+      credited_to_owa_cents: Number(p.credited_to_owa_cents || 0),
+      final_liability_cents: Number(p.final_liability_cents || 0),
       merkle_root: p.merkle_root,
       running_balance_hash: p.running_balance_hash,
       anomaly_vector: p.anomaly_vector,
@@ -211,5 +203,7 @@ app.get('/evidence', ah(async (req,res)=>{
   });
 }));
 
+app.use(createErrorHandler());
+
 const port = process.env.PORT ? +process.env.PORT : 8080;
-app.listen(port, ()=> console.log(APGMS demo API listening on :));
+app.listen(port, () => console.log('APGMS demo API listening on', port));
