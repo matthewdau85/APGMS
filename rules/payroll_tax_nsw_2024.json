@@ -1,0 +1,34 @@
+{
+  "state": "NSW",
+  "year": 2024,
+  "thresholds": {
+    "annual": 1200000,
+    "monthly": 100000
+  },
+  "rates": [
+    { "threshold": null, "rate": 0.0485 }
+  ],
+  "grouping": {
+    "shared_threshold": true,
+    "threshold_application": "Group wages are aggregated across related employers and the monthly threshold is applied once to the combined amount.",
+    "rules": [
+      "Related corporations and commonly controlled employers form a group and must share the NSW threshold.",
+      "Businesses with substantially common employees or shared control are grouped for payroll tax purposes."
+    ]
+  },
+  "nexus": [
+    "Wages paid or payable in NSW for services performed in NSW.",
+    "Wages paid outside NSW where the employee performs NSW duties for more than 10 days in the month.",
+    "Wages paid by NSW employers to contractors that have been deemed wages under NSW nexus provisions."
+  ],
+  "levies": [
+    {
+      "name": "Mental Health Levy",
+      "rate": 0.001,
+      "apply_on": "taxable",
+      "effective_from": "2023-07-01",
+      "effective_to": "2024-06-30",
+      "notes": "Applied to taxable wages while the NSW mental health levy is in effect."
+    }
+  ]
+}
