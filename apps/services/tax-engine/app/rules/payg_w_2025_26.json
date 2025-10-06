@@ -1,0 +1,45 @@
+{
+  "version": "2025-26",
+  "notes": "Placeholder for next financial year's PAYG withholding schedule.",
+  "methods_enabled": [
+    "table_ato",
+    "formula_progressive"
+  ],
+  "formula_progressive": {
+    "period": "weekly",
+    "brackets": [
+      {
+        "up_to": 370,
+        "a": 0.19,
+        "b": 70,
+        "fixed": 0
+      },
+      {
+        "up_to": 460,
+        "a": 0.232,
+        "b": 88.24,
+        "fixed": 0
+      },
+      {
+        "up_to": 580,
+        "a": 0.347,
+        "b": 154.5,
+        "fixed": 0
+      },
+      {
+        "up_to": 760,
+        "a": 0.352,
+        "b": 158,
+        "fixed": 0
+      },
+      {
+        "up_to": 999999,
+        "a": 0.39,
+        "b": 190,
+        "fixed": 0
+      }
+    ],
+    "tax_free_threshold": true,
+    "rounding": "HALF_UP"
+  }
+}

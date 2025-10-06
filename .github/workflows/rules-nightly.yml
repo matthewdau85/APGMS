@@ -1,0 +1,66 @@
+name: Rules Drift Watch
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    name: Nightly rules fetch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+      - name: Run rules fetcher
+        run: pnpm run rules:fetch
+      - name: Detect rule changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git diff > rules.diff
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Open drift issue
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const manifest = JSON.parse(fs.readFileSync('apps/services/tax-engine/app/rules_manifest.json', 'utf8'));
+            const diff = fs.readFileSync('rules.diff', 'utf8');
+            const title = `Rules source update detected (${manifest.rates_version})`;
+            const body = [
+              'Nightly fetch detected changes to tax rules files.',
+              '',
+              '```diff',
+              diff.length > 60000 ? diff.slice(0, 60000) + '\n…' : diff,
+              '```'
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'automation,tax-rules'
+            });
+            if (issues.some(issue => issue.title === title)) {
+              core.info('Drift issue already open');
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['automation', 'tax-rules']
+            });

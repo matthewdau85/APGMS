@@ -1,0 +1,26 @@
+{
+  "rates_version": "2024-25",
+  "source": {
+    "description": "ATO PAYG withholding weekly tax tables",
+    "effective_from": "2024-07-01",
+    "fetched_at": "2024-07-01T00:00:00Z",
+    "url": "https://example.ato.gov.au/paygw/2024-25-weekly.json"
+  },
+  "effective_periods": [
+    {
+      "version": "2024-25",
+      "period": "weekly",
+      "start": "2024-07-01",
+      "end": "2025-06-30",
+      "file": "payg_w_2024_25.json"
+    },
+    {
+      "version": "2025-26",
+      "period": "weekly",
+      "start": "2025-07-01",
+      "end": "2026-06-30",
+      "file": "payg_w_2025_26.json",
+      "notes": "placeholder for next financial year"
+    }
+  ]
+}
