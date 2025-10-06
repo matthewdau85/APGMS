@@ -1,0 +1,18 @@
+{
+  "probes": [
+    {
+      "offset_hours": 6,
+      "status": "healthy",
+      "latency_ms": 182,
+      "mTLS_peer": "rails-probe.ap-southeast-2.internal",
+      "certificate_expires_at": "2025-12-12T00:00:00Z"
+    },
+    {
+      "offset_hours": 30,
+      "status": "healthy",
+      "latency_ms": 205,
+      "mTLS_peer": "rails-probe.ap-southeast-2.internal",
+      "certificate_expires_at": "2025-12-12T00:00:00Z"
+    }
+  ]
+}

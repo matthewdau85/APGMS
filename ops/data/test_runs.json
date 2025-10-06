@@ -1,0 +1,34 @@
+{
+  "runs": [
+    {
+      "suite": "golden",
+      "offset_hours": 10,
+      "total": 58,
+      "passed": 58,
+      "failed": 0,
+      "duration_seconds": 142,
+      "commit": "9c1f5de",
+      "notes": "Baseline ledger invariants"
+    },
+    {
+      "suite": "boundary",
+      "offset_hours": 11,
+      "total": 37,
+      "passed": 36,
+      "failed": 1,
+      "duration_seconds": 188,
+      "commit": "9c1f5de",
+      "notes": "PAYGW reversal observed (retry fixed)"
+    },
+    {
+      "suite": "e2e",
+      "offset_hours": 12,
+      "total": 14,
+      "passed": 14,
+      "failed": 0,
+      "duration_seconds": 96,
+      "commit": "9c1f5de",
+      "notes": "Smoke across EVTE ingest pipeline"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ import { api } from "./api";                  // your existing API router(s)
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 app.use(express.json({ limit: "2mb" }));
 
 // (optional) quick request logger
@@ -34,5 +34,7 @@ app.use("/api", api);
 // 404 fallback (must be last)
 app.use((_req, res) => res.status(404).send("Not found"));
 
-const port = Number(process.env.PORT) || 3000;
-app.listen(port, () => console.log("APGMS server listening on", port));
+if (process.env.NODE_ENV !== "test") {
+  const port = Number(process.env.PORT) || 3000;
+  app.listen(port, () => console.log("APGMS server listening on", port));
+}

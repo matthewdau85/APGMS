@@ -1,0 +1,16 @@
+[
+  {
+    "offset_days": 0,
+    "availability": 99.982,
+    "p95_latency_ms": 212,
+    "dlq_depth": 1,
+    "window_hours": 168
+  },
+  {
+    "offset_days": 8,
+    "availability": 99.961,
+    "p95_latency_ms": 240,
+    "dlq_depth": 3,
+    "window_hours": 168
+  }
+]
