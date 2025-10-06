@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "2c30cd217c2793eaa0ba269fee50ce30840a8d2aaf1620dcb198023118ec2dd8",
+    "source_url": "https://www.ato.gov.au/business/gst/in-detail/adjustments/"
+  },
+  "triggers": {
+    "bad_debt": {
+      "purchases": {
+        "labels": {
+          "amount": "G11",
+          "gst": "1B"
+        }
+      },
+      "rule_hash": "6448d24ea12bca75f166eae6aac29d14594338bc5139b7b1f83b1791bdff0347",
+      "sales": {
+        "labels": {
+          "amount": "G1",
+          "gst": "1A"
+        }
+      }
+    },
+    "error_correction": {
+      "imports": {
+        "labels": {
+          "amount": "G10",
+          "gst": "1B"
+        }
+      },
+      "purchases": {
+        "labels": {
+          "amount": "G11",
+          "gst": "1B"
+        }
+      },
+      "rule_hash": "0ffe3e2fd719d60e1b0e9e82e74d6c84abdd8efc85d3ff2eaf3b0969c1fbab93",
+      "sales": {
+        "labels": {
+          "amount": "G1",
+          "gst": "1A"
+        }
+      }
+    },
+    "price_change": {
+      "exports": {
+        "labels": {
+          "amount": "G2",
+          "gst": "1A"
+        }
+      },
+      "rule_hash": "dcdc648b1b3b50b3cb18f3dc6a50476861ac39aa44562cd36a4da5015b8b99be",
+      "sales": {
+        "labels": {
+          "amount": "G1",
+          "gst": "1A"
+        }
+      }
+    }
+  }
+}

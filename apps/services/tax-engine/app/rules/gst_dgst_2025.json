@@ -1,0 +1,14 @@
+{
+  "labels": {
+    "dgst": "7",
+    "gst": "1A"
+  },
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "6289528333438e71c17e2aa5aedc72521bb8a11722e07fb17b8a986e26d918f6",
+    "source_url": "https://www.ato.gov.au/business/gst/in-detail/importing-goods/paying-gst-and-import-processing-charges/"
+  },
+  "rule_hash": "79052d5010767361c001bd62bb4ea64901e8ad41e37fffbfdb9aaeb4d3c371dd"
+}
