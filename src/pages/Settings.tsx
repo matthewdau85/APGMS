@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import HelpTip from "../components/HelpTip";
 
 const tabs = [
   "Business Profile",
@@ -48,7 +49,10 @@ export default function Settings() {
             }}
           >
             <div style={{ marginBottom: 16 }}>
-              <label>ABN:</label>
+              <label>
+                ABN
+                <HelpTip articleId="abn-format" />
+              </label>
               <input
                 className="settings-input"
                 style={{ width: "100%" }}
@@ -122,7 +126,10 @@ export default function Settings() {
         )}
         {activeTab === "Payroll & Sales" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Payroll Providers</h3>
+            <h3>
+              Payroll Providers
+              <HelpTip articleId="owa-balance" label="How payroll affects balances" />
+            </h3>
             <ul>
               <li>MYOB</li>
               <li>QuickBooks</li>
@@ -138,7 +145,10 @@ export default function Settings() {
         )}
         {activeTab === "Automated Transfers" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Scheduled Transfers</h3>
+            <h3>
+              Scheduled Transfers
+              <HelpTip articleId="deposits-buffer" />
+            </h3>
             <table>
               <thead>
                 <tr>

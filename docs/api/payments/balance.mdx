@@ -1,0 +1,35 @@
+---
+title: Balance endpoint
+---
+
+# GET /api/payments/balance
+
+Use this read-only endpoint to check the running balance for an One-Way Account period. It queries the ledger in descending order
+and totals deposits and releases for the requested ABN, tax type and period.
+
+## Request
+
+- **Query string:**
+  - `abn` – required 11 digit ABN.
+  - `taxType` – required tax stream (e.g. `PAYGW`, `GST`).
+  - `periodId` – required identifier such as `2025-Q4`.
+
+## Response
+
+```
+{
+  "abn": "12345678901",
+  "taxType": "PAYGW",
+  "periodId": "2025-Q4",
+  "balance_cents": 120000,
+  "has_release": true
+}
+```
+
+- `balance_cents` is the current balance after summing deposits and releases.
+- `has_release` becomes `true` as soon as a release has been recorded for the period.
+
+## Errors
+
+- `400` when any required query argument is missing.
+- `500` if the ledger query fails.

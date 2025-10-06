@@ -1,6 +1,10 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import HelpCenter from "./HelpCenter";
+import WhatsNewPanel from "./WhatsNewPanel";
+import { useSupport } from "../context/SupportContext";
+import { getRuntimeBanner } from "../utils/runtime";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -14,13 +18,30 @@ const navLinks = [
 ];
 
 export default function AppLayout() {
+  const { openHelpCenter, openWhatsNew } = useSupport();
+  const banner = getRuntimeBanner();
+
   return (
     <div>
       <header className="app-header">
-        <img src={atoLogo} alt="ATO Logo" />
-        <h1>APGMS - Automated PAYGW & GST Management</h1>
-        <p>ATO-Compliant Tax Management System</p>
-        <nav style={{ marginTop: 16 }}>
+        <div className="app-header-inner">
+          <div className="app-branding">
+            <img src={atoLogo} alt="ATO Logo" />
+            <div>
+              <h1>APGMS - Automated PAYGW & GST Management</h1>
+              <p>ATO-Compliant Tax Management System</p>
+            </div>
+          </div>
+          <div className="app-header-actions">
+            <button type="button" className="header-button" onClick={openWhatsNew}>
+              What&apos;s New
+            </button>
+            <button type="button" className="header-button" onClick={() => openHelpCenter()}>
+              Help Center · Shift + /
+            </button>
+          </div>
+        </div>
+        <nav className="app-nav">
           {navLinks.map((link) => (
             <NavLink
               key={link.to}
@@ -44,6 +65,12 @@ export default function AppLayout() {
         </nav>
       </header>
 
+      <div className="mode-banner" role="status" aria-live="polite">
+        <span className="mode-pill">{banner.modeLabel}</span>
+        <span className="mode-separator">•</span>
+        <span className="mode-rails">Rails: {banner.railsLabel}</span>
+      </div>
+
       {/* 👇 This tells React Router where to render the child pages */}
       <main style={{ padding: 20 }}>
         <Outlet />
@@ -52,6 +79,9 @@ export default function AppLayout() {
       <footer className="app-footer">
         <p>© 2025 APGMS | Compliant with Income Tax Assessment Act 1997 & GST Act 1999</p>
       </footer>
+
+      <HelpCenter />
+      <WhatsNewPanel />
     </div>
   );
 }

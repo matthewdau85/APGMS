@@ -1,0 +1,44 @@
+---
+title: Release endpoint
+---
+
+# POST /api/payments/release
+
+Create a negative ledger entry when remitting funds to the ATO. The route requires a verified Remittance Payload Token (RPT) and
+doubles as a compliance checkpoint.
+
+## Request body
+
+```
+{
+  "abn": "12345678901",
+  "taxType": "PAYGW",
+  "periodId": "2025-Q4",
+  "amountCents": -119500
+}
+```
+
+- `amountCents` must be negative. The service default is `-100` if omitted.
+- RPT verification is handled by middleware before the handler executes.
+
+## Response
+
+```
+{
+  "ok": true,
+  "ledger_id": 43,
+  "transfer_uuid": "0dd3...",
+  "release_uuid": "44d0...",
+  "balance_after_cents": 500,
+  "rpt_ref": {
+    "rpt_id": "2025-05-ATO",
+    "kid": "ato-demo",
+    "payload_sha256": "..."
+  }
+}
+```
+
+## Errors
+
+- `400` if validation fails, the RPT is missing, or the ledger insert violates constraints.
+- `403` when the middleware could not validate the RPT payload.

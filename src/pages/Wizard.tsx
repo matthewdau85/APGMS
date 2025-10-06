@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import HelpTip from "../components/HelpTip";
 
 const steps = [
   "Business Details",
@@ -20,25 +21,40 @@ export default function Wizard() {
       <div style={{ background: "#f9f9f9", borderRadius: 10, padding: 24, minHeight: 120 }}>
         {step === 0 && (
           <div>
-            <label>Business ABN:</label>
+            <label>
+              Business ABN
+              <HelpTip articleId="abn-format" />
+            </label>
             <input className="settings-input" style={{ width: 220 }} defaultValue="12 345 678 901" />
             <br />
-            <label>Legal Name:</label>
+            <label>
+              Legal Name
+              <HelpTip articleId="ledger-audit" label="Why legal names matter" />
+            </label>
             <input className="settings-input" style={{ width: 220 }} defaultValue="Example Pty Ltd" />
           </div>
         )}
         {step === 1 && (
           <div>
-            <label>BSB:</label>
+            <label>
+              BSB
+              <HelpTip articleId="deposits-buffer" label="Use dedicated buffer accounts" />
+            </label>
             <input className="settings-input" style={{ width: 140 }} defaultValue="123-456" />
             <br />
-            <label>Account #:</label>
+            <label>
+              Account #
+              <HelpTip articleId="release-ato" label="Account matching for releases" />
+            </label>
             <input className="settings-input" style={{ width: 140 }} defaultValue="11111111" />
           </div>
         )}
         {step === 2 && (
           <div>
-            <label>Payroll Provider:</label>
+            <label>
+              Payroll Provider
+              <HelpTip articleId="owa-balance" label="Connect payroll to balances" />
+            </label>
             <select className="settings-input" style={{ width: 220 }}>
               <option>MYOB</option>
               <option>QuickBooks</option>
@@ -47,7 +63,10 @@ export default function Wizard() {
         )}
         {step === 3 && (
           <div>
-            <label>Automated PAYGW transfer?</label>
+            <label>
+              Automated PAYGW transfer?
+              <HelpTip articleId="release-ato" label="How releases post to the ledger" />
+            </label>
             <input type="checkbox" defaultChecked /> Yes
           </div>
         )}

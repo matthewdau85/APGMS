@@ -4,7 +4,8 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "docs:check": "tsx scripts/docs/checkCoverage.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
