@@ -25,7 +25,8 @@ export async function payAto(req:any, res:any) {
   const payload = pr.rows[0].payload;
   try {
     await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
+    const idemKey = req.header("Idempotency-Key") || undefined;
+    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference, idemKey);
     await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
     return res.json(r);
   } catch (e:any) {
