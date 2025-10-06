@@ -1,18 +1,30 @@
+from decimal import Decimal
+
 import pytest
-from app.tax_rules import gst_line_tax, paygw_weekly
 
-@pytest.mark.parametrize("amount_cents, expected", [
-    (0, 0),
-    (1000, 100),   # 10% GST
-    (999, 100),    # rounding check
-])
-def test_gst(amount_cents, expected):
-    assert gst_line_tax(amount_cents, "GST") == expected
+from app.tax_rules import compute_withholding, gst_line_tax
 
-@pytest.mark.parametrize("gross, expected", [
-    (50_000, 7_500),     # 15% below bracket
-    (80_000, 12_000),    # top of bracket
-    (100_000, 16_000),   # 12,000 + 20% of 20,000
-])
-def test_paygw(gross, expected):
-    assert paygw_weekly(gross) == expected
+
+@pytest.mark.parametrize(
+    "amount_cents, tax_code, expected",
+    [
+        (0, "GST", 0),
+        (110000, "GST", 10000),
+        (55000, "GST", 5000),
+        (33000, "GST_FREE", 0),
+    ],
+)
+def test_gst_line_tax(amount_cents: int, tax_code: str, expected: int) -> None:
+    assert gst_line_tax(amount_cents, tax_code) == expected
+
+
+@pytest.mark.parametrize(
+    "gross, expected",
+    [
+        (Decimal("500"), 8792),
+        (Decimal("1200"), 32756),
+        (Decimal("2500"), 82436),
+    ],
+)
+def test_weekly_withholding_samples(gross: Decimal, expected: int) -> None:
+    assert compute_withholding(gross, "weekly", "resident", {"tax_free_threshold": True}) == expected

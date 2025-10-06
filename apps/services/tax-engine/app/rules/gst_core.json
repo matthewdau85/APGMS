@@ -1,0 +1,14 @@
+{
+  "rate": 0.10,
+  "rounding": {
+    "line": "HALF_UP",
+    "aggregate": "HALF_UP"
+  },
+  "recognition": {
+    "cash": "cash",
+    "accrual": "accrual"
+  },
+  "treatment": {
+    "amounts_include_gst": true
+  }
+}

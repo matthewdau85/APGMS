@@ -1,0 +1,54 @@
+{
+  "periods": [
+    {
+      "abn": "12345678901",
+      "period_id": "2025-09",
+      "payroll": [
+        {
+          "employee": "Alice",
+          "gross_cents": 250000,
+          "period": "weekly",
+          "residency": "resident",
+          "tax_free_threshold": true
+        },
+        {
+          "employee": "Bob",
+          "gross_cents": 180000,
+          "period": "weekly",
+          "residency": "resident",
+          "tax_free_threshold": true
+        }
+      ],
+      "gst": [
+        {
+          "id": "sale-1",
+          "type": "sale",
+          "total_cents": 110000,
+          "tax_code": "GST",
+          "recognised": ["cash", "accrual"]
+        },
+        {
+          "id": "sale-2",
+          "type": "sale",
+          "total_cents": 220000,
+          "tax_code": "GST",
+          "recognised": ["cash", "accrual"]
+        },
+        {
+          "id": "purchase-1",
+          "type": "purchase",
+          "total_cents": 55000,
+          "tax_code": "GST",
+          "recognised": ["cash", "accrual"]
+        },
+        {
+          "id": "purchase-2",
+          "type": "purchase",
+          "total_cents": 33000,
+          "tax_code": "GST_FREE",
+          "recognised": ["cash", "accrual"]
+        }
+      ]
+    }
+  ]
+}
