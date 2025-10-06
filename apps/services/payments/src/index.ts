@@ -5,6 +5,8 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
+import { createExpressObservability, initializeTelemetry } from '../../../../libs/observability/index.js';
+
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
@@ -23,11 +25,16 @@ const connectionString =
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
 
+initializeTelemetry({ serviceName: 'payments-service' });
+const observability = createExpressObservability({ serviceName: 'payments-service' });
+
 const app = express();
+app.use(observability.requestMiddleware);
 app.use(express.json());
 
-// Health check
-app.get('/health', (_req, res) => res.json({ ok: true }));
+// Health and metrics
+app.get(['/health', '/healthz'], (_req, res) => res.json({ ok: true }));
+app.get('/metrics', observability.metricsHandler);
 
 // Endpoints
 app.post('/deposit', deposit);

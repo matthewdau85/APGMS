@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: apgms
+          POSTGRES_PASSWORD: apgms_pw
+          POSTGRES_DB: apgms
+        options: >-
+          --health-cmd "pg_isready -U apgms"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Ed25519 secret
+        id: ed25519
+        run: |
+          echo "secret=$(openssl rand -base64 64)" >> "$GITHUB_OUTPUT"
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://apgms:apgms_pw@127.0.0.1:5432/apgms
+        run: pnpm run migrate
+
+      - name: Seed smoke data
+        env:
+          DATABASE_URL: postgres://apgms:apgms_pw@127.0.0.1:5432/apgms
+        run: pnpm run seed:smoke
+
+      - name: Unit tests (payments)
+        env:
+          DATABASE_URL: postgres://apgms:apgms_pw@127.0.0.1:5432/apgms
+        run: pnpm --filter payments test -- --runInBand
+
+      - name: Smoke test
+        env:
+          DATABASE_URL: postgres://apgms:apgms_pw@127.0.0.1:5432/apgms
+          RPT_ED25519_SECRET_BASE64: ${{ steps.ed25519.outputs.secret }}
+        run: pnpm run smoke

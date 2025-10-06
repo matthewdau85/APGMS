@@ -2,6 +2,7 @@
 import express from "express";
 import dotenv from "dotenv";
 
+import { createExpressObservability, initializeTelemetry } from "../libs/observability/index.js";
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
@@ -9,14 +10,17 @@ import { api } from "./api";                  // your existing API router(s)
 
 dotenv.config();
 
+initializeTelemetry({ serviceName: "apgms-app" });
+
+const observability = createExpressObservability({ serviceName: "apgms-app" });
+
 const app = express();
+app.use(observability.requestMiddleware);
 app.use(express.json({ limit: "2mb" }));
 
-// (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
-
-// Simple health check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+// Health and metrics
+app.get(["/health", "/healthz"], (_req, res) => res.json({ ok: true }));
+app.get("/metrics", observability.metricsHandler);
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
