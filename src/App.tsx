@@ -11,6 +11,7 @@ import Audit from "./pages/Audit";
 import Fraud from "./pages/Fraud";
 import Integrations from "./pages/Integrations";
 import Help from "./pages/Help";
+import DesignSystemPage from "./pages/DesignSystem";
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/fraud" element={<Fraud />} />
           <Route path="/integrations" element={<Integrations />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/help/design-system" element={<DesignSystemPage />} />
         </Route>
       </Routes>
     </Router>

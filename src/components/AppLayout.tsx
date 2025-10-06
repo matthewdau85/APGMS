@@ -11,6 +11,7 @@ const navLinks = [
   { to: "/fraud", label: "Fraud" },
   { to: "/integrations", label: "Integrations" },
   { to: "/help", label: "Help" },
+  { to: "/help/design-system", label: "Design System" },
 ];
 
 export default function AppLayout() {
