@@ -13,6 +13,36 @@ scrape_configs:
     static_configs:
       - targets: ["tax-engine:8002"]
 
+  - job_name: "portal_api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["portal-api:8000"]
+
+  - job_name: "bas_gate"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["bas-gate:8101"]
+
+  - job_name: "recon"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["recon:8102"]
+
+  - job_name: "bank_egress"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["bank-egress:8103"]
+
+  - job_name: "audit"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["audit:8104"]
+
+  - job_name: "payments"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["payments:3000"]
+
   - job_name: "nats_exporter"
     metrics_path: /metrics
     static_configs:

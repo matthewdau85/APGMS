@@ -1,20 +1,30 @@
+import time
+from typing import Any, Dict, List
+
 from fastapi import FastAPI, Query
 from pydantic import BaseModel
-from typing import List, Dict, Any
-import time
+from prometheus_client import Gauge
+
+import sys
+from pathlib import Path
+
+_services_path = Path(__file__).resolve().parents[1] / "apps" / "services"
+if _services_path.exists() and str(_services_path) not in sys.path:
+    sys.path.append(str(_services_path))
+
+from observability import Observability
 
 app = FastAPI(title="APGMS Portal API", version="0.1.0")
+observability = Observability("portal-api")
+observability.install_http_middleware(app)
+observability.install_metrics_endpoint(app)
+PORTAL_UP = Gauge("portal_up", "Portal API availability", ["service", "version", "env"])
+PORTAL_UP.labels(**observability.service_labels).set(1)
+
 
 @app.get("/readyz")
-def readyz(): return {"ok": True, "ts": time.time()}
-
-@app.get("/metrics", response_class=None)
-def metrics():
-    return ("\n".join([
-        "# HELP portal_up 1 if up",
-        "# TYPE portal_up gauge",
-        "portal_up 1"
-    ]))
+def readyz():
+    return {"ok": True, "ts": time.time()}
 
 @app.get("/dashboard/yesterday")
 def yesterday():

@@ -1,17 +1,36 @@
 ﻿# apps/services/audit/main.py
+import os
+import psycopg2
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI
-import os, psycopg2, json
+
+_cursor = Path(__file__).resolve()
+for _ in range(6):
+    parent = _cursor.parent
+    if (parent / "observability.py").exists():
+        if str(parent) not in sys.path:
+            sys.path.append(str(parent))
+        break
+    _cursor = parent
+
+from observability import Observability
 
 app = FastAPI(title="audit")
+observability = Observability("audit")
+observability.install_http_middleware(app)
+observability.install_metrics_endpoint(app)
 
 def db():
-    return psycopg2.connect(
+    conn = psycopg2.connect(
         host=os.getenv("PGHOST","127.0.0.1"),
         user=os.getenv("PGUSER","postgres"),
         password=os.getenv("PGPASSWORD","postgres"),
         dbname=os.getenv("PGDATABASE","postgres"),
         port=int(os.getenv("PGPORT","5432"))
     )
+    return observability.instrument_db_connection(conn)
 
 @app.get("/audit/bundle/{period_id}")
 def bundle(period_id: str):

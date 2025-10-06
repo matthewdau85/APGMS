@@ -1,9 +1,26 @@
 ﻿# apps/services/recon/main.py
+import math
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI
 from pydantic import BaseModel
-import os, psycopg2, json, math
+
+_cursor = Path(__file__).resolve()
+for _ in range(6):
+    parent = _cursor.parent
+    if (parent / "observability.py").exists():
+        if str(parent) not in sys.path:
+            sys.path.append(str(parent))
+        break
+    _cursor = parent
+
+from observability import Observability
 
 app = FastAPI(title="recon")
+observability = Observability("recon")
+observability.install_http_middleware(app)
+observability.install_metrics_endpoint(app)
 
 class ReconReq(BaseModel):
     period_id: str

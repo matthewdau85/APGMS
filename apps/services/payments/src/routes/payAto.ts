@@ -2,7 +2,7 @@
 import { Request, Response } from 'express';
 import crypto from 'crypto';
 import pg from 'pg'; const { Pool } = pg;
-import { pool } from '../index.js';
+import { pool, observability } from '../index.js';
 
 function genUUID() {
   return crypto.randomUUID();
@@ -86,6 +86,7 @@ export async function payAtoRelease(req: Request, res: Response) {
   } catch (e: any) {
     await client.query('ROLLBACK');
     // common failures: unique single-release-per-period, allow-list, etc.
+    observability.recordReleaseFailure('database');
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {
     client.release();

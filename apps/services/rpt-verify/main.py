@@ -1,8 +1,27 @@
+import hashlib
+import sys
+from pathlib import Path
+
+import nacl.encoding
+import nacl.signing
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import nacl.signing, nacl.encoding, hashlib
+
+_cursor = Path(__file__).resolve()
+for _ in range(6):
+    parent = _cursor.parent
+    if (parent / "observability.py").exists():
+        if str(parent) not in sys.path:
+            sys.path.append(str(parent))
+        break
+    _cursor = parent
+
+from observability import Observability
 
 app = FastAPI()
+observability = Observability("rpt-verify")
+observability.install_http_middleware(app)
+observability.install_metrics_endpoint(app)
 
 class VerifyIn(BaseModel):
     kid: str
