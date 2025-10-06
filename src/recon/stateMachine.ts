@@ -1,15 +1,27 @@
-﻿export type PeriodState = "OPEN"|"CLOSING"|"READY_RPT"|"BLOCKED_DISCREPANCY"|"BLOCKED_ANOMALY"|"RELEASED"|"FINALIZED";
-export interface Thresholds { epsilon_cents: number; variance_ratio: number; dup_rate: number; gap_minutes: number; }
+export type PeriodState =
+  | "OPEN"
+  | "CLOSING"
+  | "RECON_OK"
+  | "RECON_FAIL"
+  | "READY_RPT"
+  | "RELEASED";
 
-export function nextState(current: PeriodState, evt: string): PeriodState {
-  const t = ${current}:;
-  switch (t) {
-    case "OPEN:CLOSE": return "CLOSING";
-    case "CLOSING:PASS": return "READY_RPT";
-    case "CLOSING:FAIL_DISCREPANCY": return "BLOCKED_DISCREPANCY";
-    case "CLOSING:FAIL_ANOMALY": return "BLOCKED_ANOMALY";
-    case "READY_RPT:RELEASED": return "RELEASED";
-    case "RELEASED:FINALIZE": return "FINALIZED";
-    default: return current;
-  }
+export type PeriodEvent =
+  | "START_CLOSING"
+  | "RECONCILE_OK"
+  | "RECONCILE_FAIL"
+  | "ISSUE_RPT"
+  | "RELEASE";
+
+const transitions: Record<PeriodState, Partial<Record<PeriodEvent, PeriodState>>> = {
+  OPEN: { START_CLOSING: "CLOSING" },
+  CLOSING: { RECONCILE_OK: "RECON_OK", RECONCILE_FAIL: "RECON_FAIL" },
+  RECON_OK: { ISSUE_RPT: "READY_RPT", RECONCILE_FAIL: "RECON_FAIL" },
+  RECON_FAIL: { RECONCILE_OK: "RECON_OK" },
+  READY_RPT: { RELEASE: "RELEASED" },
+  RELEASED: {},
+};
+
+export function next(current: PeriodState, event: PeriodEvent): PeriodState {
+  return transitions[current]?.[event] ?? current;
 }

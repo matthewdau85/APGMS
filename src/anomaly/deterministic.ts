@@ -10,6 +10,7 @@ export interface Thresholds {
   dup_rate?: number;
   gap_minutes?: number;
   delta_vs_baseline?: number;
+  epsilon_cents?: number;
 }
 
 export function isAnomalous(v: AnomalyVector, thr: Thresholds = {}): boolean {
