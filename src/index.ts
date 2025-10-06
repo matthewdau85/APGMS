@@ -6,11 +6,15 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { assertSafeCombo, featureFlags } from "./config/features";
 
 dotenv.config();
+const flags = featureFlags();
+assertSafeCombo(flags);
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
+app.locals.features = flags;
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });

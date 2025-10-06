@@ -1,0 +1,8 @@
+{
+  "label": "rails",
+  "description": "Rails label changes must update rail adapters and parity tests.",
+  "requires": [
+    { "path": "src/rails/", "hint": "Update rail adapter implementation." },
+    { "path": "tests/sim/", "hint": "Add or update simulation parity tests." }
+  ]
+}

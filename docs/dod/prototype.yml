@@ -1,0 +1,8 @@
+{
+  "label": "prototype",
+  "description": "Prototype flows must ship docs and smoke coverage.",
+  "requires": [
+    { "path": "docs/readiness/", "hint": "Document prototype readiness updates." },
+    { "path": "seed_and_smoketest.ps1", "hint": "Keep seed + smoke script aligned." }
+  ]
+}

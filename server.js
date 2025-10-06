@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(bodyParser.json());
@@ -17,6 +19,12 @@ const pool = new Pool({
   host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
 });
 
+let fallbackRubricVersion = 'unknown';
+try {
+  const rubric = require('./docs/readiness/rubric.v1.json');
+  if (rubric?.version) fallbackRubricVersion = rubric.version;
+} catch {}
+
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
   console.error(e);
@@ -28,6 +36,35 @@ const ah = fn => (req,res)=>fn(req,res).catch(e=>{
 app.get('/health', ah(async (req,res)=>{
   await pool.query('select now()');
   res.json(['ok','db', true, 'up']);
+}));
+
+// ---------- OPS READINESS ----------
+app.get('/ops/readiness', ah(async (_req,res)=>{
+  const statusPath = path.join(__dirname, 'artifacts', 'readiness', 'status.json');
+  try {
+    const raw = await fs.promises.readFile(statusPath, 'utf8');
+    const parsed = JSON.parse(raw);
+    res.json({
+      version: parsed.rubricVersion || fallbackRubricVersion,
+      generated_at: parsed.generatedAt || null,
+      status: (parsed.summaryStatus || 'warn').toUpperCase(),
+      score: parsed.scorePercent ?? null,
+      checks: (parsed.results || []).map((r)=>({
+        id: r.id,
+        status: String(r.status || 'unknown').toUpperCase(),
+        weight: r.weight,
+        details: r.details
+      }))
+    });
+  } catch (err) {
+    console.warn('readiness status unavailable', err?.message || err);
+    res.status(503).json({
+      version: fallbackRubricVersion,
+      generated_at: null,
+      status: 'STALE',
+      checks: []
+    });
+  }
 }));
 
 // ---------- PERIOD STATUS ----------

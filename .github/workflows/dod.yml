@@ -1,0 +1,21 @@
+name: Definition of Done
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  dod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Enforce DoD by labels
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: npm run dod:check

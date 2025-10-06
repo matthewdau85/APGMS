@@ -9,6 +9,9 @@ dist/
 .next/
 coverage/
 
+# Generated readiness outputs
+artifacts/
+
 # OS noise
 Thumbs.db
 .DS_Store
