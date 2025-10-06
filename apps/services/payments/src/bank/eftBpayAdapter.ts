@@ -1,4 +1,3 @@
-﻿import pg from "pg";
 import https from "https";
 import axios from "axios";
 import { createHash, randomUUID } from "crypto";
@@ -23,7 +22,7 @@ const client = axios.create({
   httpsAgent: agent
 });
 
-export async function sendEftOrBpay(p: Params): Promise<{transfer_uuid: string; bank_receipt_hash: string; provider_receipt_id: string}> {
+export async function sendEftOrBpay(p: Params): Promise<{transfer_uuid: string; bank_receipt_hash: string; provider_receipt_id:string}> {
   const transfer_uuid = randomUUID();
   const payload = {
     amount_cents: p.amount_cents,

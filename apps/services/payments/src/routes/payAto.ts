@@ -1,45 +1,33 @@
-﻿// apps/services/payments/src/routes/payAto.ts
-import { Request, Response } from 'express';
-import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
-import { pool } from '../index.js';
+// apps/services/payments/src/routes/payAto.ts
+import { Request, Response } from "express";
+import crypto from "crypto";
+import { pool } from "../index.js";
 
 function genUUID() {
   return crypto.randomUUID();
 }
 
-/**
- * Minimal release path:
- * - Requires rptGate to have attached req.rpt
- * - Inserts a single negative ledger entry for the given period
- * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
- */
 export async function payAtoRelease(req: Request, res: Response) {
   const { abn, taxType, periodId, amountCents } = req.body || {};
   if (!abn || !taxType || !periodId) {
-    return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
+    return res.status(400).json({ error: "Missing abn/taxType/periodId" });
   }
 
-  // default a tiny test debit if not provided
   const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
 
-  // must be negative for a release
   if (amt >= 0) {
-    return res.status(400).json({ error: 'amountCents must be negative for a release' });
+    return res.status(400).json({ error: "amountCents must be negative for a release" });
   }
 
-  // rptGate attaches req.rpt when verification succeeds
   const rpt = (req as any).rpt;
   if (!rpt) {
-    return res.status(403).json({ error: 'RPT not verified' });
+    return res.status(403).json({ error: "RPT not verified" });
   }
 
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
-    // compute running balance AFTER this entry:
-    // fetch last balance in this period (by id order), default 0
     const { rows: lastRows } = await client.query<{
       balance_after_cents: string | number;
     }>(
@@ -73,7 +61,7 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
     ]);
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     return res.json({
       ok: true,
@@ -84,9 +72,8 @@ export async function payAtoRelease(req: Request, res: Response) {
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
-    await client.query('ROLLBACK');
-    // common failures: unique single-release-per-period, allow-list, etc.
-    return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
+    await client.query("ROLLBACK");
+    return res.status(400).json({ error: "Release failed", detail: String(e?.message || e) });
   } finally {
     client.release();
   }

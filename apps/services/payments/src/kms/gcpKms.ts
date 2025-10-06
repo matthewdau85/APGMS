@@ -1,5 +1,4 @@
-﻿import pg from "pg";
-import {KmsProvider} from "./kmsProvider";
+import { KmsProvider } from "./kmsProvider";
 import * as ed from "@noble/ed25519";
 import { KeyManagementServiceClient } from "@google-cloud/kms";
 

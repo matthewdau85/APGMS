@@ -1,4 +1,3 @@
-﻿import pg from "pg";
 import { createHash } from "crypto";
 
 export function sha256Hex(input: string | Buffer): string {
