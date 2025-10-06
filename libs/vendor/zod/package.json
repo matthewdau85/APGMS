@@ -1,0 +1,8 @@
+{
+  "name": "zod",
+  "version": "0.0.0",
+  "description": "Minimal runtime subset of Zod for offline validation",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "MIT"
+}
