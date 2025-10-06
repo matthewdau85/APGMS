@@ -5,6 +5,9 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
+import { httpMetrics, instrumentPgPool, registerHealthEndpoints } from '../../../../src/ops/health.js';
+import { initOtel, requestIdMiddleware } from '../../../../src/otel.js';
+
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
@@ -22,12 +25,16 @@ const connectionString =
 
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
+instrumentPgPool(pool, 'payments');
+
+initOtel();
 
 const app = express();
+app.use(requestIdMiddleware);
+app.use(httpMetrics);
 app.use(express.json());
 
-// Health check
-app.get('/health', (_req, res) => res.json({ ok: true }));
+registerHealthEndpoints(app);
 
 // Endpoints
 app.post('/deposit', deposit);

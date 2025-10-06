@@ -1,22 +1,25 @@
 ﻿// src/index.ts
-import express from "express";
 import dotenv from "dotenv";
+import express from "express";
 
-import { idempotency } from "./middleware/idempotency";
-import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { httpMetrics, registerHealthEndpoints } from "./ops/health";
+import { initOtel, requestIdMiddleware } from "./otel";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
-import { api } from "./api";                  // your existing API router(s)
+import { api } from "./api"; // your existing API router(s)
+import { idempotency } from "./middleware/idempotency";
+import { closeAndIssue, evidence, payAto, paytoSweep, settlementWebhook } from "./routes/reconcile";
 
 dotenv.config();
+initOtel();
 
 const app = express();
+app.use(requestIdMiddleware);
+app.use(httpMetrics);
 app.use(express.json({ limit: "2mb" }));
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
-
-// Simple health check
-app.get("/health", (_req, res) => res.json({ ok: true }));
+registerHealthEndpoints(app);
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
