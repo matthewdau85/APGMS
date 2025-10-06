@@ -1,0 +1,6 @@
+label: dod:security
+title: Security & Controls
+items:
+  - Threat model updated with new flows
+  - Authentication and rate-limits validated
+  - Logging and alerting reviewed by security

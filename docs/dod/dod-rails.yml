@@ -1,0 +1,6 @@
+label: dod:rails
+title: Rails & Settlement Integrity
+items:
+  - Simulated releases cover EFT/BPAY success and reversal cases
+  - Settlement import links provider_ref to ledger rows
+  - Recon artifacts attached in PR description

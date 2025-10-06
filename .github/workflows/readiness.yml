@@ -1,0 +1,98 @@
+name: Readiness Scorecard
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Run unit tests
+        run: npm test
+      - name: Generate readiness report
+        run: npm run readiness:score
+      - name: Generate readiness badges
+        run: npm run readiness:badge
+      - name: Upload readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-report
+          path: artifacts/readiness/report.md
+          if-no-files-found: error
+      - name: Enforce score regressions
+        run: |
+          node <<'SCRIPT'
+          const fs = require('fs');
+          const path = require('path');
+          const lastPath = path.join(process.cwd(), 'artifacts', 'readiness', 'last.json');
+          if (!fs.existsSync(lastPath)) {
+            console.log('No readiness snapshot found.');
+            process.exit(0);
+          }
+          const data = JSON.parse(fs.readFileSync(lastPath, 'utf8'));
+          if (data.previous) {
+            const prevProto = data.previous.prototypeScore;
+            const prevReal = data.previous.realScore;
+            if (typeof prevProto === 'number' && data.prototype?.score < prevProto) {
+              console.error(`Prototype score regressed: ${data.prototype.score} < ${prevProto}`);
+              process.exit(1);
+            }
+            if (typeof prevReal === 'number' && data.real?.score < prevReal) {
+              console.error(`Real score regressed: ${data.real.score} < ${prevReal}`);
+              process.exit(1);
+            }
+          }
+          SCRIPT
+      - name: Comment readiness summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const lastPath = path.join(process.cwd(), 'artifacts', 'readiness', 'last.json');
+            if (!fs.existsSync(lastPath)) {
+              core.warning('Readiness snapshot missing');
+              return;
+            }
+            const snapshot = JSON.parse(fs.readFileSync(lastPath, 'utf8'));
+            const escape = (value) => String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+            const formatChecks = (checks) =>
+              checks
+                .map((check) => `| ${escape(check.key)} | ${check.ok ? '✅' : '❌'} | ${check.points}/${check.maxPoints} | ${escape(check.details)} |`)
+                .join('\n');
+            const prototypeTable = `### Prototype (${snapshot.prototype.score}/${snapshot.prototype.max})\n| Check | Status | Points | Details |\n| --- | --- | --- | --- |\n${formatChecks(snapshot.prototype.checks)}`;
+            const realTable = `### Real (${snapshot.real.score}/${snapshot.real.max})\n| Check | Status | Points | Details |\n| --- | --- | --- | --- |\n${formatChecks(snapshot.real.checks)}`;
+            const badgeBase = `https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/${context.sha}/public/badges`;
+            const body = `## Readiness Scorecard (v${snapshot.rubric.version})\nGenerated: ${snapshot.generatedAt}\n\n${prototypeTable}\n\n${realTable}\n\n![Prototype readiness](${badgeBase}/prototype.svg) ![Real readiness](${badgeBase}/real.svg)`;
+            const marker = '<!-- readiness-scorecard -->';
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const existing = comments.data.find((comment) => comment.body && comment.body.includes(marker));
+            const payload = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: payload,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: payload,
+              });
+            }
