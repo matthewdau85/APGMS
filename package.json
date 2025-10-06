@@ -18,10 +18,13 @@
         "typescript": "^5.9.3"
     },
     "dependencies": {
+        "@tanstack/react-query": "^5.51.0",
         "csv-parse": "^6.1.0",
         "dotenv": "^17.2.3",
         "express": "^5.1.0",
         "pg": "^8.16.3",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
         "tweetnacl": "^1.0.3",
         "uuid": "^13.0.0"
     }

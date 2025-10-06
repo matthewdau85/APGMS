@@ -1,59 +1,102 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const steps = [
-  "Business Details",
-  "Link Accounts",
-  "Add Payroll Provider",
-  "Setup Automated Transfers",
-  "Review & Complete"
-];
+import { Skeleton } from "../components/Skeleton";
+import { useSaveSettingsMutation, useSettings, useStartConnectionMutation } from "../api/hooks";
+
+const steps = ["Retention", "Privacy", "Integrations", "Review"] as const;
 
 export default function Wizard() {
   const [step, setStep] = useState(0);
+  const { data: settings, isLoading } = useSettings();
+  const saveSettings = useSaveSettingsMutation();
+  const startConnection = useStartConnectionMutation();
+
+  const [retentionMonths, setRetentionMonths] = useState(84);
+  const [piiMask, setPiiMask] = useState(true);
+  const [provider, setProvider] = useState("MYOB");
+
+  useEffect(() => {
+    if (settings) {
+      setRetentionMonths(settings.retentionMonths);
+      setPiiMask(settings.piiMask);
+    }
+  }, [settings]);
+
+  const handleFinish = () => {
+    saveSettings.mutate({ retentionMonths, piiMask });
+  };
 
   return (
     <div className="main-card">
       <h1 style={{ color: "#00716b", fontWeight: 700, fontSize: 30, marginBottom: 28 }}>Setup Wizard</h1>
       <div style={{ marginBottom: 20 }}>
-        <b>Step {step + 1} of {steps.length}: {steps[step]}</b>
+        <b>
+          Step {step + 1} of {steps.length}: {steps[step]}
+        </b>
       </div>
-      <div style={{ background: "#f9f9f9", borderRadius: 10, padding: 24, minHeight: 120 }}>
+      <div style={{ background: "#f9f9f9", borderRadius: 10, padding: 24, minHeight: 180 }}>
         {step === 0 && (
           <div>
-            <label>Business ABN:</label>
-            <input className="settings-input" style={{ width: 220 }} defaultValue="12 345 678 901" />
-            <br />
-            <label>Legal Name:</label>
-            <input className="settings-input" style={{ width: 220 }} defaultValue="Example Pty Ltd" />
+            <p style={{ fontSize: 14, color: "#555" }}>How long should logs stay available for audits?</p>
+            {isLoading ? (
+              <Skeleton height={40} />
+            ) : (
+              <input
+                className="settings-input"
+                type="number"
+                min={6}
+                max={120}
+                value={retentionMonths}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setRetentionMonths(Number(event.target.value))
+                }
+              />
+            )}
           </div>
         )}
         {step === 1 && (
           <div>
-            <label>BSB:</label>
-            <input className="settings-input" style={{ width: 140 }} defaultValue="123-456" />
-            <br />
-            <label>Account #:</label>
-            <input className="settings-input" style={{ width: 140 }} defaultValue="11111111" />
+            <p style={{ fontSize: 14, color: "#555" }}>Mask employee and customer data in exports?</p>
+            <label>
+              <input
+                type="checkbox"
+                checked={piiMask}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setPiiMask(event.target.checked)
+                }
+                style={{ marginRight: 8 }}
+              />
+              Enable masking
+            </label>
           </div>
         )}
         {step === 2 && (
           <div>
-            <label>Payroll Provider:</label>
-            <select className="settings-input" style={{ width: 220 }}>
-              <option>MYOB</option>
-              <option>QuickBooks</option>
+            <p style={{ fontSize: 14, color: "#555" }}>Choose a provider to connect for payroll or POS data.</p>
+            <select
+              className="settings-input"
+              style={{ width: 240 }}
+              value={provider}
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setProvider(event.target.value)}
+            >
+              <option value="MYOB">MYOB (Payroll)</option>
+              <option value="Square">Square (POS)</option>
             </select>
+            <button
+              className="button"
+              style={{ marginTop: 16 }}
+              onClick={() =>
+                startConnection.mutate({ type: provider === "Square" ? "pos" : "payroll", provider })
+              }
+              disabled={startConnection.isPending}
+            >
+              {startConnection.isPending ? "Starting..." : "Start connection"}
+            </button>
           </div>
         )}
         {step === 3 && (
-          <div>
-            <label>Automated PAYGW transfer?</label>
-            <input type="checkbox" defaultChecked /> Yes
-          </div>
-        )}
-        {step === 4 && (
           <div style={{ color: "#00716b", fontWeight: 600 }}>
-            All done! Click "Finish" to save your setup.
+            Review complete! Click "Finish" to persist retention and masking preferences.
           </div>
         )}
       </div>
@@ -69,7 +112,14 @@ export default function Wizard() {
           </button>
         )}
         {step === steps.length - 1 && (
-          <button className="button" style={{ background: "#4CAF50" }}>Finish</button>
+          <button
+            className="button"
+            style={{ background: "#4CAF50" }}
+            onClick={handleFinish}
+            disabled={saveSettings.isPending}
+          >
+            {saveSettings.isPending ? "Saving..." : "Finish"}
+          </button>
         )}
       </div>
     </div>

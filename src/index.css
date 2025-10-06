@@ -6,6 +6,21 @@ body {
   color: #222;
 }
 
+.animate-pulse {
+  animation: pulse 1.6s ease-in-out infinite;
+  background: #e2e8f0;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 .app-header {
   background: #00205b;
   color: #fff;
