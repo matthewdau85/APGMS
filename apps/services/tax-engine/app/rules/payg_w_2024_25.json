@@ -1,18 +1,140 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
-    ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
+  "periods": {
+    "weekly": {
+      "resident": {
+        "with_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 359, "a": 0.0, "b": 0.0, "fixed": 0 },
+            { "up_to": 438, "a": 0.19, "b": 68.0, "fixed": 0 },
+            { "up_to": 548, "a": 0.234, "b": 87.82, "fixed": 0 },
+            { "up_to": 721, "a": 0.347, "b": 148.5, "fixed": 0 },
+            { "up_to": 865, "a": 0.345, "b": 147.0, "fixed": 0 },
+            { "up_to": 999999, "a": 0.39, "b": 183.0, "fixed": 0 }
+          ]
+        },
+        "no_tfn": { "rate": 0.47 }
+      },
+      "non_resident": {
+        "no_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 90, "a": 0.19, "b": 0.0, "fixed": 0 },
+            { "up_to": 250, "a": 0.325, "b": 12.83, "fixed": 0 },
+            { "up_to": 999999, "a": 0.37, "b": 25.68, "fixed": 0 }
+          ]
+        }
+      }
+    },
+    "fortnightly": {
+      "resident": {
+        "with_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 718, "a": 0.0, "b": 0.0, "fixed": 0 },
+            { "up_to": 876, "a": 0.19, "b": 136.0, "fixed": 0 },
+            { "up_to": 1096, "a": 0.234, "b": 175.64, "fixed": 0 },
+            { "up_to": 1442, "a": 0.347, "b": 297.0, "fixed": 0 },
+            { "up_to": 1730, "a": 0.345, "b": 294.0, "fixed": 0 },
+            { "up_to": 1999998, "a": 0.39, "b": 366.0, "fixed": 0 }
+          ]
+        },
+        "no_tfn": { "rate": 0.47 }
+      },
+      "non_resident": {
+        "no_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 180, "a": 0.19, "b": 0.0, "fixed": 0 },
+            { "up_to": 500, "a": 0.325, "b": 25.66, "fixed": 0 },
+            { "up_to": 1999998, "a": 0.37, "b": 51.36, "fixed": 0 }
+          ]
+        }
+      }
+    },
+    "monthly": {
+      "resident": {
+        "with_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 1555.67, "a": 0.0, "b": 0.0, "fixed": 0 },
+            { "up_to": 1898, "a": 0.19, "b": 294.67, "fixed": 0 },
+            { "up_to": 2374.67, "a": 0.234, "b": 380.55, "fixed": 0 },
+            { "up_to": 3124.33, "a": 0.347, "b": 643.5, "fixed": 0 },
+            { "up_to": 3748.33, "a": 0.345, "b": 637.0, "fixed": 0 },
+            { "up_to": 4333329, "a": 0.39, "b": 793.0, "fixed": 0 }
+          ]
+        },
+        "no_tfn": { "rate": 0.47 }
+      },
+      "non_resident": {
+        "no_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 195.0, "a": 0.19, "b": 0.0, "fixed": 0 },
+            { "up_to": 541.67, "a": 0.325, "b": 27.63, "fixed": 0 },
+            { "up_to": 4333329, "a": 0.37, "b": 55.24, "fixed": 0 }
+          ]
+        }
+      }
+    },
+    "quarterly": {
+      "resident": {
+        "with_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 4667, "a": 0.0, "b": 0.0, "fixed": 0 },
+            { "up_to": 5694, "a": 0.19, "b": 884.0, "fixed": 0 },
+            { "up_to": 7124, "a": 0.234, "b": 1141.66, "fixed": 0 },
+            { "up_to": 9373, "a": 0.347, "b": 1930.5, "fixed": 0 },
+            { "up_to": 11245, "a": 0.345, "b": 1911.0, "fixed": 0 },
+            { "up_to": 12999987, "a": 0.39, "b": 2379.0, "fixed": 0 }
+          ]
+        },
+        "no_tfn": { "rate": 0.47 }
+      },
+      "non_resident": {
+        "no_tfn": {
+          "rounding": "NEAREST_DOLLAR",
+          "brackets": [
+            { "up_to": 1170, "a": 0.19, "b": 0.0, "fixed": 0 },
+            { "up_to": 3250, "a": 0.325, "b": 83.4, "fixed": 0 },
+            { "up_to": 12999987, "a": 0.37, "b": 166.92, "fixed": 0 }
+          ]
+        }
+      }
+    }
+  },
+  "stsl": {
+    "flags": ["help", "tsl", "ssl", "sfss", "stsl"],
+    "annual_factor": {
+      "weekly": 52,
+      "fortnightly": 26,
+      "monthly": 12,
+      "quarterly": 4
+    },
+    "rounding": "NEAREST_DOLLAR",
+    "thresholds": [
+      { "up_to": 51599, "rate": 0.0 },
+      { "up_to": 60199, "rate": 0.01 },
+      { "up_to": 63899, "rate": 0.02 },
+      { "up_to": 67699, "rate": 0.025 },
+      { "up_to": 71499, "rate": 0.03 },
+      { "up_to": 75399, "rate": 0.035 },
+      { "up_to": 79499, "rate": 0.04 },
+      { "up_to": 83799, "rate": 0.045 },
+      { "up_to": 88399, "rate": 0.05 },
+      { "up_to": 93299, "rate": 0.055 },
+      { "up_to": 98599, "rate": 0.06 },
+      { "up_to": 104399, "rate": 0.065 },
+      { "up_to": 111599, "rate": 0.07 },
+      { "up_to": 119399, "rate": 0.075 },
+      { "up_to": 127799, "rate": 0.08 },
+      { "up_to": 136799, "rate": 0.085 },
+      { "up_to": 146399, "rate": 0.09 },
+      { "up_to": 156599, "rate": 0.095 },
+      { "up_to": 9999999, "rate": 0.1 }
+    ]
   }
 }
