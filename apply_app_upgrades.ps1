@@ -92,13 +92,14 @@ create table if not exists rpt_tokens (
 );
 
 create table if not exists audit_log (
-  seq bigserial primary key,
+  id bigserial primary key,
   ts timestamptz default now(),
   actor text not null,
   action text not null,
-  payload_hash text not null,
+  target text,
+  payload jsonb not null default '{}'::jsonb,
   prev_hash text,
-  terminal_hash text
+  hash text not null
 );
 
 create table if not exists remittance_destinations (
@@ -181,13 +182,14 @@ import { Pool } from "pg";
 const pool = new Pool();
 
 export async function appendAudit(actor: string, action: string, payload: any) {
-  const { rows } = await pool.query("select terminal_hash from audit_log order by seq desc limit 1");
-  const prevHash = rows[0]?.terminal_hash || "";
-  const payloadHash = sha256Hex(JSON.stringify(payload));
-  const terminalHash = sha256Hex(prevHash + payloadHash);
+  const { rows } = await pool.query("select hash from audit_log order by id desc limit 1");
+  const prevHash = rows[0]?.hash || null;
+  const payloadJson = JSON.stringify(payload ?? {});
+  const payloadHash = sha256Hex(payloadJson);
+  const terminalHash = sha256Hex(`${prevHash ?? ""}|${actor}|${action}|${""}|${payloadHash}`);
   await pool.query(
-    "insert into audit_log(actor,action,payload_hash,prev_hash,terminal_hash) values ($1,$2,$3,$4,$5)",
-    [actor, action, payloadHash, prevHash, terminalHash]
+    "insert into audit_log(actor,action,target,payload,prev_hash,hash) values ($1,$2,$3,$4,$5,$6)",
+    [actor, action, null, payloadJson, prevHash, terminalHash]
   );
   return terminalHash;
 }

@@ -45,13 +45,14 @@ create table if not exists rpt_tokens (
 );
 
 create table if not exists audit_log (
-  seq bigserial primary key,
+  id bigserial primary key,
   ts timestamptz default now(),
   actor text not null,
   action text not null,
-  payload_hash text not null,
+  target text,
+  payload jsonb not null default '{}'::jsonb,
   prev_hash text,
-  terminal_hash text
+  hash text not null
 );
 
 create table if not exists remittance_destinations (
