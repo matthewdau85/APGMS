@@ -180,7 +180,15 @@
       $('#btnUpload')?.addEventListener('click', async () => {
         const f = $('#file').files[0], out = $('#normOut'); if(!f){ alert('Choose a file'); return; }
         const text = await f.text();
-        const payload = text.trim().startsWith('{') || text.trim().startsWith('[') ? JSON.parse(text) : { csv: text };
+        let payload;
+        try {
+          const trimmed = text.trim();
+          payload = trimmed.startsWith('{') || trimmed.startsWith('[') ? JSON.parse(trimmed) : { csv: text };
+        } catch (err) {
+          console.error('Failed to parse upload payload', err);
+          out.textContent = 'Upload failed: invalid JSON content.';
+          return;
+        }
         out.textContent = 'Uploading...';
         try {
           const res = await api('/normalize', { method:'POST', body: JSON.stringify(payload) });
