@@ -8,5 +8,7 @@ const __dirname  = dirname(__filename);
 
 // load repo-root .env.local first
 dotenv.config({ path: resolve(__dirname, '../../../../.env.local') });
+// provider bindings override
+dotenv.config({ path: resolve(__dirname, '../../../../.env.providers'), override: true });
 // then a local .env (optional)
-dotenv.config();
+dotenv.config({ override: true });

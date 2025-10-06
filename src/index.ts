@@ -1,13 +1,16 @@
 ﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { describeProviders, getProviderBindings } from "../apps/services/payments/src/core/providers/registry";
 
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env.providers"), override: true });
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
@@ -17,6 +20,12 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health/capabilities", (_req, res) => {
+  res.json({ ok: true, providers: describeProviders() });
+});
+app.get("/debug/providers", (_req, res) => {
+  res.json({ bindings: getProviderBindings() });
+});
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
