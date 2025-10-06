@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
-import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
-import { api } from "./api";                  // your existing API router(s)
+import { paymentsApi } from "./api/payments";
+import { api } from "./api";
 
 dotenv.config();
 
@@ -20,13 +20,13 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
-app.post("/api/close-issue", closeAndIssue);
+app.post("/api/periods/:periodId/close-and-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);
 
-// ✅ Payments API first so it isn't shadowed by catch-alls in `api`
-app.use("/api", paymentsApi);
+// Payments API mounted at /api/payments
+app.use("/api/payments", paymentsApi);
 
 // Existing API router(s) after
 app.use("/api", api);

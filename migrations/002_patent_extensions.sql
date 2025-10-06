@@ -5,7 +5,9 @@ ALTER TABLE owa_ledger
   ADD COLUMN IF NOT EXISTS prev_hash text,
   ADD COLUMN IF NOT EXISTS hash_after text,
   ADD COLUMN IF NOT EXISTS transfer_uuid uuid,
-  ADD COLUMN IF NOT EXISTS bank_receipt_hash text;
+  ADD COLUMN IF NOT EXISTS bank_receipt_hash text,
+  ADD COLUMN IF NOT EXISTS rpt_verified boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS release_uuid uuid;
 
 -- Idempotency on the “real world receipt”
 CREATE UNIQUE INDEX IF NOT EXISTS owa_uniq_bank_receipt
@@ -19,14 +21,18 @@ CREATE INDEX IF NOT EXISTS owa_ledger_period_order_idx
 -- (B) RPT: canonical storage (you already added; keep for completeness)
 ALTER TABLE rpt_tokens
   ADD COLUMN IF NOT EXISTS payload_c14n   text,
-  ADD COLUMN IF NOT EXISTS payload_sha256 text;
+  ADD COLUMN IF NOT EXISTS payload_sha256 text,
+  ADD COLUMN IF NOT EXISTS rates_version text,
+  ADD COLUMN IF NOT EXISTS kid text,
+  ADD COLUMN IF NOT EXISTS exp timestamptz,
+  ADD COLUMN IF NOT EXISTS nonce uuid;
 
 -- (C) State machine check (guardrails)
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='periods_state_check') THEN
     ALTER TABLE periods ADD CONSTRAINT periods_state_check
-    CHECK (state IN ('OPEN','CLOSING','READY_RPT','RELEASED','BLOCKED_ANOMALY','BLOCKED_DISCREPANCY'));
+    CHECK (state IN ('OPEN','CLOSING','RECON_OK','RECON_FAIL','READY_RPT','RELEASED'));
   END IF;
 END$$;
 

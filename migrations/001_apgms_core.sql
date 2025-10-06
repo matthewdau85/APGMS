@@ -27,6 +27,8 @@ create table if not exists owa_ledger (
   bank_receipt_hash text,
   prev_hash text,
   hash_after text,
+  rpt_verified boolean default false,
+  release_uuid uuid,
   created_at timestamptz default now(),
   unique (transfer_uuid)
 );
@@ -40,7 +42,26 @@ create table if not exists rpt_tokens (
   period_id text not null,
   payload jsonb not null,
   signature text not null,
-  status text not null default 'ISSUED',
+  payload_c14n text,
+  payload_sha256 text,
+  rates_version text not null,
+  kid text not null,
+  exp timestamptz not null,
+  nonce uuid not null,
+  status text not null default 'active',
+  created_at timestamptz default now(),
+  unique (abn, tax_type, period_id, nonce)
+);
+
+create table if not exists approvals (
+  id bigserial primary key,
+  abn text not null,
+  tax_type text not null,
+  period_id text not null,
+  actor text not null,
+  role text not null,
+  decision text not null,
+  reason text,
   created_at timestamptz default now()
 );
 

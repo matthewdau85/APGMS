@@ -1,4 +1,5 @@
-﻿import nacl from "tweetnacl";
+import nacl from "tweetnacl";
+import { canonicalJson } from "../utils/json";
 
 export interface RptPayload {
   entity_id: string; period_id: string; tax_type: "PAYGW"|"GST";
@@ -8,13 +9,13 @@ export interface RptPayload {
 }
 
 export function signRpt(payload: RptPayload, secretKey: Uint8Array): string {
-  const msg = new TextEncoder().encode(JSON.stringify(payload));
+  const msg = new TextEncoder().encode(canonicalJson(payload));
   const sig = nacl.sign.detached(msg, secretKey);
   return Buffer.from(sig).toString("base64url");
 }
 
 export function verifyRpt(payload: RptPayload, signatureB64: string, publicKey: Uint8Array): boolean {
-  const msg = new TextEncoder().encode(JSON.stringify(payload));
+  const msg = new TextEncoder().encode(canonicalJson(payload));
   const sig = Buffer.from(signatureB64, "base64url");
   return nacl.sign.detached.verify(msg, sig, publicKey);
 }

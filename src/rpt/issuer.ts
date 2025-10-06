@@ -1,37 +1,98 @@
-﻿import { Pool } from "pg";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
-import { exceeds } from "../anomaly/deterministic";
-const pool = new Pool();
-const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
+import { sha256Hex } from "../crypto/merkle";
+import { getPool } from "../db/pool";
+import { canonicalJson } from "../utils/json";
+import { RATES_VERSION, RPT_KID, RPT_TTL_SECONDS } from "./constants";
 
-export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
-  const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
-  if (p.rowCount === 0) throw new Error("PERIOD_NOT_FOUND");
-  const row = p.rows[0];
-  if (row.state !== "CLOSING") throw new Error("BAD_STATE");
+const pool = getPool();
+const secretKeyB64 = process.env.RPT_ED25519_SECRET_BASE64 || "";
+const secretKey = secretKeyB64 ? Buffer.from(secretKeyB64, "base64") : Buffer.alloc(0);
 
-  const v = row.anomaly_vector || {};
-  if (exceeds(v, thresholds)) {
-    await pool.query("update periods set state='BLOCKED_ANOMALY' where id=", [row.id]);
-    throw new Error("BLOCKED_ANOMALY");
-  }
-  const epsilon = Math.abs(Number(row.final_liability_cents) - Number(row.credited_to_owa_cents));
-  if (epsilon > (thresholds["epsilon_cents"] ?? 0)) {
-    await pool.query("update periods set state='BLOCKED_DISCREPANCY' where id=", [row.id]);
-    throw new Error("BLOCKED_DISCREPANCY");
+export async function issueRPT(
+  abn: string,
+  taxType: "PAYGW" | "GST",
+  periodId: string,
+  thresholds: Record<string, number>
+) {
+  if (!secretKey.length) {
+    throw new Error("NO_RPT_SECRET");
   }
 
-  const payload: RptPayload = {
-    entity_id: row.abn, period_id: row.period_id, tax_type: row.tax_type,
-    amount_cents: Number(row.final_liability_cents),
-    merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
-    anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
-  };
-  const signature = signRpt(payload, new Uint8Array(secretKey));
-  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
-    [abn, taxType, periodId, payload, signature]);
-  await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
-  return { payload, signature };
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const { rows } = await client.query(
+      "select * from periods where abn=$1 and tax_type=$2 and period_id=$3 for update",
+      [abn, taxType, periodId]
+    );
+    if (!rows.length) {
+      throw new Error("PERIOD_NOT_FOUND");
+    }
+    const period = rows[0];
+    if (period.state !== "RECON_OK") {
+      throw new Error("BAD_STATE");
+    }
+
+    await client.query(
+      "update rpt_tokens set status='expired' where abn=$1 and tax_type=$2 and period_id=$3 and status='active'",
+      [abn, taxType, periodId]
+    );
+
+    const expiry = new Date(Date.now() + RPT_TTL_SECONDS * 1000);
+    const nonce = crypto.randomUUID();
+    const payload: RptPayload = {
+      entity_id: period.abn,
+      period_id: period.period_id,
+      tax_type: period.tax_type,
+      amount_cents: Number(period.final_liability_cents ?? 0),
+      merkle_root: period.merkle_root || "",
+      running_balance_hash: period.running_balance_hash || "",
+      anomaly_vector: period.anomaly_vector || {},
+      thresholds,
+      rail_id: "EFT",
+      reference: process.env.ATO_PRN || "",
+      expiry_ts: expiry.toISOString(),
+      nonce,
+    };
+
+    const payloadC14n = canonicalJson(payload);
+    const payloadSha = sha256Hex(payloadC14n);
+    const signature = signRpt(payload, new Uint8Array(secretKey));
+
+    await client.query(
+      "insert into rpt_tokens(abn,tax_type,period_id,payload,signature,payload_c14n,payload_sha256,rates_version,kid,exp,nonce,status) values ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,$10,$11,$12)",
+      [
+        abn,
+        taxType,
+        periodId,
+        JSON.stringify(payload),
+        signature,
+        payloadC14n,
+        payloadSha,
+        RATES_VERSION,
+        RPT_KID,
+        expiry.toISOString(),
+        nonce,
+        "active",
+      ]
+    );
+
+    await client.query("update periods set state=$1 where id=$2", ["READY_RPT", period.id]);
+    await client.query("COMMIT");
+
+    return {
+      payload,
+      signature,
+      kid: RPT_KID,
+      rates_version: RATES_VERSION,
+      exp: expiry.toISOString(),
+      nonce,
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 }
