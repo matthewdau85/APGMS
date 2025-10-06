@@ -224,8 +224,14 @@
           tr.innerHTML = `<td>${t.date}</td><td>${t.source}</td><td>${t.description}</td><td style="text-align:right">${t.amount.toFixed(2)}</td><td>${t.category||''}</td>`;
           tb.appendChild(tr);
         });
-        const sel = $('#filterSource'); sel.innerHTML = '<option value="">All sources</option>';
+        const sel = $('#filterSource');
+        sel.innerHTML = '<option value="">All sources</option>';
         data.sources.forEach(s=>{ const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+        if (src && data.sources.includes(src)) {
+          sel.value = src;
+        } else {
+          sel.value = '';
+        }
       }
       $('#btnRefresh').onclick = load;
       load();
