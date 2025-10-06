@@ -21,7 +21,12 @@ const connectionString =
   `@${process.env.PGHOST || '127.0.0.1'}:${process.env.PGPORT || '5432'}/${process.env.PGDATABASE || 'apgms'}`;
 
 // Export pool for other modules
-export const pool = new Pool({ connectionString });
+const useFakePool = process.env.PAYMENTS_FAKE_POOL === '1';
+const poolInstance = useFakePool
+  ? new (await import('../../../../tests/helpers/fakeDb.js')).FakePool()
+  : new Pool({ connectionString });
+
+export const pool = poolInstance;
 
 const app = express();
 app.use(express.json());
@@ -38,7 +43,11 @@ app.get('/ledger', ledger);
 // 404 fallback
 app.use((_req, res) => res.status(404).send('Not found'));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`[payments] listening on http://localhost:${PORT}`);
-});
+// Start server unless explicitly skipped (useful for tests)
+if (process.env.PAYMENTS_SKIP_LISTEN !== '1') {
+  app.listen(PORT, () => {
+    console.log(`[payments] listening on http://localhost:${PORT}`);
+  });
+}
+
+export { app };
