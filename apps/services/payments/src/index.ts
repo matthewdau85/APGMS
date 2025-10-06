@@ -6,7 +6,10 @@ import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
 import { rptGate } from './middleware/rptGate.js';
-import { payAtoRelease } from './routes/payAto.js';
+import { release } from './routes/release.js';
+import { importSettlement } from './routes/settlementImport.js';
+import { simRailReconFile } from './routes/simRail.js';
+import { evidence } from './routes/evidence.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
@@ -31,9 +34,13 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // Endpoints
 app.post('/deposit', deposit);
-app.post('/payAto', rptGate, payAtoRelease);
+app.post('/release', rptGate, release);
+app.post('/payAto', rptGate, release); // legacy alias
+app.post('/settlement/import', importSettlement);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
+app.get('/sim/rail/recon-file', simRailReconFile);
+app.get('/evidence/:periodId', evidence);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).send('Not found'));
