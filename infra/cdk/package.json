@@ -1,0 +1,33 @@
+{
+  "name": "apgms-aws-infra",
+  "version": "0.1.0",
+  "bin": {
+    "apgms-infra": "bin/apgms-infra.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "lint": "eslint --ext .ts bin lib",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "test": "npm run lint && npm run build && npm run synth"
+  },
+  "dependencies": {
+    "@aws-cdk/aws-apigatewayv2-alpha": "^2.132.0-alpha.0",
+    "@aws-cdk/aws-apigatewayv2-integrations-alpha": "^2.132.0-alpha.0",
+    "@aws-cdk/aws-cloudfront-origins": "^2.132.0",
+    "@aws-cdk/aws-wafv2": "^2.132.0",
+    "aws-cdk-lib": "^2.132.0",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "eslint": "^8.54.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsdoc": "^46.8.2",
+    "eslint-plugin-prefer-arrow": "^1.2.3",
+    "typescript": "^5.2.2"
+  }
+}

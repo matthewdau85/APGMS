@@ -78,6 +78,10 @@ End-to-end encryption (e.g., AES-256)
 
 Robust audit logs
 
+## Cloud Deployment
+
+An AWS reference deployment with hardened defaults (Secrets Manager, private RDS, CloudFront + WAF, and CI/CD pipelines with Trivy/Checkov scanning) is available under `infra/cdk`. See [`docs/aws-deployment.md`](docs/aws-deployment.md) for rollout guidance.
+
 License
 Open source under the MIT License.
 
