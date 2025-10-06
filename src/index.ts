@@ -6,11 +6,19 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { ingestRouter } from "./routes/ingest";
+import { reconRouter } from "./routes/recon";
+import { evidenceRouter } from "./routes/evidenceApi";
 
 dotenv.config();
 
 const app = express();
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({
+  limit: "2mb",
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = buf.toString("utf8");
+  },
+}));
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
@@ -24,6 +32,9 @@ app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
 app.get("/api/evidence", evidence);
+app.use("/ingest", ingestRouter);
+app.use("/recon", reconRouter);
+app.use("/evidence", evidenceRouter);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);

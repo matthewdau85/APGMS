@@ -47,6 +47,6 @@ export async function settlementWebhook(req:any, res:any) {
 }
 
 export async function evidence(req:any, res:any) {
-  const { abn, taxType, periodId } = req.query as any;
-  res.json(await buildEvidenceBundle(abn, taxType, periodId));
+  const { periodId } = req.query as any;
+  res.json(await buildEvidenceBundle(periodId));
 }

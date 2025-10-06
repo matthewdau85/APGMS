@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://apgms.example.com/schema/pos_event.json",
+  "title": "Point of Sale Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "txn_id",
+    "dt",
+    "net",
+    "gst",
+    "category",
+    "source"
+  ],
+  "properties": {
+    "txn_id": {
+      "type": "string",
+      "minLength": 4
+    },
+    "dt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "net": {
+      "type": "number"
+    },
+    "gst": {
+      "type": "number"
+    },
+    "category": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    }
+  }
+}

@@ -1,19 +1,132 @@
-﻿import { Pool } from "pg";
-const pool = new Pool();
+import fs from "fs/promises";
+import path from "path";
+import crypto from "crypto";
+import {
+  getGateRecord,
+  getReconResult,
+  getSettlement,
+  GateRecord,
+  listAuditLog,
+} from "../ingest/store";
 
-export async function buildEvidenceBundle(abn: string, taxType: string, periodId: string) {
-  const p = (await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId])).rows[0];
-  const rpt = (await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId])).rows[0];
-  const deltas = (await pool.query("select created_at as ts, amount_cents, hash_after, bank_receipt_hash from owa_ledger where abn= and tax_type= and period_id= order by id", [abn, taxType, periodId])).rows;
-  const last = deltas[deltas.length-1];
-  const bundle = {
-    bas_labels: { W1: null, W2: null, "1A": null, "1B": null }, // TODO: populate
-    rpt_payload: rpt?.payload ?? null,
-    rpt_signature: rpt?.signature ?? null,
-    owa_ledger_deltas: deltas,
-    bank_receipt_hash: last?.bank_receipt_hash ?? null,
-    anomaly_thresholds: p?.thresholds ?? {},
-    discrepancy_log: []  // TODO: populate from recon diffs
+interface RulesFileDescriptor {
+  name: string;
+  source_url: string;
+  path: string;
+  effective_from: string;
+  effective_to: string;
+}
+
+interface RulesManifest {
+  rates_version: string;
+  files: RulesFileDescriptor[];
+}
+
+async function loadRulesManifest(): Promise<RulesManifest> {
+  const manifestPath = path.join(process.cwd(), "data", "rules_manifest.json");
+  const content = await fs.readFile(manifestPath, "utf8");
+  return JSON.parse(content) as RulesManifest;
+}
+
+async function computeSha256(filePath: string): Promise<string> {
+  const file = await fs.readFile(filePath);
+  return crypto.createHash("sha256").update(file).digest("hex");
+}
+
+async function resolveRules(manifest: RulesManifest) {
+  const files = await Promise.all(
+    manifest.files.map(async (file) => {
+      const resolvedPath = path.join(process.cwd(), file.path);
+      const sha256 = await computeSha256(resolvedPath);
+      return {
+        name: file.name,
+        sha256,
+        source_url: file.source_url,
+        effective_from: file.effective_from,
+        effective_to: file.effective_to,
+      };
+    })
+  );
+  return {
+    rates_version: manifest.rates_version,
+    files,
   };
-  return bundle;
+}
+
+function describeGatePath(gate: GateRecord): string[] {
+  const path: string[] = ["OPEN"];
+  gate.transitions.forEach((transition) => {
+    const last = path[path.length - 1];
+    if (transition.to !== last) {
+      path.push(transition.to);
+    }
+  });
+  if (path[path.length - 1] !== gate.state) {
+    path.push(gate.state);
+  }
+  return path;
+}
+
+function buildRationale(
+  periodId: string,
+  gate: GateRecord,
+  pathHistory: string[],
+): string {
+  const recon = getReconResult(periodId);
+  const finalState = pathHistory[pathHistory.length - 1];
+  const tolerances = `tolerance ${gate.thresholds.tolerance_pct}% with max delta ${gate.thresholds.max_delta_cents} cents`;
+  const approvals = gate.approvals.map((approval) => `${approval.user}${approval.mfa ? " (MFA)" : ""}`).join(", ") || "none";
+  const reconSummary = recon?.status === "RECON_OK"
+    ? "reconciliation passed with no material variances"
+    : `reconciliation failed due to ${recon?.reasons.map((r) => r.code).join(", ")}`;
+  return `Gate traversed ${pathHistory.join(" → ")} under ${tolerances}; ${reconSummary}. Approvals recorded: ${approvals}. Final state ${finalState}.`;
+}
+
+export async function buildEvidenceBundle(periodId: string) {
+  const manifest = await loadRulesManifest();
+  const rules = await resolveRules(manifest);
+  const gate = getGateRecord(periodId);
+  const settlement = getSettlement(periodId);
+  const pathHistory = describeGatePath(gate);
+  const recon = getReconResult(periodId);
+
+  const narrative = {
+    gate_path: pathHistory,
+    thresholds: gate.thresholds,
+    anomalies: recon?.reasons.map((reason) => ({
+      code: reason.code,
+      desc: reason.description ?? reason.code,
+      resolved: recon?.status === "RECON_OK",
+    })) ?? [],
+    approvals: gate.approvals,
+    rationale: buildRationale(periodId, gate, pathHistory),
+  };
+
+  const settlementDetails = settlement ?? {
+    periodId,
+    channel: "UNKNOWN",
+    provider_ref: "",
+    amount_cents: 0,
+    paidAt: "",
+    receiptPayload: undefined,
+  };
+
+  const audit = listAuditLog().filter((entry) => entry.payload?.periodId === periodId);
+
+  return {
+    periodId,
+    computedAt: new Date().toISOString(),
+    details: {
+      rules,
+      settlement: {
+        channel: settlementDetails.channel,
+        provider_ref: settlementDetails.provider_ref,
+        amount_cents: settlementDetails.amount_cents,
+        paidAt: settlementDetails.paidAt,
+        receiptPayload: settlementDetails.receiptPayload ?? null,
+      },
+      narrative,
+      audit,
+    },
+  };
 }
