@@ -89,3 +89,98 @@ For demonstration and prototyping only—real-world deployments require further 
 Contributing
 Pull requests are welcome!
 For major changes, please open an issue first to discuss what you’d like to change.
+
+Visual Architecture
+-------------------
+
+### Logical Component Architecture
+
+```mermaid
+flowchart LR
+  subgraph UI[React Console]
+    DSH[Dashboard]
+    BAS[BAS Workflow]
+    EV["Evidence Drawer\n(JSON/ZIP)"]
+    SET[Settings]
+  end
+
+  subgraph GW[Node/Express Gateway]
+    APIv1[/OpenAPI v1/]
+    AUTH[JWT + TOTP step-up + SoD]
+    AUD["Append-only Audit\n(prev_hash→hash)"]
+  end
+
+  subgraph TAX[Tax Engine]
+    RULES[(Versioned Rules\nRATES_VERSION + hashes)]
+    PAYGW[PAYGW Calculator]
+    GST[GST Engine\ncash/accrual + 1A/1B]
+    BASMAP[BAS Label Mapper]
+  end
+
+  subgraph SVC[Microservices]
+    RECON[Reconciliation\n(anomaly flags)]
+    GATE[BAS Gate State\n(OPEN→CLOSING→READY_RPT)]
+    PAY["Payments Service\n(rptGate middleware)"]
+    EVI["Evidence Builder"]
+  end
+
+  subgraph ADP[Adapters (Ports)]
+    BANK["BankingPort\n(EFT/BPAY/PayTo)\nDRY_RUN/SHADOW_ONLY"]
+    STP["STP/POS Ingest\n(HMAC)"]
+  end
+
+  subgraph DB[(Postgres)]
+    P[periods]
+    L[owa_ledger]
+    RPT[rpt_tokens]
+    REC[recon_inputs]
+    BR[bank_receipts]
+    EVB[evidence_bundles]
+    AUDT[audit_log]
+    IDE[idempotency_keys]
+  end
+
+  DSH-->APIv1
+  BAS-->APIv1
+  EV-->APIv1
+  SET-->APIv1
+
+  APIv1--JWT/MFA/SoD-->AUTH
+  APIv1-->TAX
+  TAX-->APIv1
+
+  APIv1-->RECON-->GATE
+  APIv1-->PAY
+  APIv1-->EVI
+
+  STP-->RECON
+  PAY-->BANK
+
+  GW-->DB
+  TAX-->RULES
+  RECON-->DB
+  GATE-->DB
+  PAY-->DB
+  EVI-->DB
+  AUD-->DB
+```
+
+### Deployment (AWS) High-Level
+
+```mermaid
+flowchart TB
+  U[Users/Operators] --> CF[CloudFront/WAF]
+  CF --> ALB[ALB]
+  ALB --> ECSGW[Gateway Service (ECS)]
+  ALB --> ECSTAX[Tax Engine (ECS)]
+  ALB --> ECSPAY[Payments Svc (ECS)]
+  ALB --> ECSOTH[Recon/Gate/Evidence (ECS)]
+  ECSGW --> RDS[(RDS Postgres - private)]
+  ECSTAX --> RDS
+  ECSPAY --> RDS
+  ECSOTH --> RDS
+  ECSPAY --> SM[Secrets Manager/KMS]
+  ECSGW --> SM
+  VPC[VPC private subnets] --- RDS
+  note right of ECSPAY: mTLS certs for real rails\nvia Secrets Manager/KMS
+```
