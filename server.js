@@ -1,7 +1,7 @@
 require('dotenv').config({ path: '.env.local' });
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Pool } = require('pg');
+const { getPool } = require('./src/db/pool');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
 
@@ -9,13 +9,12 @@ const app = express();
 app.use(bodyParser.json());
 
 const {
-  PGHOST='127.0.0.1', PGUSER='apgms', PGPASSWORD='apgms_pw', PGDATABASE='apgms', PGPORT='5432',
-  RPT_ED25519_SECRET_BASE64, RPT_PUBLIC_BASE64, ATO_PRN='1234567890'
+  RPT_ED25519_SECRET_BASE64,
+  RPT_PUBLIC_BASE64,
+  ATO_PRN='1234567890'
 } = process.env;
 
-const pool = new Pool({
-  host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
-});
+const pool = getPool();
 
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
@@ -34,7 +33,9 @@ app.get('/health', ah(async (req,res)=>{
 app.get('/period/status', ah(async (req,res)=>{
   const {abn, taxType, periodId} = req.query;
   const r = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
+    `select *
+       from periods
+      where abn=$1 and tax_type=$2 and period_id=$3`,
     [abn, taxType, periodId]
   );
   if (r.rowCount===0) return res.status(404).json({error:'NOT_FOUND'});
@@ -45,7 +46,9 @@ app.get('/period/status', ah(async (req,res)=>{
 app.post('/rpt/issue', ah(async (req,res)=>{
   const {abn, taxType, periodId} = req.body;
   const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
+    `select *
+       from periods
+      where abn=$1 and tax_type=$2 and period_id=$3`,
     [abn, taxType, periodId]
   );
   if (pr.rowCount===0) throw new Error('PERIOD_NOT_FOUND');
@@ -63,13 +66,19 @@ app.post('/rpt/issue', ah(async (req,res)=>{
     Math.abs((v.delta_vs_baseline || 0)) > thresholds.delta_vs_baseline;
 
   if (exceeds) {
-    await pool.query(update periods set state='BLOCKED_ANOMALY' where id=, [p.id]);
+    await pool.query(
+      `update periods set state='BLOCKED_ANOMALY' where id=$1`,
+      [p.id]
+    );
     return res.status(409).json({error:'BLOCKED_ANOMALY'});
   }
 
   const epsilon = Math.abs(Number(p.final_liability_cents) - Number(p.credited_to_owa_cents));
   if (epsilon > thresholds.epsilon_cents) {
-    await pool.query(update periods set state='BLOCKED_DISCREPANCY' where id=, [p.id]);
+    await pool.query(
+      `update periods set state='BLOCKED_DISCREPANCY' where id=$1`,
+      [p.id]
+    );
     return res.status(409).json({error:'BLOCKED_DISCREPANCY', epsilon});
   }
 
@@ -100,12 +109,15 @@ app.post('/rpt/issue', ah(async (req,res)=>{
 
   // 7 params insert (payload_c14n + payload_sha256)
   await pool.query(
-    insert into rpt_tokens(abn,tax_type,period_id,payload,signature,payload_c14n,payload_sha256)
-     values (,,,,,,),
+    `insert into rpt_tokens(abn,tax_type,period_id,payload,signature,payload_c14n,payload_sha256)
+         values ($1,$2,$3,$4,$5,$6,$7)`,
     [abn, taxType, periodId, payload, signature, payloadStr, payloadSha256]
   );
 
-  await pool.query(update periods set state='READY_RPT' where id=, [p.id]);
+  await pool.query(
+    `update periods set state='READY_RPT' where id=$1`,
+    [p.id]
+  );
   res.json({ payload, signature, payload_sha256: payloadSha256 });
 }));
 
@@ -114,7 +126,9 @@ app.post('/release', ah(async (req,res)=>{
   const {abn, taxType, periodId} = req.body;
 
   const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
+    `select *
+       from periods
+      where abn=$1 and tax_type=$2 and period_id=$3`,
     [abn, taxType, periodId]
   );
   if (pr.rowCount===0) throw new Error('PERIOD_NOT_FOUND');
@@ -122,18 +136,20 @@ app.post('/release', ah(async (req,res)=>{
 
   // need latest token
   const rr = await pool.query(
-    select payload, signature from rpt_tokens
-     where abn= and tax_type= and period_id=
-     order by id desc limit 1,
+    `select payload, signature
+       from rpt_tokens
+      where abn=$1 and tax_type=$2 and period_id=$3
+      order by id desc limit 1`,
     [abn, taxType, periodId]
   );
   if (rr.rowCount===0) return res.status(400).json({error:'NO_RPT'});
 
   // ensure funds exist
   const lr = await pool.query(
-    select balance_after_cents from owa_ledger
-       where abn= and tax_type= and period_id=
-       order by id desc limit 1,
+    `select balance_after_cents
+       from owa_ledger
+      where abn=$1 and tax_type=$2 and period_id=$3
+      order by id desc limit 1`,
     [abn, taxType, periodId]
   );
   const prevBal = lr.rows[0]?.balance_after_cents ?? 0;
@@ -142,8 +158,10 @@ app.post('/release', ah(async (req,res)=>{
 
   // do the debit
   const synthetic = 'rpt_debit:' + crypto.randomUUID().slice(0,12);
-  const r = await pool.query(select * from owa_append(,,,,),
-    [abn, taxType, periodId, -amt, synthetic]);
+  const r = await pool.query(
+    'select * from owa_append($1,$2,$3,$4,$5)',
+    [abn, taxType, periodId, -amt, synthetic]
+  );
 
   let newBalance = null;
   if (r.rowCount && r.rows[0] && r.rows[0].out_balance_after != null) {
@@ -151,15 +169,19 @@ app.post('/release', ah(async (req,res)=>{
   } else {
     // fallback: read back most recent balance if no row returned
     const fr = await pool.query(
-      select balance_after_cents as bal from owa_ledger
-       where abn= and tax_type= and period_id=
-       order by id desc limit 1,
+      `select balance_after_cents as bal
+         from owa_ledger
+        where abn=$1 and tax_type=$2 and period_id=$3
+        order by id desc limit 1`,
       [abn, taxType, periodId]
     );
     newBalance = fr.rows[0]?.bal ?? (prevBal - amt);
   }
 
-  await pool.query(update periods set state='RELEASED' where id=, [p.id]);
+  await pool.query(
+    `update periods set state='RELEASED' where id=$1`,
+    [p.id]
+  );
   res.json({ released: true, bank_receipt_hash: synthetic, new_balance: newBalance });
 }));
 
@@ -167,26 +189,28 @@ app.post('/release', ah(async (req,res)=>{
 app.get('/evidence', ah(async (req,res)=>{
   const {abn, taxType, periodId} = req.query;
   const pr = await pool.query(
-    select * from periods where abn= and tax_type= and period_id=,
+    `select *
+       from periods
+      where abn=$1 and tax_type=$2 and period_id=$3`,
     [abn, taxType, periodId]
   );
   if (pr.rowCount===0) return res.status(404).json({error:'NOT_FOUND'});
   const p = pr.rows[0];
 
   const rr = await pool.query(
-    select payload, payload_c14n, payload_sha256, signature, created_at
+    `select payload, payload_c14n, payload_sha256, signature, created_at
        from rpt_tokens
-      where abn= and tax_type= and period_id=
-      order by id desc limit 1,
+      where abn=$1 and tax_type=$2 and period_id=$3
+      order by id desc limit 1`,
     [abn, taxType, periodId]
   );
   const rpt = rr.rows[0] || null;
 
   const lr = await pool.query(
-    select id, amount_cents, balance_after_cents, bank_receipt_hash, prev_hash, hash_after, created_at
+    `select id, amount_cents, balance_after_cents, bank_receipt_hash, prev_hash, hash_after, created_at
        from owa_ledger
-      where abn= and tax_type= and period_id=
-      order by id,
+      where abn=$1 and tax_type=$2 and period_id=$3
+      order by id`,
     [abn, taxType, periodId]
   );
 
@@ -212,4 +236,4 @@ app.get('/evidence', ah(async (req,res)=>{
 }));
 
 const port = process.env.PORT ? +process.env.PORT : 8080;
-app.listen(port, ()=> console.log(APGMS demo API listening on :));
+app.listen(port, () => console.log(`APGMS demo API listening on ${port}`));
