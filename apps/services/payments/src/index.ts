@@ -5,6 +5,14 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
+import {
+  createLogger,
+  requestLogger,
+  securityHeaders,
+  corsMiddleware,
+  rateLimiter,
+} from '../../../../libs/security/index.js';
+import { authenticate, ensureRealModeTotp, getAppMode, requireDualApproval, requireRoles, requireTotp, setAppMode } from './middleware/auth.js';
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
@@ -23,22 +31,46 @@ const connectionString =
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
 
-const app = express();
+export const app = express();
+const logger = createLogger({ bindings: { service: 'payments' } });
+
 app.use(express.json());
+app.use(securityHeaders());
+app.use(corsMiddleware({ origins: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['*'] }));
+app.use(rateLimiter({ limit: Number(process.env.RATE_LIMIT_MAX || 120) }));
+app.use(requestLogger(logger));
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.get('/mode', (_req, res) => res.json({ mode: getAppMode() }));
+app.post('/mode', authenticate, requireRoles('admin'), requireTotp, (req, res) => {
+  const mode = String(req.body?.mode || '').toLowerCase();
+  if (mode !== 'test' && mode !== 'real') {
+    return res.status(400).json({ error: 'INVALID_MODE' });
+  }
+  setAppMode(mode as 'test' | 'real');
+  return res.json({ mode: getAppMode() });
+});
+
 // Endpoints
-app.post('/deposit', deposit);
-app.post('/payAto', rptGate, payAtoRelease);
-app.get('/balance', balance);
-app.get('/ledger', ledger);
+app.post('/deposit', authenticate, requireRoles('admin', 'accountant'), deposit);
+app.post('/payAto', authenticate, requireRoles('admin', 'accountant'), ensureRealModeTotp, rptGate, (req, res) => {
+  try {
+    requireDualApproval(req, Math.abs(Number(req.body?.amountCents || 0)));
+  } catch (err: any) {
+    return res.status(403).json({ error: err?.message || 'DUAL_APPROVAL_FAILED' });
+  }
+  return payAtoRelease(req, res);
+});
+app.get('/balance', authenticate, requireRoles('admin', 'accountant', 'auditor'), balance);
+app.get('/ledger', authenticate, requireRoles('admin', 'accountant', 'auditor'), ledger);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).send('Not found'));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`[payments] listening on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    logger.info({ event: 'startup', port: PORT }, '[payments] listening');
+  });
+}

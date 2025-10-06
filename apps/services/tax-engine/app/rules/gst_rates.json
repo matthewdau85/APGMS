@@ -1,0 +1,12 @@
+{
+  "version": "2024-25",
+  "notes": "Australian GST codes for BAS labels 1A/1B. Rates expressed as decimal fractions of taxable amount.",
+  "codes": {
+    "GST": { "rate": 0.10, "label": "Taxed sales" },
+    "GST_FREE": { "rate": 0.0, "label": "GST-free" },
+    "INPUT_TAXED": { "rate": 0.0, "label": "Input taxed" },
+    "EXPORT": { "rate": 0.0, "label": "Exported" },
+    "ADJUSTMENT": { "rate": 0.10, "label": "Adjustment" }
+  },
+  "rounding": "ATO_DOLLAR"
+}

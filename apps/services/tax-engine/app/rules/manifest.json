@@ -1,0 +1,8 @@
+{
+  "version": "2024-25",
+  "files": {
+    "gst_rates.json": "51fb35a547a78485732e74b33bb14f2998b98e8f64c0207e6859b37090fd685c",
+    "payg_w_2024_25.json": "a43b3aab04dccaea7d06ad969f6af0833feb773d3711febb8cb36973160fde92"
+  },
+  "composite_sha256": "cb23bc026810bc90b876c4ab1518a4eba6ce800f58710682d8dbcaf57863492c"
+}

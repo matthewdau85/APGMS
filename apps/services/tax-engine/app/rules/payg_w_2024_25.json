@@ -1,18 +1,28 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
+  "notes": "Stage 3 resident tax scale effective 1 July 2024. Sourced from ATO NAT 1005 Method B weekly formulas.",
+  "methods_enabled": [
+    "table_ato",
+    "formula_progressive",
+    "percent_simple",
+    "flat_plus_percent",
+    "bonus_marginal",
+    "net_to_gross"
+  ],
   "formula_progressive": {
     "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
-    ],
+    "rounding": "ATO_DOLLAR",
     "tax_free_threshold": true,
-    "rounding": "HALF_UP"
+    "brackets": [
+      { "up_to": 350.00,   "a": 0.00, "b":   0.00,      "fixed": 0.00 },
+      { "up_to": 865.38,   "a": 0.16, "b":  56.00,      "fixed": 0.00 },
+      { "up_to": 2596.15,  "a": 0.30, "b": 177.153846,  "fixed": 0.00 },
+      { "up_to": 3653.85,  "a": 0.37, "b": 358.884615,  "fixed": 0.00 },
+      { "up_to": 999999.0, "a": 0.45, "b": 651.192308,  "fixed": 0.00 }
+    ]
+  },
+  "stsl": {
+    "weekly_threshold": 102.00,
+    "rate": 0.02
   }
 }
