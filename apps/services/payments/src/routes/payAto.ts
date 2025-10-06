@@ -1,91 +1,102 @@
-﻿// apps/services/payments/src/routes/payAto.ts
+// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
 import { pool } from '../index.js';
 
-function genUUID() {
-  return crypto.randomUUID();
+function asNumber(value: unknown, fallback: number): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }
 
-/**
- * Minimal release path:
- * - Requires rptGate to have attached req.rpt
- * - Inserts a single negative ledger entry for the given period
- * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
- */
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
+  const { abn, taxType, periodId } = req.body || {};
   if (!abn || !taxType || !periodId) {
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
   }
 
-  // default a tiny test debit if not provided
-  const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
-
-  // must be negative for a release
-  if (amt >= 0) {
-    return res.status(400).json({ error: 'amountCents must be negative for a release' });
-  }
-
-  // rptGate attaches req.rpt when verification succeeds
-  const rpt = (req as any).rpt;
+  const rpt = (req as any).rpt as {
+    rpt_id: number;
+    payload: any;
+    payload_sha256: string;
+  } | undefined;
   if (!rpt) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
+
+  const liability = asNumber(rpt.payload?.liability_cents, NaN);
+  if (!Number.isFinite(liability) || liability <= 0) {
+    return res.status(400).json({ error: 'Invalid liability in RPT payload' });
+  }
+
+  const dryRun = String(process.env.DRY_RUN || '').toLowerCase() === 'true';
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // compute running balance AFTER this entry:
-    // fetch last balance in this period (by id order), default 0
-    const { rows: lastRows } = await client.query<{
-      balance_after_cents: string | number;
-    }>(
-      `SELECT balance_after_cents
-       FROM owa_ledger
-       WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-       ORDER BY id DESC
-       LIMIT 1`,
+    const debit = -Math.trunc(liability);
+
+    let bankReceiptId: number | null = null;
+    let providerRef: string | null = null;
+    if (dryRun) {
+      providerRef = `dryrun-${crypto.randomUUID()}`;
+      const ins = await client.query<{ id: number }>(
+        `INSERT INTO bank_receipts (abn, tax_type, period_id, provider_ref, dry_run, metadata)
+         VALUES ($1,$2,$3,$4,TRUE,'{}'::jsonb)
+         RETURNING id`,
+        [abn, taxType, periodId, providerRef]
+      );
+      bankReceiptId = ins.rows[0].id;
+    }
+
+    const release_uuid = crypto.randomUUID();
+    const append = await client.query<{
+      id: number;
+      balance_after: string | number;
+      hash_after: string;
+    }>(`SELECT * FROM owa_append($1,$2,$3,$4,$5)`, [abn, taxType, periodId, debit, providerRef]);
+    if (!append.rows.length) {
+      throw new Error('OWA append failed');
+    }
+    const ledgerId = append.rows[0].id;
+    const { rows: updated } = await client.query(
+      `UPDATE owa_ledger
+          SET rpt_verified=TRUE,
+              release_uuid=$1,
+              bank_receipt_id=$2
+        WHERE id=$3
+        RETURNING transfer_uuid, balance_after_cents`,
+      [release_uuid, bankReceiptId, ledgerId]
+    );
+    if (!updated.length) throw new Error('OWA ledger update failed');
+    const transfer_uuid = updated[0].transfer_uuid;
+    const balanceAfter = updated[0].balance_after_cents;
+
+    await client.query(
+      `UPDATE periods SET state='RELEASED' WHERE abn=$1 AND tax_type=$2 AND period_id=$3`,
       [abn, taxType, periodId]
     );
-    const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
-    const newBal = lastBal + amt;
-
-    const release_uuid = genUUID();
-
-    const insert = `
-      INSERT INTO owa_ledger
-        (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
-      RETURNING id, transfer_uuid, balance_after_cents
-    `;
-    const transfer_uuid = genUUID();
-    const { rows: ins } = await client.query(insert, [
-      abn,
-      taxType,
-      periodId,
-      transfer_uuid,
-      amt,
-      newBal,
-      release_uuid,
-    ]);
+    await client.query(
+      `UPDATE rpt_tokens SET status='released' WHERE id=$1`,
+      [rpt.rpt_id]
+    );
 
     await client.query('COMMIT');
 
     return res.json({
       ok: true,
-      ledger_id: ins[0].id,
+      ledger_id: ledgerId,
       transfer_uuid,
       release_uuid,
-      balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      balance_after_cents: balanceAfter,
+      receipt_id: bankReceiptId,
+      provider_ref: providerRef,
+      dry_run: dryRun,
+      liability_cents: liability,
+      rpt_sha256: rpt.payload_sha256,
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
-    // common failures: unique single-release-per-period, allow-list, etc.
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {
     client.release();
