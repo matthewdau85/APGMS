@@ -1,10 +1,20 @@
-﻿import nacl from "tweetnacl";
+import nacl from "tweetnacl";
+
+export interface RptTotals {
+  credited_to_owa_cents: number;
+  net_cents: number;
+  final_liability_cents: number;
+  accrued_cents: number;
+}
 
 export interface RptPayload {
-  entity_id: string; period_id: string; tax_type: "PAYGW"|"GST";
-  amount_cents: number; merkle_root: string; running_balance_hash: string;
-  anomaly_vector: Record<string, number>; thresholds: Record<string, number>;
-  rail_id: "EFT"|"BPAY"|"PayTo"; reference: string; expiry_ts: string; nonce: string;
+  abn: string;
+  tax_type: "PAYGW" | "GST";
+  period_id: string;
+  totals: RptTotals;
+  rates_version: string;
+  nonce: string;
+  exp: string;
 }
 
 export function signRpt(payload: RptPayload, secretKey: Uint8Array): string {
