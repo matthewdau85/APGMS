@@ -1,18 +1,116 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
-    ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
+  "rounding": "HALF_UP",
+  "top_withholding_rate": 0.47,
+  "offsets": {
+    "lito": 2.88,
+    "medicare": -1.50
+  },
+  "period_tables": {
+    "weekly": {
+      "resident": {
+        "with_tfn": {
+          "tax_free_threshold": [
+            {"lower": 0, "upper": 359, "rate": 0.0, "base": 0.0},
+            {"lower": 359, "upper": 438, "rate": 0.19, "base": 0.0},
+            {"lower": 438, "upper": 548, "rate": 0.234, "base": 15.01},
+            {"lower": 548, "upper": 721, "rate": 0.347, "base": 40.75},
+            {"lower": 721, "upper": 865, "rate": 0.345, "base": 100.78},
+            {"lower": 865, "upper": null, "rate": 0.39, "base": 150.46}
+          ],
+          "no_tax_free_threshold": [
+            {"lower": 0, "upper": 87, "rate": 0.19, "base": 0.0},
+            {"lower": 87, "upper": 371, "rate": 0.234, "base": 16.53},
+            {"lower": 371, "upper": 515, "rate": 0.347, "base": 82.99},
+            {"lower": 515, "upper": 865, "rate": 0.39, "base": 132.95},
+            {"lower": 865, "upper": null, "rate": 0.47, "base": 269.45}
+          ]
+        },
+        "no_tfn": [
+          {"lower": 0, "upper": null, "rate": 0.47, "base": 0.0}
+        ]
+      },
+      "foreign": {
+        "with_tfn": [
+          {"lower": 0, "upper": null, "rate": 0.325, "base": 0.0}
+        ]
+      },
+      "working_holiday": {
+        "with_tfn": [
+          {"lower": 0, "upper": 863, "rate": 0.15, "base": 0.0},
+          {"lower": 863, "upper": null, "rate": 0.32, "base": 129.45}
+        ]
+      }
+    },
+    "fortnightly": {
+      "resident": {
+        "with_tfn": {
+          "tax_free_threshold": [
+            {"lower": 0, "upper": 718, "rate": 0.0, "base": 0.0},
+            {"lower": 718, "upper": 876, "rate": 0.19, "base": 0.0},
+            {"lower": 876, "upper": 1096, "rate": 0.234, "base": 30.02},
+            {"lower": 1096, "upper": 1442, "rate": 0.347, "base": 81.5},
+            {"lower": 1442, "upper": 1730, "rate": 0.345, "base": 201.56},
+            {"lower": 1730, "upper": null, "rate": 0.39, "base": 300.92}
+          ],
+          "no_tax_free_threshold": [
+            {"lower": 0, "upper": 174, "rate": 0.19, "base": 0.0},
+            {"lower": 174, "upper": 742, "rate": 0.234, "base": 33.06},
+            {"lower": 742, "upper": 1030, "rate": 0.347, "base": 165.98},
+            {"lower": 1030, "upper": 1730, "rate": 0.39, "base": 265.9},
+            {"lower": 1730, "upper": null, "rate": 0.47, "base": 538.9}
+          ]
+        },
+        "no_tfn": [
+          {"lower": 0, "upper": null, "rate": 0.47, "base": 0.0}
+        ]
+      },
+      "foreign": {
+        "with_tfn": [
+          {"lower": 0, "upper": null, "rate": 0.325, "base": 0.0}
+        ]
+      },
+      "working_holiday": {
+        "with_tfn": [
+          {"lower": 0, "upper": 1726, "rate": 0.15, "base": 0.0},
+          {"lower": 1726, "upper": null, "rate": 0.32, "base": 258.9}
+        ]
+      }
+    },
+    "monthly": {
+      "resident": {
+        "with_tfn": {
+          "tax_free_threshold": [
+            {"lower": 0.0, "upper": 1555.65, "rate": 0.0, "base": 0.0},
+            {"lower": 1555.65, "upper": 1897.99, "rate": 0.19, "base": 0.0},
+            {"lower": 1897.99, "upper": 2374.65, "rate": 0.234, "base": 65.04},
+            {"lower": 2374.65, "upper": 3124.31, "rate": 0.347, "base": 176.58},
+            {"lower": 3124.31, "upper": 3748.3, "rate": 0.345, "base": 436.71},
+            {"lower": 3748.3, "upper": null, "rate": 0.39, "base": 651.99}
+          ],
+          "no_tax_free_threshold": [
+            {"lower": 0.0, "upper": 377.0, "rate": 0.19, "base": 0.0},
+            {"lower": 377.0, "upper": 1607.65, "rate": 0.234, "base": 71.63},
+            {"lower": 1607.65, "upper": 2231.65, "rate": 0.347, "base": 359.62},
+            {"lower": 2231.65, "upper": 3748.3, "rate": 0.39, "base": 576.11},
+            {"lower": 3748.3, "upper": null, "rate": 0.47, "base": 1167.61}
+          ]
+        },
+        "no_tfn": [
+          {"lower": 0, "upper": null, "rate": 0.47, "base": 0.0}
+        ]
+      },
+      "foreign": {
+        "with_tfn": [
+          {"lower": 0, "upper": null, "rate": 0.325, "base": 0.0}
+        ]
+      },
+      "working_holiday": {
+        "with_tfn": [
+          {"lower": 0.0, "upper": 3739.64, "rate": 0.15, "base": 0.0},
+          {"lower": 3739.64, "upper": null, "rate": 0.32, "base": 560.95}
+        ]
+      }
+    }
   }
 }
