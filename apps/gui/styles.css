@@ -16,3 +16,36 @@ table{ width:100%; border-collapse:collapse }
 th,td{ padding:8px; border-bottom:1px solid var(--border) }
 .kbd{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px }
 .footer{ margin-top:24px; color:var(--muted) }
+.hidden{ display:none !important }
+.muted{ color:var(--muted) }
+.font-mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace }
+.truncate{ overflow:hidden; white-space:nowrap; text-overflow:ellipsis }
+.space-y-4 > * + *{ margin-top:16px }
+.space-y-6 > * + *{ margin-top:24px }
+.skeleton{ position:relative; overflow:hidden; background:var(--border); border-radius:8px }
+.skeleton::after{ content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.6) 45%, rgba(255,255,255,0.6) 55%, transparent 100%); animation:skeleton-sheen 1.1s ease-in-out infinite }
+.skeleton-card .skeleton + .skeleton{ margin-top:12px }
+@media (prefers-reduced-motion: reduce){ .skeleton::after{ animation-duration:2s } }
+@keyframes skeleton-sheen{ from{ transform:translateX(-100%) } to{ transform:translateX(100%) } }
+.virtual-table{ margin-top:12px; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--card) }
+.virtual-table table{ width:100%; border-collapse:collapse }
+.virtual-table thead{ display:table; width:100%; table-layout:fixed; background:var(--card) }
+.virtual-table thead th{ padding:10px 12px; font-size:12px; text-transform:uppercase; letter-spacing:0.04em; text-align:left; color:var(--muted); border-bottom:1px solid var(--border) }
+.virtual-table tbody{ display:block; max-height:360px; overflow-y:auto; background:var(--bg) }
+.virtual-table tbody::-webkit-scrollbar{ width:8px }
+.virtual-table tbody::-webkit-scrollbar-thumb{ background:var(--border); border-radius:999px }
+.virtual-table tbody::-webkit-scrollbar-track{ background:transparent }
+.virtual-table tbody tr{ display:table; width:100%; table-layout:fixed; height:var(--row-height, 44px) }
+.virtual-table tbody td{ padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:middle; white-space:nowrap }
+.virtual-table tbody tr:last-child td{ border-bottom:none }
+.virtual-table tbody tr.spacer td{ padding:0; border:none }
+.virtual-table tbody tr.error td{ padding:16px 12px }
+.virtual-table tbody td.mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace }
+.virtual-table tbody td.num{ text-align:right; font-variant-numeric:tabular-nums }
+.virtual-table tbody td.actions{ text-align:right }
+.virtual-table tbody td.actions a{ color:var(--focus); text-decoration:none }
+.virtual-table tbody td.actions a:hover{ text-decoration:underline }
+.virtual-status{ margin-top:8px; font-size:12px; color:var(--muted) }
+.virtual-empty{ margin-top:12px; color:var(--muted); font-size:13px }
+.skeleton-row td{ padding:12px 12px; border-bottom:1px solid transparent }
+.skeleton-row .skeleton{ display:block; height:14px; border-radius:999px }
