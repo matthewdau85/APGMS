@@ -1,93 +1,69 @@
-﻿// apps/services/payments/src/routes/payAto.ts
+// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
-import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
-import { pool } from '../index.js';
+import { pool } from '../db.js';
+import { executeRelease } from '../services/release.js';
 
-function genUUID() {
-  return crypto.randomUUID();
+function extractAmount(payload: any): number {
+  const totals = payload?.totals ?? {};
+  const candidates = [
+    totals.final_liability_cents,
+    totals.amount_cents,
+    totals.net_liability_cents,
+  ];
+  for (const value of candidates) {
+    const n = Number(value);
+    if (Number.isFinite(n)) return Math.trunc(n);
+  }
+  throw new Error('INVALID_TOTALS');
 }
 
-/**
- * Minimal release path:
- * - Requires rptGate to have attached req.rpt
- * - Inserts a single negative ledger entry for the given period
- * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
- */
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
+  const { abn, taxType, periodId } = req.body || {};
   if (!abn || !taxType || !periodId) {
     return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
   }
 
-  // default a tiny test debit if not provided
-  const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
-
-  // must be negative for a release
-  if (amt >= 0) {
-    return res.status(400).json({ error: 'amountCents must be negative for a release' });
-  }
-
-  // rptGate attaches req.rpt when verification succeeds
   const rpt = (req as any).rpt;
-  if (!rpt) {
+  if (!rpt || !rpt.payload) {
     return res.status(403).json({ error: 'RPT not verified' });
   }
 
-  const client = await pool.connect();
+  let amount: number;
   try {
-    await client.query('BEGIN');
+    amount = extractAmount(rpt.payload);
+  } catch (err: any) {
+    return res.status(400).json({ error: 'INVALID_TOTALS', detail: String(err?.message || err) });
+  }
+  if (amount <= 0) {
+    return res.status(400).json({ error: 'Amount must be positive' });
+  }
 
-    // compute running balance AFTER this entry:
-    // fetch last balance in this period (by id order), default 0
-    const { rows: lastRows } = await client.query<{
-      balance_after_cents: string | number;
-    }>(
-      `SELECT balance_after_cents
-       FROM owa_ledger
-       WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-       ORDER BY id DESC
-       LIMIT 1`,
-      [abn, taxType, periodId]
-    );
-    const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
-    const newBal = lastBal + amt;
+  const dryRun = String(process.env.DRY_RUN ?? 'true').toLowerCase() === 'true';
+  const channel: 'EFT' | 'BPAY' = rpt.payload.channel ?? 'EFT';
 
-    const release_uuid = genUUID();
-
-    const insert = `
-      INSERT INTO owa_ledger
-        (abn, tax_type, period_id, transfer_uuid, amount_cents, balance_after_cents,
-         rpt_verified, release_uuid, created_at)
-      VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
-      RETURNING id, transfer_uuid, balance_after_cents
-    `;
-    const transfer_uuid = genUUID();
-    const { rows: ins } = await client.query(insert, [
+  try {
+    const result = await executeRelease({
+      pool,
       abn,
       taxType,
       periodId,
-      transfer_uuid,
-      amt,
-      newBal,
-      release_uuid,
-    ]);
-
-    await client.query('COMMIT');
+      amountCents: amount,
+      channel,
+      dryRun,
+      rptId: rpt.rpt_id,
+    });
 
     return res.json({
       ok: true,
-      ledger_id: ins[0].id,
-      transfer_uuid,
-      release_uuid,
-      balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      receipt_id: result.receipt_id,
+      provider_ref: result.provider_ref,
+      ledger_id: result.ledger_id,
+      release_uuid: result.release_uuid,
+      bank_receipt_hash: result.bank_receipt_hash,
+      balance_after_cents: result.balance_after_cents,
+      dry_run: dryRun,
     });
   } catch (e: any) {
-    await client.query('ROLLBACK');
-    // common failures: unique single-release-per-period, allow-list, etc.
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
-  } finally {
-    client.release();
   }
 }

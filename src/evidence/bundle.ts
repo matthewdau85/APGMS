@@ -1,19 +1,63 @@
-﻿import { Pool } from "pg";
-const pool = new Pool();
+import { pool } from "../db/pool";
+import { getTaxTotals } from "../tax/totals";
 
 export async function buildEvidenceBundle(abn: string, taxType: string, periodId: string) {
-  const p = (await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId])).rows[0];
-  const rpt = (await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId])).rows[0];
-  const deltas = (await pool.query("select created_at as ts, amount_cents, hash_after, bank_receipt_hash from owa_ledger where abn= and tax_type= and period_id= order by id", [abn, taxType, periodId])).rows;
-  const last = deltas[deltas.length-1];
-  const bundle = {
-    bas_labels: { W1: null, W2: null, "1A": null, "1B": null }, // TODO: populate
-    rpt_payload: rpt?.payload ?? null,
-    rpt_signature: rpt?.signature ?? null,
-    owa_ledger_deltas: deltas,
-    bank_receipt_hash: last?.bank_receipt_hash ?? null,
-    anomaly_thresholds: p?.thresholds ?? {},
-    discrepancy_log: []  // TODO: populate from recon diffs
+  const periodRes = await pool.query(
+    `SELECT * FROM periods WHERE abn=$1 AND tax_type=$2 AND period_id=$3`,
+    [abn, taxType, periodId]
+  );
+  const period = periodRes.rows[0];
+  if (!period) {
+    throw new Error("PERIOD_NOT_FOUND");
+  }
+
+  const rptRes = await pool.query(
+    `SELECT payload, signature
+       FROM rpt_tokens
+      WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+      ORDER BY id DESC
+      LIMIT 1`,
+    [abn, taxType, periodId]
+  );
+  const rpt = rptRes.rows[0] ?? null;
+
+  const totalsRecord = await getTaxTotals(abn, taxType as "PAYGW" | "GST", periodId);
+
+  const ledgerRes = await pool.query(
+    `SELECT id, amount_cents, balance_after_cents, bank_receipt_id, bank_receipt_hash, hash_after, rpt_verified, created_at
+       FROM owa_ledger
+      WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+      ORDER BY id ASC`,
+    [abn, taxType, periodId]
+  );
+
+  const receiptLedger = ledgerRes.rows
+    .slice()
+    .reverse()
+    .find((row: any) => row.bank_receipt_id != null);
+
+  let receipt: null | { id: number; channel: string; provider_ref: string; dry_run: boolean } = null;
+  if (receiptLedger) {
+    const receiptRes = await pool.query(
+      `SELECT id, channel, provider_ref, dry_run
+         FROM bank_receipts
+        WHERE id=$1`,
+      [receiptLedger.bank_receipt_id]
+    );
+    if (receiptRes.rowCount) {
+      receipt = receiptRes.rows[0];
+    }
+  }
+
+  return {
+    labels: totalsRecord.labels,
+    totals: totalsRecord.totals,
+    rates_version: totalsRecord.rates_version,
+    rpt: rpt ? { payload: rpt.payload, signature: rpt.signature } : null,
+    proofs: {
+      merkle_root: period.merkle_root ?? null,
+      running_balance_hash: period.running_balance_hash ?? null,
+    },
+    receipt,
   };
-  return bundle;
 }
