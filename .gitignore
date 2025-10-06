@@ -1,6 +1,7 @@
 ﻿# Python / venv
 .venv/
 venv/
+.env
 __pycache__/
 
 # Node / builds
