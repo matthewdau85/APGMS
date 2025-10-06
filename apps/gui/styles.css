@@ -8,11 +8,15 @@ nav a.active{ background:var(--primary); color:white }
 header h1{ margin:10px 0 0 0; font-size:20px }
 .grid{ display:grid; gap:12px }
 .card{ background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px }
+.context-panel h3{ margin-top:0 }
+.context-panel p{ margin:6px 0 0; color:var(--muted) }
 .btn{ border:1px solid var(--border); background:var(--bg); padding:8px 12px; border-radius:10px; cursor:pointer }
 .btn:focus{ outline:3px solid var(--focus) }
 label{ display:block; margin:8px 0 4px; color:var(--muted) }
 input, select, textarea{ width:100%; padding:8px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--fg) }
 table{ width:100%; border-collapse:collapse }
 th,td{ padding:8px; border-bottom:1px solid var(--border) }
+.empty{ color:var(--muted); font-style:italic }
+[data-testid="empty-state"]{ color:var(--muted) }
 .kbd{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; background:var(--card); border:1px solid var(--border); border-radius:6px; padding:2px 6px }
 .footer{ margin-top:24px; color:var(--muted) }
