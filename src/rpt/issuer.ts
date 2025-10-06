@@ -1,11 +1,15 @@
-﻿import { Pool } from "pg";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
 import { exceeds } from "../anomaly/deterministic";
-const pool = new Pool();
-const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
+import { getPool } from "../db/pool";
 
 export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
+  const pool = getPool();
+  const secretKeyB64 = process.env.RPT_ED25519_SECRET_BASE64 || "";
+  const secretKey = Buffer.from(secretKeyB64, "base64");
+  if (secretKey.length !== 64) {
+    throw new Error("BAD_SECRET_KEY");
+  }
   const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
   if (p.rowCount === 0) throw new Error("PERIOD_NOT_FOUND");
   const row = p.rows[0];
