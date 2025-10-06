@@ -3,7 +3,7 @@
   const base = (cfg.baseUrl || "/api").replace(/\/+$/, "");
   const $ = (sel, root=document) => root.querySelector(sel);
 
-  const routes = ["home","connections","transactions","tax-bas","help","settings"];
+  const routes = ["home","connections","transactions","tax-bas","evidence","help","settings"];
   function currentRoute(){ const h = location.hash.replace(/^#\/?/, "").toLowerCase(); return routes.includes(h) ? h : "home"; }
   window.addEventListener("hashchange", () => render());
 
@@ -22,6 +22,7 @@
           <a href="#/connections" class="${active==='connections'?'active':''}">Connections</a>
           <a href="#/transactions"class="${active==='transactions'?'active':''}">Transactions</a>
           <a href="#/tax-bas"     class="${active==='tax-bas'?'active':''}">Tax & BAS</a>
+          <a href="#/evidence"    class="${active==='evidence'?'active':''}">Evidence</a>
           <a href="#/help"        class="${active==='help'?'active':''}">Help</a>
           <a href="#/settings"    class="${active==='settings'?'active':''}">Settings</a>
         </nav>`;
@@ -121,6 +122,42 @@
             <button class="btn" id="btnValidateBas">Validate with ATO (SBR)</button>
             <button class="btn" id="btnLodgeBas">Lodge BAS</button>
             <div id="lodgeMsg" style="margin-top:8px"></div>
+          </div>
+        </div>
+      `;
+    },
+
+    evidence(){
+      return `
+        ${this.nav('evidence')}
+        <div class="evidence-layout" style="margin-top:12px">
+          <div class="card evidence-sidebar">
+            <h3>Periods</h3>
+            <p id="evListStatus" class="muted">Loading…</p>
+            <div id="evList" class="evidence-periods"></div>
+          </div>
+          <div class="card evidence-main">
+            <div class="evidence-header">
+              <div>
+                <h3 id="evTitle">Select a period</h3>
+                <p id="evSubtitle" class="muted"></p>
+              </div>
+              <div class="evidence-actions">
+                <button class="btn" id="evDiffBtn" disabled>Diff to previous evidence</button>
+                <button class="btn" id="evDownloadBtn" disabled>Download ZIP</button>
+              </div>
+            </div>
+            <div id="evDiffPanel" class="evidence-diff hidden"></div>
+            <div id="evTabs" class="evidence-tabs">
+              <button type="button" data-tab="overview" class="active">Overview</button>
+              <button type="button" data-tab="hashes">Hashes</button>
+              <button type="button" data-tab="rules">Rules</button>
+              <button type="button" data-tab="settlement">Settlement</button>
+              <button type="button" data-tab="json">JSON</button>
+            </div>
+            <div id="evContent" class="evidence-content">
+              <p class="muted">Choose a period to load evidence.</p>
+            </div>
           </div>
         </div>
       `;
@@ -239,6 +276,428 @@
       $('#btnValidateBas').onclick = async () => { $('#lodgeMsg').textContent = 'Validating with ATO...'; try{ await api('/bas/validate', { method:'POST' }); $('#lodgeMsg').textContent='Validated'; } catch(e){ $('#lodgeMsg').textContent='Failed: '+e.message; } };
       $('#btnLodgeBas').onclick = async () => { $('#lodgeMsg').textContent = 'Lodging with ATO...'; try{ await api('/bas/lodge', { method:'POST' }); $('#lodgeMsg').textContent='Lodged'; } catch(e){ $('#lodgeMsg').textContent='Failed: '+e.message; } };
       try{ $('#atoStatus').textContent = (await api('/ato/status')).status; }catch{ $('#atoStatus').textContent='Unavailable'; }
+    }
+
+    if (view==='evidence') {
+      const listEl = $('#evList');
+      const statusEl = $('#evListStatus');
+      const titleEl = $('#evTitle');
+      const subtitleEl = $('#evSubtitle');
+      const tabsEl = $('#evTabs');
+      const contentEl = $('#evContent');
+      const diffPanel = $('#evDiffPanel');
+      const diffBtn = $('#evDiffBtn');
+      const downloadBtn = $('#evDownloadBtn');
+      const cache = new Map();
+      let periods = [];
+      let current = null;
+      let currentEvidence = null;
+      let currentTab = 'overview';
+      let changedPaths = new Set();
+
+      function escapeHtml(value){
+        return String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      function fmtDate(value){
+        if (!value) return '—';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return escapeHtml(value);
+        return escapeHtml(d.toLocaleString());
+      }
+
+      function fmtCurrency(cents){
+        if (cents === null || cents === undefined) return '—';
+        const amount = Number(cents) / 100;
+        if (!Number.isFinite(amount)) return escapeHtml(String(cents));
+        return escapeHtml(`A$${amount.toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}`);
+      }
+
+      function fmtNumber(value){
+        if (value === null || value === undefined) return '—';
+        const num = Number(value);
+        if (!Number.isFinite(num)) return escapeHtml(String(value));
+        return escapeHtml(num.toLocaleString());
+      }
+
+      function fmtBytes(size){
+        if (size === null || size === undefined) return '—';
+        let val = Number(size);
+        if (!Number.isFinite(val)) return escapeHtml(String(size));
+        const units = ['B','KB','MB','GB'];
+        let i = 0;
+        while (val >= 1024 && i < units.length - 1) { val /= 1024; i++; }
+        return escapeHtml(`${val.toFixed(i ? 1 : 0)} ${units[i]}`);
+      }
+
+      function formatHash(value){
+        if (!value) return '—';
+        return `<code>${escapeHtml(value)}</code>`;
+      }
+
+      function makeKey(item){
+        return `${item.abn}|${item.taxType}|${item.periodId}`;
+      }
+
+      function applyHighlights(){
+        const nodes = contentEl.querySelectorAll('[data-path]');
+        nodes.forEach(node => {
+          if (changedPaths.has(node.dataset.path)) node.classList.add('ev-changed');
+          else node.classList.remove('ev-changed');
+        });
+      }
+
+      function renderOverview(data){
+        if (!data) return `<p class="muted">Choose a period to load evidence.</p>`;
+        const meta = data.meta || {};
+        const period = data.period || {};
+        const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+        const approvals = Array.isArray(data.approvals) ? data.approvals : [];
+        const rpt = data.rpt || null;
+        const rows = [
+          `<tr><th>Bundle generated</th><td>${fmtDate(meta.generated_at)}</td></tr>`,
+          `<tr data-path="period.state"><th>State</th><td>${escapeHtml(period.state ?? '—')}</td></tr>`,
+          `<tr data-path="period.final_liability_cents"><th>Final liability</th><td>${fmtCurrency(period.final_liability_cents)}</td></tr>`,
+          `<tr data-path="period.accrued_cents"><th>Accrued</th><td>${fmtCurrency(period.accrued_cents)}</td></tr>`,
+          `<tr data-path="period.credited_to_owa_cents"><th>Credited to OWA</th><td>${fmtCurrency(period.credited_to_owa_cents)}</td></tr>`,
+          `<tr><th>Thresholds</th><td><code>${escapeHtml(JSON.stringify(period.thresholds || {}))}</code></td></tr>`
+        ].join('');
+        const rptSection = rpt ? `
+          <table class="evidence-summary"><tbody>
+            <tr data-path="rpt.created_at"><th>Issued</th><td>${fmtDate(rpt.created_at)}</td></tr>
+            <tr data-path="rpt.signature"><th>Signature</th><td>${formatHash(rpt.signature)}</td></tr>
+            <tr data-path="rpt.payload_sha256"><th>Payload SHA256</th><td>${formatHash(rpt.payload_sha256)}</td></tr>
+          </tbody></table>
+          <details class="ev-details"><summary>View payload</summary><pre class="code-block">${escapeHtml(JSON.stringify(rpt.payload, null, 2))}</pre></details>
+        ` : `<p class="muted">No RPT issued for this period.</p>`;
+        const approvalsList = approvals.length ? `<ul class="ev-listing">${approvals.map(a => `
+          <li>
+            <strong>${escapeHtml(a.action || '—')}</strong>
+            <span>${escapeHtml(a.actor || '—')}</span>
+            <time>${fmtDate(a.at)}</time>
+            ${a.payload_hash ? `<code>${escapeHtml(a.payload_hash)}</code>` : ''}
+          </li>`).join('')}</ul>` : `<p class="muted">No approvals recorded.</p>`;
+        const attachmentsList = attachments.length ? `<ul class="ev-listing">${attachments.map(a => `
+          <li>
+            <strong>${escapeHtml(a.name)}</strong>
+            <span class="muted">${escapeHtml(a.description || '')}</span>
+            <span class="muted">${escapeHtml(a.mime || 'application/octet-stream')} • ${fmtBytes(a.size)}</span>
+          </li>`).join('')}</ul>` : `<p class="muted">No attachments available.</p>`;
+        return `
+          <section class="ev-section">
+            <h4>Period summary</h4>
+            <table class="evidence-summary"><tbody>${rows}</tbody></table>
+          </section>
+          <section class="ev-section">
+            <h4>RPT</h4>
+            ${rptSection}
+          </section>
+          <section class="ev-section">
+            <h4>Approvals</h4>
+            ${approvalsList}
+          </section>
+          <section class="ev-section">
+            <h4>Attachments</h4>
+            ${attachmentsList}
+          </section>
+        `;
+      }
+
+      function renderHashes(data){
+        if (!data) return `<p class="muted">Choose a period to load evidence.</p>`;
+        const hashes = data.hashes || {};
+        return `
+          <section class="ev-section">
+            <h4>Hash material</h4>
+            <table class="evidence-summary"><tbody>
+              <tr data-path="hashes.merkle_root"><th>Merkle root</th><td>${formatHash(hashes.merkle_root)}</td></tr>
+              <tr data-path="hashes.running_balance_hash"><th>Running balance hash</th><td>${formatHash(hashes.running_balance_hash)}</td></tr>
+              <tr data-path="hashes.ledger_head_hash"><th>Ledger head hash</th><td>${formatHash(hashes.ledger_head_hash)}</td></tr>
+              <tr data-path="hashes.bank_receipt_hash"><th>Bank receipt hash</th><td>${formatHash(hashes.bank_receipt_hash)}</td></tr>
+              <tr data-path="hashes.rpt_payload_sha256"><th>RPT payload SHA256</th><td>${formatHash(hashes.rpt_payload_sha256)}</td></tr>
+            </tbody></table>
+          </section>
+        `;
+      }
+
+      function renderRules(data){
+        if (!data) return `<p class="muted">Choose a period to load evidence.</p>`;
+        const rules = data.rules || { files: [] };
+        const files = Array.isArray(rules.files) ? rules.files : [];
+        const rows = files.length ? files.map(f => `
+          <tr>
+            <td>${escapeHtml(f.name)}</td>
+            <td><code>${escapeHtml(f.sha256 || '—')}</code></td>
+            <td>${fmtBytes(f.size)}</td>
+          </tr>
+        `).join('') : `<tr><td colspan="3" class="muted">No rule files found.</td></tr>`;
+        return `
+          <section class="ev-section">
+            <h4>Rule versions</h4>
+            <table class="evidence-summary"><tbody>
+              <tr data-path="rules.rates_version"><th>Rates version</th><td>${escapeHtml(rules.rates_version || '—')}</td></tr>
+            </tbody></table>
+          </section>
+          <section class="ev-section">
+            <h4>Rule file hashes</h4>
+            <table class="evidence-ledger">
+              <thead><tr><th>File</th><th>SHA256</th><th>Size</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </section>
+        `;
+      }
+
+      function renderSettlement(data){
+        if (!data) return `<p class="muted">Choose a period to load evidence.</p>`;
+        const settlement = data.settlement || {};
+        const ledger = Array.isArray(data.owa_ledger) ? data.owa_ledger : [];
+        const sample = ledger.slice(-10);
+        const rows = sample.length ? sample.map(r => `
+          <tr>
+            <td>${escapeHtml(r.created_at)}</td>
+            <td>${escapeHtml(r.transfer_uuid)}</td>
+            <td>${fmtCurrency(r.amount_cents)}</td>
+            <td>${fmtCurrency(r.balance_after_cents)}</td>
+            <td><code>${escapeHtml(r.bank_receipt_hash || '')}</code></td>
+          </tr>
+        `).join('') : `<tr><td colspan="5" class="muted">No ledger entries recorded.</td></tr>`;
+        return `
+          <section class="ev-section">
+            <h4>Settlement receipt</h4>
+            <table class="evidence-summary"><tbody>
+              <tr data-path="settlement.receipt"><th>Receipt hash</th><td>${formatHash(settlement.receipt)}</td></tr>
+              <tr data-path="settlement.ledger_entries"><th>Ledger entries</th><td>${fmtNumber(settlement.ledger_entries)}</td></tr>
+              <tr data-path="settlement.balance_after_cents"><th>Balance after</th><td>${fmtCurrency(settlement.balance_after_cents)}</td></tr>
+            </tbody></table>
+          </section>
+          <section class="ev-section">
+            <h4>Ledger preview (latest ${sample.length} of ${ledger.length})</h4>
+            <table class="evidence-ledger">
+              <thead><tr><th>When</th><th>Transfer</th><th>Amount</th><th>Balance</th><th>Receipt hash</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </section>
+        `;
+      }
+
+      function renderJson(data){
+        if (!data) return `<p class="muted">Choose a period to load evidence.</p>`;
+        return `<pre class="code-block">${escapeHtml(JSON.stringify(data, null, 2))}</pre>`;
+      }
+
+      function renderTab(tab){
+        if (tab==='hashes') return renderHashes(currentEvidence);
+        if (tab==='rules') return renderRules(currentEvidence);
+        if (tab==='settlement') return renderSettlement(currentEvidence);
+        if (tab==='json') return renderJson(currentEvidence);
+        return renderOverview(currentEvidence);
+      }
+
+      function renderCurrent(){
+        contentEl.innerHTML = renderTab(currentTab);
+        applyHighlights();
+      }
+
+      function setTab(tab){
+        currentTab = tab;
+        tabsEl.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.tab===tab));
+        renderCurrent();
+      }
+
+      tabsEl.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => setTab(btn.dataset.tab));
+      });
+
+      function renderList(){
+        listEl.innerHTML = '';
+        if (!periods.length) return;
+        const frag = document.createDocumentFragment();
+        periods.forEach(item => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'evidence-period';
+          if (current && makeKey(current) === makeKey(item)) btn.classList.add('active');
+          btn.innerHTML = `<span class="period">${escapeHtml(item.periodId)}</span><span class="meta">${escapeHtml(item.taxType)} • ${escapeHtml(item.state || '—')}</span><span class="meta">${escapeHtml(item.abn)}</span>`;
+          btn.onclick = () => selectPeriod(item);
+          frag.appendChild(btn);
+        });
+        listEl.appendChild(frag);
+      }
+
+      async function loadEvidence(item){
+        const key = makeKey(item);
+        if (cache.has(key)) return cache.get(key);
+        const query = `/evidence?abn=${encodeURIComponent(item.abn)}&taxType=${encodeURIComponent(item.taxType)}&periodId=${encodeURIComponent(item.periodId)}`;
+        const res = await api(query);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        cache.set(key, res.body);
+        return res.body;
+      }
+
+      function findPrevious(item){
+        const idx = periods.findIndex(p => makeKey(p) === makeKey(item));
+        if (idx === -1) return null;
+        for (let i = idx + 1; i < periods.length; i++) {
+          const candidate = periods[i];
+          if (candidate.abn === item.abn && candidate.taxType === item.taxType) return candidate;
+        }
+        return null;
+      }
+
+      function flatten(obj, prefix, out){
+        if (obj === null || obj === undefined) {
+          if (prefix) out[prefix] = obj;
+          return;
+        }
+        if (typeof obj !== 'object') {
+          if (prefix) out[prefix] = obj;
+          return;
+        }
+        if (Array.isArray(obj)) {
+          if (prefix) out[prefix] = JSON.stringify(obj);
+          return;
+        }
+        const keys = Object.keys(obj);
+        if (!keys.length) {
+          if (prefix) out[prefix] = obj;
+          return;
+        }
+        keys.forEach(key => {
+          const next = prefix ? `${prefix}.${key}` : key;
+          flatten(obj[key], next, out);
+        });
+      }
+
+      function computeDiff(prev, next){
+        const ignore = new Set(['meta.generated_at']);
+        const prevFlat = {};
+        const nextFlat = {};
+        flatten(prev, '', prevFlat);
+        flatten(next, '', nextFlat);
+        const keys = new Set([...Object.keys(prevFlat), ...Object.keys(nextFlat)]);
+        const diffs = [];
+        keys.forEach(key => {
+          if (ignore.has(key)) return;
+          const before = prevFlat[key];
+          const after = nextFlat[key];
+          const beforeNorm = before === undefined || before === null ? '—' : typeof before === 'string' ? before : JSON.stringify(before);
+          const afterNorm = after === undefined || after === null ? '—' : typeof after === 'string' ? after : JSON.stringify(after);
+          if (beforeNorm === afterNorm) return;
+          diffs.push({ path: key, before: beforeNorm, after: afterNorm });
+        });
+        return diffs.sort((a,b)=>a.path.localeCompare(b.path));
+      }
+
+      function renderDiffTable(diffs, prev){
+        const header = `<div class="evidence-diff-header"><strong>Changes vs ${escapeHtml(prev.periodId)}</strong><button type="button" class="link-btn" id="evDiffClear">Clear</button></div>`;
+        if (!diffs.length) {
+          return `${header}<p class="muted">Evidence matches ${escapeHtml(prev.periodId)}.</p>`;
+        }
+        const rows = diffs.map(d => `<tr><td>${escapeHtml(d.path)}</td><td>${escapeHtml(d.before)}</td><td>${escapeHtml(d.after)}</td></tr>`).join('');
+        return `${header}<table><thead><tr><th>Field</th><th>${escapeHtml(prev.periodId)}</th><th>${escapeHtml(current.periodId)}</th></tr></thead><tbody>${rows}</tbody></table>`;
+      }
+
+      function clearDiff(){
+        changedPaths = new Set();
+        diffPanel.classList.add('hidden');
+        diffPanel.innerHTML = '';
+        applyHighlights();
+      }
+
+      async function showDiff(){
+        if (!current || !currentEvidence) return;
+        const prev = findPrevious(current);
+        if (!prev) {
+          diffPanel.classList.remove('hidden');
+          diffPanel.innerHTML = '<p class="muted">No previous evidence available for this ABN and tax type.</p>';
+          changedPaths = new Set();
+          applyHighlights();
+          return;
+        }
+        diffPanel.classList.remove('hidden');
+        diffPanel.innerHTML = '<p class="muted">Calculating diff…</p>';
+        try {
+          const prevEvidence = await loadEvidence(prev);
+          const diffs = computeDiff(prevEvidence, currentEvidence);
+          diffPanel.innerHTML = renderDiffTable(diffs, prev);
+          changedPaths = new Set(diffs.map(d => d.path));
+          applyHighlights();
+        } catch (e) {
+          diffPanel.innerHTML = '<p class="muted">Unable to diff evidence.</p>';
+          changedPaths = new Set();
+          applyHighlights();
+        }
+        const clearBtn = $('#evDiffClear');
+        if (clearBtn) clearBtn.onclick = clearDiff;
+      }
+
+      async function downloadZip(){
+        if (!current) return;
+        downloadBtn.disabled = true;
+        try {
+          const url = `${base}/evidence/zip?abn=${encodeURIComponent(current.abn)}&taxType=${encodeURIComponent(current.taxType)}&periodId=${encodeURIComponent(current.periodId)}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP '+res.status);
+          const blob = await res.blob();
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `evidence_${current.abn}_${current.periodId}_${current.taxType}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          URL.revokeObjectURL(a.href);
+          a.remove();
+        } catch (e) {
+          alert('Failed to download ZIP.');
+        } finally {
+          downloadBtn.disabled = false;
+        }
+      }
+
+      async function selectPeriod(item){
+        current = item;
+        changedPaths = new Set();
+        diffPanel.classList.add('hidden');
+        diffPanel.innerHTML = '';
+        renderList();
+        titleEl.textContent = `Evidence ${item.periodId}`;
+        subtitleEl.textContent = `${item.abn} · ${item.taxType}`;
+        contentEl.innerHTML = '<p class="muted">Loading…</p>';
+        downloadBtn.disabled = true;
+        diffBtn.disabled = true;
+        try {
+          currentEvidence = await loadEvidence(item);
+          downloadBtn.disabled = false;
+          diffBtn.disabled = !findPrevious(item);
+          renderCurrent();
+        } catch (e) {
+          currentEvidence = null;
+          contentEl.innerHTML = '<p class="muted">Failed to load evidence.</p>';
+        }
+      }
+
+      async function loadIndex(){
+        statusEl.textContent = 'Loading…';
+        listEl.innerHTML = '';
+        try {
+          const res = await api('/evidence/index');
+          if (!res.ok || !Array.isArray(res.body) || !res.body.length) {
+            statusEl.textContent = res.ok ? 'No evidence available yet.' : 'Failed to load evidence list.';
+            periods = [];
+            return;
+          }
+          statusEl.textContent = '';
+          periods = res.body;
+          renderList();
+          selectPeriod(periods[0]);
+        } catch (e) {
+          statusEl.textContent = 'Failed to load evidence list.';
+        }
+      }
+
+      diffBtn.onclick = showDiff;
+      downloadBtn.onclick = downloadZip;
+      loadIndex();
     }
 
     if (view==='settings') {
