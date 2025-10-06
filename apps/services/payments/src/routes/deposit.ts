@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { pool } from "../index.js";
 import { randomUUID } from "node:crypto";
+import { merkleRootHex, sha256Hex } from "../../../../src/crypto/merkle.js";
 
 export async function deposit(req: Request, res: Response) {
   try {
@@ -14,24 +15,60 @@ export async function deposit(req: Request, res: Response) {
       await client.query("BEGIN");
 
       const { rows: last } = await client.query(
-        `SELECT balance_after_cents FROM owa_ledger
-         WHERE abn=$1 AND tax_type=$2 AND period_id=$3
-         ORDER BY id DESC LIMIT 1`,
+        `SELECT balance_after_cents, hash_after
+           FROM owa_ledger
+          WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+          ORDER BY id DESC LIMIT 1`,
         [abn, taxType, periodId]
       );
       const prevBal = last[0]?.balance_after_cents ?? 0;
+      const prevHash = last[0]?.hash_after ?? "";
       const newBal = prevBal + amt;
+
+      const transferUuid = randomUUID();
+      const bankReceiptHash = `rcpt:${transferUuid.replace(/-/g, "").slice(0, 24)}`;
+      const hashAfter = sha256Hex(prevHash + bankReceiptHash + String(newBal));
 
       const { rows: ins } = await client.query(
         `INSERT INTO owa_ledger
-           (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,now())
-         RETURNING id,transfer_uuid,balance_after_cents`,
-        [abn, taxType, periodId, randomUUID(), amt, newBal]
+           (abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after,created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,now())
+         RETURNING id,transfer_uuid,balance_after_cents,hash_after`,
+        [abn, taxType, periodId, transferUuid, amt, newBal, bankReceiptHash, prevHash, hashAfter]
+      );
+
+      const { rows: ledgerRows } = await client.query(
+        `SELECT transfer_uuid, amount_cents, balance_after_cents
+           FROM owa_ledger
+          WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+          ORDER BY id`,
+        [abn, taxType, periodId]
+      );
+      const merkle = merkleRootHex(
+        ledgerRows.map((row) => `${row.transfer_uuid}:${row.amount_cents}:${row.balance_after_cents}`)
+      );
+
+      await client.query(
+        `INSERT INTO periods(
+           abn,tax_type,period_id,state,basis,accrued_cents,credited_to_owa_cents,final_liability_cents,
+           merkle_root,running_balance_hash,anomaly_vector,thresholds)
+         VALUES ($1,$2,$3,'OPEN','ACCRUAL',0,$4,$4,$5,$6,'{}','{}')
+         ON CONFLICT (abn,tax_type,period_id)
+         DO UPDATE SET
+           credited_to_owa_cents = EXCLUDED.credited_to_owa_cents,
+           final_liability_cents = EXCLUDED.final_liability_cents,
+           merkle_root = EXCLUDED.merkle_root,
+           running_balance_hash = EXCLUDED.running_balance_hash`,
+        [abn, taxType, periodId, newBal, merkle, hashAfter]
       );
 
       await client.query("COMMIT");
-      return res.json({ ok: true, ledger_id: ins[0].id, balance_after_cents: ins[0].balance_after_cents });
+      return res.json({
+        ok: true,
+        ledger_id: ins[0].id,
+        transfer_uuid: ins[0].transfer_uuid,
+        balance_after_cents: ins[0].balance_after_cents,
+      });
 
     } catch (e:any) {
       await client.query("ROLLBACK");
