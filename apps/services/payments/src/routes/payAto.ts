@@ -1,59 +1,136 @@
-﻿// apps/services/payments/src/routes/payAto.ts
-import { Request, Response } from 'express';
-import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
-import { pool } from '../index.js';
+import { Request, Response } from "express";
+import { randomUUID } from "node:crypto";
+import { ZodError, z } from "zod";
 
-function genUUID() {
-  return crypto.randomUUID();
+import { pool } from "../index.js";
+import { isAbnAllowlisted } from "../utils/allowlist.js";
+
+const releaseRequestSchema = z
+  .object({
+    abn: z
+      .string()
+      .trim()
+      .regex(/^[0-9]{11}$/u, { message: "abn must be 11 digits" }),
+    taxType: z.string().trim().min(1, { message: "taxType is required" }),
+    periodId: z.string().trim().min(1, { message: "periodId is required" }),
+    amountCents: z.preprocess(val => {
+      if (typeof val === "number" && Number.isFinite(val)) return val;
+      if (typeof val === "string" && val.trim().length) {
+        const parsed = Number(val);
+        if (Number.isFinite(parsed)) return parsed;
+      }
+      return val;
+    }, z.number({ invalid_type_error: "amountCents must be a number" })),
+    currency: z
+      .string()
+      .trim()
+      .transform(v => v.toUpperCase())
+      .refine(v => v === "AUD", { message: "currency must be AUD" }),
+    mode: z
+      .preprocess(val => (val === undefined || val === null ? "COMMIT" : val), z.enum(["COMMIT", "DRY_RUN"])),
+    reversal: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (!Number.isFinite(value.amountCents)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "amountCents must be finite", path: ["amountCents"] });
+      return;
+    }
+    if (value.amountCents === 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "amountCents must be non-zero", path: ["amountCents"] });
+      return;
+    }
+    if (value.reversal) {
+      if (value.amountCents >= 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "reversal amount must be negative", path: ["amountCents"] });
+      }
+    } else if (value.amountCents <= 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "amountCents must be positive", path: ["amountCents"] });
+    }
+  });
+
+type ReleaseRequest = z.infer<typeof releaseRequestSchema>;
+
+const PG_ERROR_MAP: Record<string, { status: number; error: string }> = {
+  "23505": { status: 409, error: "Release already exists for this period" },
+  "23503": { status: 409, error: "Related ledger entry not found" },
+  "23514": { status: 400, error: "Ledger constraint violated" },
+};
+
+function buildReceipt(req: ReleaseRequest, opts: { requestId: string; rpt: any; dryRun: boolean; balanceAfter?: number; transferUuid?: string; releaseUuid?: string; ledgerId?: number }) {
+  const base = {
+    ok: true,
+    request_id: opts.requestId,
+    mode: req.mode,
+    amount_cents: Math.abs(req.amountCents),
+    currency: req.currency,
+    abn: req.abn,
+    taxType: req.taxType,
+    periodId: req.periodId,
+    reversal: Boolean(req.reversal),
+    rpt_ref: opts.rpt
+      ? { rpt_id: opts.rpt.rpt_id, kid: opts.rpt.kid, payload_sha256: opts.rpt.payload_sha256 }
+      : undefined,
+  } as const;
+
+  if (opts.dryRun) {
+    return { ...base, dry_run: true };
+  }
+
+  return {
+    ...base,
+    dry_run: false,
+    ledger_id: opts.ledgerId,
+    transfer_uuid: opts.transferUuid,
+    release_uuid: opts.releaseUuid,
+    balance_after_cents: opts.balanceAfter,
+  };
 }
 
-/**
- * Minimal release path:
- * - Requires rptGate to have attached req.rpt
- * - Inserts a single negative ledger entry for the given period
- * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
- */
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
-  if (!abn || !taxType || !periodId) {
-    return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
+  const requestId = randomUUID();
+
+  let parsed: ReleaseRequest;
+  try {
+    parsed = releaseRequestSchema.parse(req.body ?? {});
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return res.status(400).json({ error: "Validation failed", request_id: requestId, issues: err.issues });
+    }
+    return res.status(400).json({ error: "Invalid payload", request_id: requestId });
   }
 
-  // default a tiny test debit if not provided
-  const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
-
-  // must be negative for a release
-  if (amt >= 0) {
-    return res.status(400).json({ error: 'amountCents must be negative for a release' });
+  if (!isAbnAllowlisted(parsed.abn)) {
+    return res.status(403).json({ error: "ABN not allowlisted", request_id: requestId });
   }
 
-  // rptGate attaches req.rpt when verification succeeds
   const rpt = (req as any).rpt;
   if (!rpt) {
-    return res.status(403).json({ error: 'RPT not verified' });
+    return res.status(403).json({ error: "RPT not verified", request_id: requestId });
   }
+
+  if (parsed.mode === "DRY_RUN") {
+    return res.json(buildReceipt(parsed, { requestId, rpt, dryRun: true }));
+  }
+
+  const ledgerDelta = parsed.reversal ? Math.abs(parsed.amountCents) : -Math.abs(parsed.amountCents);
 
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
-    // compute running balance AFTER this entry:
-    // fetch last balance in this period (by id order), default 0
-    const { rows: lastRows } = await client.query<{
-      balance_after_cents: string | number;
-    }>(
+    const { rows: lastRows } = await client.query<{ balance_after_cents: string | number }>(
       `SELECT balance_after_cents
        FROM owa_ledger
        WHERE abn=$1 AND tax_type=$2 AND period_id=$3
        ORDER BY id DESC
        LIMIT 1`,
-      [abn, taxType, periodId]
+      [parsed.abn, parsed.taxType, parsed.periodId]
     );
     const lastBal = lastRows.length ? Number(lastRows[0].balance_after_cents) : 0;
-    const newBal = lastBal + amt;
+    const newBal = lastBal + ledgerDelta;
 
-    const release_uuid = genUUID();
+    const transferUuid = randomUUID();
+    const releaseUuid = randomUUID();
 
     const insert = `
       INSERT INTO owa_ledger
@@ -62,31 +139,40 @@ export async function payAtoRelease(req: Request, res: Response) {
       VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
       RETURNING id, transfer_uuid, balance_after_cents
     `;
-    const transfer_uuid = genUUID();
-    const { rows: ins } = await client.query(insert, [
-      abn,
-      taxType,
-      periodId,
-      transfer_uuid,
-      amt,
+
+    const { rows: inserted } = await client.query(insert, [
+      parsed.abn,
+      parsed.taxType,
+      parsed.periodId,
+      transferUuid,
+      ledgerDelta,
       newBal,
-      release_uuid,
+      releaseUuid,
     ]);
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
-    return res.json({
-      ok: true,
-      ledger_id: ins[0].id,
-      transfer_uuid,
-      release_uuid,
-      balance_after_cents: ins[0].balance_after_cents,
-      rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
-    });
-  } catch (e: any) {
-    await client.query('ROLLBACK');
-    // common failures: unique single-release-per-period, allow-list, etc.
-    return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
+    return res.json(
+      buildReceipt(parsed, {
+        requestId,
+        rpt,
+        dryRun: false,
+        balanceAfter: Number(inserted[0].balance_after_cents),
+        transferUuid: inserted[0].transfer_uuid,
+        releaseUuid,
+        ledgerId: inserted[0].id,
+      })
+    );
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    const pgCode = err?.code as string | undefined;
+    if (pgCode && PG_ERROR_MAP[pgCode]) {
+      const mapped = PG_ERROR_MAP[pgCode];
+      return res.status(mapped.status).json({ error: mapped.error, request_id: requestId, detail: err?.detail });
+    }
+
+    console.error(`[payments] release error ${requestId}`, err);
+    return res.status(500).json({ error: "Release error", request_id: requestId });
   } finally {
     client.release();
   }

@@ -40,7 +40,8 @@ export function PaymentsForm() {
         abn,
         taxType,
         periodId,
-        amountCents: -Math.abs(amountCents), // negative
+        currency: "AUD",
+        amountCents: Math.abs(amountCents),
       });
       setStatus(`✅ Released. Transfer ${res.transfer_uuid}. Balance ${res.balance_after_cents}`);
     } catch (err: any) {

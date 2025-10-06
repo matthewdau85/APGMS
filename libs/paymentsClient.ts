@@ -1,7 +1,12 @@
 // libs/paymentsClient.ts
 type Common = { abn: string; taxType: string; periodId: string };
-export type DepositArgs = Common & { amountCents: number };   // > 0
-export type ReleaseArgs = Common & { amountCents: number };   // < 0
+export type DepositArgs = Common & { amountCents: number }; // > 0
+export type ReleaseArgs = Common & {
+  amountCents: number; // > 0 unless reversal
+  currency: string;
+  mode?: "COMMIT" | "DRY_RUN";
+  reversal?: boolean;
+} & Common;
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
