@@ -1,7 +1,8 @@
 // libs/paymentsClient.ts
 type Common = { abn: string; taxType: string; periodId: string };
+type Destination = { bpay_biller?: string; crn?: string; bsb?: string; acct?: string };
 export type DepositArgs = Common & { amountCents: number };   // > 0
-export type ReleaseArgs = Common & { amountCents: number };   // < 0
+export type ReleaseArgs = Common & { amountCents: number; destination?: Destination };   // < 0
 
 // Prefer NEXT_PUBLIC_ (browser-safe), then server-only, then default
 const BASE =
@@ -20,6 +21,11 @@ async function handle(res: Response) {
   return json;
 }
 
+type RequestOptions = {
+  headers?: Record<string, string>;
+  signal?: AbortSignal;
+};
+
 export const Payments = {
   async deposit(args: DepositArgs) {
     const res = await fetch(`${BASE}/deposit`, {
@@ -29,12 +35,15 @@ export const Payments = {
     });
     return handle(res);
   },
-  async payAto(args: ReleaseArgs) {
-    const res = await fetch(`${BASE}/payAto`, {
+  async payAto(args: ReleaseArgs, options?: RequestOptions) {
+    const headers = { "content-type": "application/json", ...(options?.headers ?? {}) };
+    const init: RequestInit = {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify(args),
-    });
+    };
+    if (options?.signal) init.signal = options.signal;
+    const res = await fetch(`${BASE}/payAto`, init);
     return handle(res);
   },
   async balance(q: Common) {
