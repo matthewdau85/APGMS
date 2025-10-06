@@ -1,77 +1,210 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import Page from "../ui/Page";
+import { colors, fontSizes, radii, shadows, spacing } from "../ui/tokens.css";
+
+export const meta = {
+  title: "Setup wizard",
+  helpSlug: "wizard",
+};
 
 const steps = [
-  "Business Details",
-  "Link Accounts",
-  "Add Payroll Provider",
-  "Setup Automated Transfers",
-  "Review & Complete"
-];
+  { id: "business", label: "Business details" },
+  { id: "accounts", label: "Link accounts" },
+  { id: "payroll", label: "Payroll provider" },
+  { id: "automation", label: "Automation" },
+  { id: "review", label: "Review & complete" },
+] as const;
+
+const panelStyle: React.CSSProperties = {
+  background: colors.surface,
+  borderRadius: radii.lg,
+  boxShadow: shadows.soft,
+  padding: spacing.xl,
+  display: "flex",
+  flexDirection: "column",
+  gap: spacing.md,
+};
 
 export default function Wizard() {
-  const [step, setStep] = useState(0);
+  const [active, setActive] = useState(0);
+  const step = useMemo(() => steps[active], [active]);
 
   return (
-    <div className="main-card">
-      <h1 style={{ color: "#00716b", fontWeight: 700, fontSize: 30, marginBottom: 28 }}>Setup Wizard</h1>
-      <div style={{ marginBottom: 20 }}>
-        <b>Step {step + 1} of {steps.length}: {steps[step]}</b>
-      </div>
-      <div style={{ background: "#f9f9f9", borderRadius: 10, padding: 24, minHeight: 120 }}>
-        {step === 0 && (
-          <div>
-            <label>Business ABN:</label>
-            <input className="settings-input" style={{ width: 220 }} defaultValue="12 345 678 901" />
-            <br />
-            <label>Legal Name:</label>
-            <input className="settings-input" style={{ width: 220 }} defaultValue="Example Pty Ltd" />
-          </div>
-        )}
-        {step === 1 && (
-          <div>
-            <label>BSB:</label>
-            <input className="settings-input" style={{ width: 140 }} defaultValue="123-456" />
-            <br />
-            <label>Account #:</label>
-            <input className="settings-input" style={{ width: 140 }} defaultValue="11111111" />
-          </div>
-        )}
-        {step === 2 && (
-          <div>
-            <label>Payroll Provider:</label>
-            <select className="settings-input" style={{ width: 220 }}>
-              <option>MYOB</option>
-              <option>QuickBooks</option>
-            </select>
-          </div>
-        )}
-        {step === 3 && (
-          <div>
-            <label>Automated PAYGW transfer?</label>
-            <input type="checkbox" defaultChecked /> Yes
-          </div>
-        )}
-        {step === 4 && (
-          <div style={{ color: "#00716b", fontWeight: 600 }}>
-            All done! Click "Finish" to save your setup.
-          </div>
-        )}
-      </div>
-      <div style={{ marginTop: 20 }}>
-        {step > 0 && (
-          <button className="button" onClick={() => setStep(step - 1)} style={{ marginRight: 14 }}>
-            Back
+    <Page
+      meta={meta}
+      breadcrumbs={[{ label: "Workspace" }, { label: "Setup wizard" }]}
+      actions={
+        <div style={{ display: "flex", gap: spacing.sm }}>
+          {active > 0 && (
+            <button
+              type="button"
+              onClick={() => setActive((value) => Math.max(0, value - 1))}
+              style={{
+                padding: `${spacing.sm} ${spacing.lg}`,
+                borderRadius: radii.md,
+                border: `1px solid ${colors.accent}`,
+                background: "transparent",
+                color: colors.accent,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Back
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() =>
+              setActive((value) => Math.min(steps.length - 1, value + 1))
+            }
+            style={{
+              padding: `${spacing.sm} ${spacing.lg}`,
+              borderRadius: radii.md,
+              border: "none",
+              background: active === steps.length - 1 ? colors.success : colors.accent,
+              color: colors.surface,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {active === steps.length - 1 ? "Finish" : "Next"}
           </button>
-        )}
-        {step < steps.length - 1 && (
-          <button className="button" onClick={() => setStep(step + 1)}>
-            Next
-          </button>
-        )}
-        {step === steps.length - 1 && (
-          <button className="button" style={{ background: "#4CAF50" }}>Finish</button>
-        )}
+        </div>
+      }
+    >
+      <div style={{ display: "grid", gap: spacing.xl }}>
+        <div
+          style={{
+            background: colors.surface,
+            borderRadius: radii.lg,
+            boxShadow: shadows.soft,
+            padding: spacing.sm,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: spacing.sm,
+          }}
+        >
+          {steps.map((item, index) => (
+            <div
+              key={item.id}
+              style={{
+                flex: "1 1 140px",
+                minWidth: "140px",
+                borderRadius: radii.md,
+                border: `1px solid ${index === active ? colors.accent : colors.border}`,
+                background: index === active ? colors.accent : colors.surface,
+                color: index === active ? colors.surface : colors.textSecondary,
+                padding: `${spacing.sm} ${spacing.md}`,
+                fontWeight: 600,
+                textTransform: "capitalize",
+                textAlign: "center",
+              }}
+            >
+              Step {index + 1}: {item.label}
+            </div>
+          ))}
+        </div>
+
+        <div style={panelStyle}>
+          {step.id === "business" && (
+            <>
+              <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Business details</h2>
+              <label style={{ display: "flex", flexDirection: "column", gap: spacing.xs, fontSize: fontSizes.sm }}>
+                <span style={{ fontWeight: 600 }}>Business ABN</span>
+                <input
+                  defaultValue="12 345 678 901"
+                  style={{
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    borderRadius: radii.md,
+                    border: `1px solid ${colors.border}`,
+                    fontSize: fontSizes.sm,
+                  }}
+                />
+              </label>
+              <label style={{ display: "flex", flexDirection: "column", gap: spacing.xs, fontSize: fontSizes.sm }}>
+                <span style={{ fontWeight: 600 }}>Legal name</span>
+                <input
+                  defaultValue="Example Pty Ltd"
+                  style={{
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    borderRadius: radii.md,
+                    border: `1px solid ${colors.border}`,
+                    fontSize: fontSizes.sm,
+                  }}
+                />
+              </label>
+            </>
+          )}
+          {step.id === "accounts" && (
+            <>
+              <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Link accounts</h2>
+              <div style={{ display: "grid", gap: spacing.sm, fontSize: fontSizes.sm }}>
+                <label style={{ display: "flex", flexDirection: "column", gap: spacing.xs }}>
+                  <span style={{ fontWeight: 600 }}>BSB</span>
+                  <input
+                    defaultValue="123-456"
+                    style={{
+                      padding: `${spacing.sm} ${spacing.md}`,
+                      borderRadius: radii.md,
+                      border: `1px solid ${colors.border}`,
+                    }}
+                  />
+                </label>
+                <label style={{ display: "flex", flexDirection: "column", gap: spacing.xs }}>
+                  <span style={{ fontWeight: 600 }}>Account number</span>
+                  <input
+                    defaultValue="11111111"
+                    style={{
+                      padding: `${spacing.sm} ${spacing.md}`,
+                      borderRadius: radii.md,
+                      border: `1px solid ${colors.border}`,
+                    }}
+                  />
+                </label>
+              </div>
+            </>
+          )}
+          {step.id === "payroll" && (
+            <>
+              <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Payroll provider</h2>
+              <label style={{ display: "flex", flexDirection: "column", gap: spacing.xs, fontSize: fontSizes.sm }}>
+                <span style={{ fontWeight: 600 }}>Select a provider</span>
+                <select
+                  defaultValue="MYOB"
+                  style={{
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    borderRadius: radii.md,
+                    border: `1px solid ${colors.border}`,
+                    fontSize: fontSizes.sm,
+                  }}
+                >
+                  <option>MYOB</option>
+                  <option>QuickBooks</option>
+                </select>
+              </label>
+            </>
+          )}
+          {step.id === "automation" && (
+            <>
+              <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Automation</h2>
+              <label style={{ display: "flex", alignItems: "center", gap: spacing.sm, fontSize: fontSizes.sm }}>
+                <input type="checkbox" defaultChecked /> Enable weekly PAYGW sweep
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: spacing.sm, fontSize: fontSizes.sm }}>
+                <input type="checkbox" /> Notify me if transfer fails
+              </label>
+            </>
+          )}
+          {step.id === "review" && (
+            <>
+              <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Review & complete</h2>
+              <p style={{ margin: 0, color: colors.textSecondary, fontSize: fontSizes.sm }}>
+                Confirm details and finish onboarding. A summary will be emailed and the activity feed updated.
+              </p>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </Page>
   );
 }

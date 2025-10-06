@@ -1,216 +1,267 @@
 import React, { useState } from "react";
+import Page from "../ui/Page";
+import { colors, fontSizes, radii, shadows, spacing } from "../ui/tokens.css";
+
+export const meta = {
+  title: "Workspace settings",
+  helpSlug: "settings",
+};
 
 const tabs = [
-  "Business Profile",
-  "Accounts",
-  "Payroll & Sales",
-  "Automated Transfers",
-  "Security",
-  "Compliance & Audit",
-  "Customisation",
-  "Notifications",
-  "Advanced"
+  { id: "profile", label: "Business profile" },
+  { id: "accounts", label: "Accounts" },
+  { id: "automation", label: "Automation" },
+  { id: "notifications", label: "Notifications" },
 ];
 
+const panelStyle: React.CSSProperties = {
+  background: colors.surface,
+  borderRadius: radii.lg,
+  boxShadow: shadows.soft,
+  padding: spacing.xl,
+  display: "flex",
+  flexDirection: "column",
+  gap: spacing.md,
+};
+
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState(tabs[0]);
-  // Mock business profile state
+  const [activeTab, setActiveTab] = useState(tabs[0].id);
   const [profile, setProfile] = useState({
     abn: "12 345 678 901",
     name: "Example Pty Ltd",
     trading: "Example Vending",
-    contact: "info@example.com"
+    contact: "info@example.com",
   });
 
-  return (
-    <div className="settings-card">
-      <div className="tabs-row">
-        {tabs.map(tab => (
-          <div
-            key={tab}
-            className={`tab-item${activeTab === tab ? " active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-            tabIndex={0}
-          >
-            {tab}
+  const renderTab = () => {
+    switch (activeTab) {
+      case "profile":
+        return (
+          <div style={panelStyle}>
+            <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Business profile</h2>
+            <p style={{ margin: 0, color: colors.textSecondary, fontSize: fontSizes.sm }}>
+              Update the identifiers used for PAYGW & GST reporting. These details surface across the dashboard and evidence workspace.
+            </p>
+            {(
+              [
+                { key: "abn", label: "Australian Business Number" },
+                { key: "name", label: "Legal name" },
+                { key: "trading", label: "Trading name" },
+                { key: "contact", label: "Contact email or phone" },
+              ] as const
+            ).map((field) => (
+              <label key={field.key} style={{ display: "flex", flexDirection: "column", gap: spacing.xs, fontSize: fontSizes.sm }}>
+                <span style={{ fontWeight: 600 }}>{field.label}</span>
+                <input
+                  value={profile[field.key]}
+                  onChange={(event) =>
+                    setProfile((prev) => ({ ...prev, [field.key]: event.target.value }))
+                  }
+                  style={{
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    borderRadius: radii.md,
+                    border: `1px solid ${colors.border}`,
+                    fontSize: fontSizes.sm,
+                  }}
+                />
+              </label>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      case "accounts":
+        return (
+          <div style={panelStyle}>
+            <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Linked accounts</h2>
+            <p style={{ margin: 0, color: colors.textSecondary, fontSize: fontSizes.sm }}>
+              Maintain the operating, PAYGW buffer and GST saver accounts used by automation rules.
+            </p>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontSize: fontSizes.sm,
+                color: colors.textSecondary,
+              }}
+            >
+              <thead>
+                <tr>
+                  {["Account", "BSB", "Number", "Type"].map((heading) => (
+                    <th
+                      key={heading}
+                      style={{
+                        textAlign: "left",
+                        padding: `${spacing.sm} ${spacing.md}`,
+                        borderBottom: `1px solid ${colors.border}`,
+                        fontWeight: 600,
+                        color: colors.textPrimary,
+                      }}
+                    >
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { name: "Main business", bsb: "123-456", number: "11111111", type: "Operating" },
+                  { name: "PAYGW saver", bsb: "123-456", number: "22222222", type: "PAYGW buffer" },
+                ].map((account) => (
+                  <tr key={account.number}>
+                    {[account.name, account.bsb, account.number, account.type].map((value) => (
+                      <td
+                        key={value}
+                        style={{
+                          padding: `${spacing.sm} ${spacing.md}`,
+                          borderBottom: `1px solid ${colors.border}`,
+                        }}
+                      >
+                        {value}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              type="button"
+              style={{
+                alignSelf: "flex-start",
+                padding: `${spacing.sm} ${spacing.lg}`,
+                borderRadius: radii.md,
+                border: `1px solid ${colors.accent}`,
+                background: "transparent",
+                color: colors.accent,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Link another account
+            </button>
+          </div>
+        );
+      case "automation":
+        return (
+          <div style={panelStyle}>
+            <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Automation rules</h2>
+            <p style={{ margin: 0, color: colors.textSecondary, fontSize: fontSizes.sm }}>
+              Configure scheduled transfers and notifications to keep PAYGW & GST obligations in sync.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: spacing.sm,
+                fontSize: fontSizes.sm,
+                color: colors.textSecondary,
+              }}
+            >
+              <label style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
+                <input type="checkbox" defaultChecked /> Weekly PAYGW sweep (Friday)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
+                <input type="checkbox" /> Monthly GST top-up (Day 21)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: spacing.sm }}>
+                <input type="checkbox" defaultChecked /> Notify if balance drifts under forecast
+              </label>
+            </div>
+          </div>
+        );
+      case "notifications":
+        return (
+          <div style={panelStyle}>
+            <h2 style={{ margin: 0, fontSize: fontSizes.lg }}>Notifications</h2>
+            <p style={{ margin: 0, color: colors.textSecondary, fontSize: fontSizes.sm }}>
+              Stay informed about due dates, evidence gaps and activity feed items.
+            </p>
+            <div
+              style={{
+                display: "grid",
+                gap: spacing.sm,
+                fontSize: fontSizes.sm,
+                color: colors.textSecondary,
+              }}
+            >
+              <label style={{ display: "flex", gap: spacing.sm }}>
+                <input type="checkbox" defaultChecked /> Email reminder for BAS lodgment
+              </label>
+              <label style={{ display: "flex", gap: spacing.sm }}>
+                <input type="checkbox" /> SMS alert for large transfers
+              </label>
+              <label style={{ display: "flex", gap: spacing.sm }}>
+                <input type="checkbox" defaultChecked /> Weekly compliance digest
+              </label>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
-      <div style={{ marginTop: 30 }}>
-        {activeTab === "Business Profile" && (
-          <form
-            style={{
-              background: "#f9f9f9",
-              borderRadius: 12,
-              padding: 24,
-              maxWidth: 650
-            }}
-          >
-            <div style={{ marginBottom: 16 }}>
-              <label>ABN:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.abn}
-                onChange={e => setProfile({ ...profile, abn: e.target.value })}
-              />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label>Legal Name:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.name}
-                onChange={e => setProfile({ ...profile, name: e.target.value })}
-              />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label>Trading Name:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.trading}
-                onChange={e => setProfile({ ...profile, trading: e.target.value })}
-              />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label>Contact Email/Phone:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.contact}
-                onChange={e => setProfile({ ...profile, contact: e.target.value })}
-              />
-            </div>
-          </form>
-        )}
-        {activeTab === "Accounts" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Linked Accounts</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Account Name</th>
-                  <th>BSB</th>
-                  <th>Account #</th>
-                  <th>Type</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Main Business</td>
-                  <td>123-456</td>
-                  <td>11111111</td>
-                  <td>Operating</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Remove</button></td>
-                </tr>
-                <tr>
-                  <td>PAYGW Saver</td>
-                  <td>123-456</td>
-                  <td>22222222</td>
-                  <td>PAYGW Buffer</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Remove</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={{ marginTop: 18 }}>
-              <button className="button">Link New Account</button>
-            </div>
-          </div>
-        )}
-        {activeTab === "Payroll & Sales" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Payroll Providers</h3>
-            <ul>
-              <li>MYOB</li>
-              <li>QuickBooks</li>
-            </ul>
-            <button className="button" style={{ marginTop: 10 }}>Add Provider</button>
-            <h3 style={{ marginTop: 24 }}>Sales Channels</h3>
-            <ul>
-              <li>Vend</li>
-              <li>Square</li>
-            </ul>
-            <button className="button" style={{ marginTop: 10 }}>Add Channel</button>
-          </div>
-        )}
-        {activeTab === "Automated Transfers" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Scheduled Transfers</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Frequency</th>
-                  <th>Next Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>PAYGW</td>
-                  <td>$1,000</td>
-                  <td>Weekly</td>
-                  <td>05/06/2025</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Edit</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={{ marginTop: 18 }}>
-              <button className="button">Add Transfer</button>
-            </div>
-          </div>
-        )}
-        {activeTab === "Security" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Security Settings</h3>
-            <label>
-              <input type="checkbox" defaultChecked /> Two-factor authentication enabled
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> SMS alerts on large payments
-            </label>
-          </div>
-        )}
-        {activeTab === "Compliance & Audit" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Audit Log (Mock)</h3>
-            <ul>
-              <li>05/06/2025 - PAYGW transfer scheduled</li>
-              <li>29/05/2025 - BAS submitted</li>
-            </ul>
-          </div>
-        )}
-        {activeTab === "Customisation" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>App Theme</h3>
-            <button className="button" style={{ marginRight: 10 }}>ATO Style</button>
-            <button className="button" style={{ background: "#262626" }}>Dark</button>
-          </div>
-        )}
-        {activeTab === "Notifications" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Notification Preferences</h3>
-            <label>
-              <input type="checkbox" defaultChecked /> Email reminders for due dates
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> SMS notifications for lodgment
-            </label>
-          </div>
-        )}
-        {activeTab === "Advanced" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Export Data</h3>
-            <button className="button">Export as CSV</button>
-          </div>
-        )}
+  return (
+    <Page
+      meta={meta}
+      breadcrumbs={[{ label: "Workspace" }, { label: "Settings" }]}
+      actions={
+        <button
+          type="button"
+          style={{
+            padding: `${spacing.sm} ${spacing.lg}`,
+            borderRadius: radii.md,
+            border: "none",
+            background: colors.accent,
+            color: colors.surface,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          Save changes
+        </button>
+      }
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: spacing.lg,
+        }}
+      >
+        <div
+          role="tablist"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: spacing.sm,
+            background: colors.surface,
+            borderRadius: radii.lg,
+            boxShadow: shadows.soft,
+            padding: spacing.sm,
+          }}
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                padding: `${spacing.sm} ${spacing.lg}`,
+                borderRadius: radii.md,
+                border: `1px solid ${activeTab === tab.id ? colors.accent : "transparent"}`,
+                background: activeTab === tab.id ? colors.accent : "transparent",
+                color: activeTab === tab.id ? colors.surface : colors.textSecondary,
+                cursor: "pointer",
+                fontWeight: 600,
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {renderTab()}
       </div>
-    </div>
+    </Page>
   );
 }
