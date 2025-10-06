@@ -1,0 +1,30 @@
+[
+  {
+    "actor": "alex.warden",
+    "action": "granted",
+    "target": "okta:group/admin-portal",
+    "reason": "Payment operations backfill",
+    "offset_days": 4
+  },
+  {
+    "actor": "alex.warden",
+    "action": "revoked",
+    "target": "aws:iam/role/temp-auditor",
+    "reason": "Rotation complete",
+    "offset_days": 2
+  },
+  {
+    "actor": "sam.audit",
+    "action": "granted",
+    "target": "snowflake:role/compliance_view",
+    "reason": "Annual DSP attestation",
+    "offset_days": 9
+  },
+  {
+    "actor": "mfa.guard",
+    "action": "challenge",
+    "target": "admin.merlin",
+    "reason": "Step-up authentication",
+    "offset_days": 1
+  }
+]

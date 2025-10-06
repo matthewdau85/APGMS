@@ -1,0 +1,18 @@
+{
+  "rotations": [
+    {
+      "offset_days": 3,
+      "old_kid": "apgms-ed25519-2025q3",
+      "new_kid": "apgms-ed25519-2025q4",
+      "grace_window_hours": 48,
+      "rotated_by": "security-oncall"
+    },
+    {
+      "offset_days": 40,
+      "old_kid": "apgms-ed25519-2025q2",
+      "new_kid": "apgms-ed25519-2025q3",
+      "grace_window_hours": 72,
+      "rotated_by": "security-oncall"
+    }
+  ]
+}

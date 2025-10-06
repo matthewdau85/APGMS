@@ -1,0 +1,29 @@
+[
+  {
+    "id": "DSP-01",
+    "title": "Segregate privileged access and enforce MFA",
+    "components": ["cmp_payments_api", "cmp_admin_portal"],
+    "owner": "Security Engineering",
+    "status": "operational",
+    "evidence": "SCIM-fed admin group with per-login WebAuthn challenge",
+    "updated_at": "2025-10-02T04:10:00Z"
+  },
+  {
+    "id": "DSP-07",
+    "title": "Detect anomalous BAS submissions",
+    "components": ["cmp_anomaly_detector", "cmp_rpt_tokeniser"],
+    "owner": "Risk & Controls",
+    "status": "operational",
+    "evidence": "Variance, dup-rate and running balance checks block release",
+    "updated_at": "2025-09-30T23:18:00Z"
+  },
+  {
+    "id": "DSP-12",
+    "title": "Immutable audit logging for tax obligations",
+    "components": ["cmp_evidence_builder", "cmp_compliance_datastore"],
+    "owner": "Platform Trust",
+    "status": "operational",
+    "evidence": "Tamper-evident ledger with SHA256 chaining and daily escrow",
+    "updated_at": "2025-10-01T11:45:00Z"
+  }
+]

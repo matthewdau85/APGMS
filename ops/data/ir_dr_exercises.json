@@ -1,0 +1,27 @@
+[
+  {
+    "type": "Incident Response",
+    "offset_days": 5,
+    "scenario": "ATO settlement API outage",
+    "summary": "Tabletop validated failover to standby settlement endpoint and operator runbooks.",
+    "rto_hours": 4,
+    "rpo_minutes": 15,
+    "participants": ["Platform On-call", "SRE", "Payments", "ATO Liaison"],
+    "findings": [
+      "Automated mTLS credential rotation reduced manual steps to <5min",
+      "Need to pre-stage sandbox settlement certificates for drills"
+    ]
+  },
+  {
+    "type": "Disaster Recovery",
+    "offset_days": 33,
+    "scenario": "Region failover",
+    "summary": "Quarterly failover to secondary region completed in 48 minutes with no data loss.",
+    "rto_hours": 4,
+    "rpo_minutes": 30,
+    "participants": ["Platform", "SRE", "Database"],
+    "findings": [
+      "Update bastion AMIs with latest hardened image"
+    ]
+  }
+]

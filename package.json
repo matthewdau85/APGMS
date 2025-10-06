@@ -4,7 +4,9 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "evte:generate": "tsx scripts/evte/generate_pack.ts",
+        "test:ops": "tsx --test tests/ops/*.test.ts"
     },
     "version": "0.1.0",
     "name": "apgms",

@@ -1,0 +1,33 @@
+{
+  "version": "2025.10",
+  "owner": "Controls Council",
+  "review_cadence_days": 30,
+  "rules": [
+    {
+      "id": "GST-CLOSE-01",
+      "title": "Close BAS periods with anomaly triage",
+      "control_family": "GST",
+      "severity": "critical",
+      "last_updated": "2025-09-30"
+    },
+    {
+      "id": "PAYGW-LEDGER-02",
+      "title": "Reconcile PAYGW ledger with bank clearing account",
+      "control_family": "PAYGW",
+      "severity": "high",
+      "last_updated": "2025-09-28"
+    },
+    {
+      "id": "DSP-EVIDENCE-05",
+      "title": "Generate EVTE/DSP evidence pack weekly",
+      "control_family": "Compliance",
+      "severity": "high",
+      "last_updated": "2025-10-02"
+    }
+  ],
+  "references": [
+    "ATO DSP Operational Framework",
+    "ISO 27001 Annex A",
+    "PCI DSS SAQ-D"
+  ]
+}

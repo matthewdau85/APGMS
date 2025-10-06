@@ -1,0 +1,29 @@
+[
+  {
+    "id": "SC-AVAIL-01",
+    "control": "99.95% availability tracked via SLO dashboard",
+    "coverage": ["Payments API", "Admin Portal", "Evidence builder"],
+    "monitor": "grafana://slo/availability",
+    "owner": "SRE",
+    "last_audit": "2025-09-28",
+    "status": "passing"
+  },
+  {
+    "id": "SC-MTLS-04",
+    "control": "Mutual TLS enforced for Rails probes and partner callbacks",
+    "coverage": ["Rails Probe", "ATO Settlement Webhook"],
+    "monitor": "grafana://slo/rails-probe",
+    "owner": "Network Security",
+    "last_audit": "2025-10-01",
+    "status": "passing"
+  },
+  {
+    "id": "SC-KMS-06",
+    "control": "Hardware-backed ED25519 keys rotated quarterly",
+    "coverage": ["Payments Signer", "Evidence Service"],
+    "monitor": "pagerduty://kms-rotation",
+    "owner": "Crypto Services",
+    "last_audit": "2025-09-29",
+    "status": "passing"
+  }
+]
