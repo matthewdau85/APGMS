@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "pilot_ready": {
+    "rail_evidence": {
+      "narrative_tags": ["RPT", "RECON_OK"],
+      "required_fields": ["provider_ref", "rules.manifest_sha256", "approvals"],
+      "description": "Evidence bundles must include RPT issuance and reconciliation proof."
+    },
+    "rules_security": {
+      "mode": "real",
+      "mfa_header": "x-apgms-mfa",
+      "approver_header": "x-apgms-approver",
+      "dual_approval_threshold_cents": 500000,
+      "pending_ttl_ms": 900000,
+      "rate_limit_per_minute": 3,
+      "rate_limit_window_ms": 60000,
+      "notes": "Release operations require MFA in real mode and dual approvals above threshold."
+    }
+  }
+}
