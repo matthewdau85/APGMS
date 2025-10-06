@@ -1,29 +1,60 @@
 ﻿// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import { idempotency } from "./middleware/idempotency";
+import { requestContext } from "./middleware/requestContext";
+import { authenticateJwt, requireRole, requireTotp } from "./middleware/security";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { upsertAllowlist } from "./routes/allowlist";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { securityConfig } from "./config/security";
+import { announceRetention, logSecurityEvent } from "./security/logger";
 
 dotenv.config();
 
-const app = express();
-app.use(express.json({ limit: "2mb" }));
+announceRetention();
 
-// (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
+const sensitiveWindow = Number.isFinite(securityConfig.sensitiveRateWindowMs)
+  ? securityConfig.sensitiveRateWindowMs
+  : 5 * 60 * 1000;
+const sensitiveLimit = Number.isFinite(securityConfig.sensitiveRateLimit) && securityConfig.sensitiveRateLimit > 0
+  ? securityConfig.sensitiveRateLimit
+  : 8;
+
+const sensitiveLimiter = rateLimit({
+  windowMs: sensitiveWindow,
+  limit: sensitiveLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    logSecurityEvent(req, "rate_limit_block", { limit: sensitiveLimit, window_ms: sensitiveWindow });
+    res.status(429).json({ error: "RATE_LIMIT" });
+  },
+  keyGenerator: (req) => req.ip ?? req.requestId ?? "unknown",
+});
+
+const app = express();
+app.use(helmet());
+app.use(express.json({ limit: "2mb" }));
+app.use(requestContext);
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Existing explicit endpoints
-app.post("/api/pay", idempotency(), payAto);
+const releaseGuards = [authenticateJwt, requireRole("release:execute"), sensitiveLimiter, requireTotp("release")];
+app.post("/api/pay", ...releaseGuards, idempotency(), payAto);
 app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
-app.get("/api/evidence", evidence);
+const evidenceGuards = [authenticateJwt, requireRole("evidence:read"), sensitiveLimiter, requireTotp("evidence_export")];
+app.get("/api/evidence", ...evidenceGuards, evidence);
+const allowlistGuards = [authenticateJwt, requireRole("allowlist:write"), sensitiveLimiter, requireTotp("allowlist_update")];
+app.post("/api/remittance/allowlist", ...allowlistGuards, upsertAllowlist);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
