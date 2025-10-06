@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "prototype": {
+    "weights": {
+      "rails_sim": 2,
+      "evidence_v2": 2,
+      "rules_correct": 2,
+      "security_thin": 1,
+      "observability": 1,
+      "seed_smoke": 1,
+      "help_docs": 1
+    },
+    "thresholds": {
+      "pass": 6,
+      "max": 10
+    }
+  },
+  "real": {
+    "weights": {
+      "kms_rpt": 2,
+      "sandbox_rail": 2,
+      "security_controls": 2,
+      "assurance": 2,
+      "pilot_ops": 2
+    },
+    "thresholds": {
+      "pass": 6,
+      "max": 10
+    }
+  }
+}

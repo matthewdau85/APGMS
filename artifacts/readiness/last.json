@@ -1,0 +1,112 @@
+{
+  "rubric": {
+    "version": "1.0"
+  },
+  "generatedAt": "2025-10-06T17:22:52.265Z",
+  "appMode": "prototype",
+  "prototype": {
+    "score": 0,
+    "max": 10,
+    "passThreshold": 6,
+    "checks": [
+      {
+        "key": "prototype.rails_sim",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "GET /sim/rail failed (0): READINESS_BASE_URL not configured"
+      },
+      {
+        "key": "prototype.evidence_v2",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "Unable to fetch evidence for latest: READINESS_BASE_URL not configured"
+      },
+      {
+        "key": "prototype.rules_correct",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "Rules correctness gaps: PAYGW/GST golden tests, RATES_VERSION, RULES_MANIFEST_SHA256"
+      },
+      {
+        "key": "prototype.security_thin",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 1,
+        "details": "Security controls missing: /release without JWT, real mode MFA, dual approval"
+      },
+      {
+        "key": "prototype.observability",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 1,
+        "details": "Observability gaps: healthz, metrics, x-request-id"
+      },
+      {
+        "key": "prototype.seed_smoke",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 1,
+        "details": "Seed/smoke tooling missing: scripts/seed, scripts/smoke"
+      },
+      {
+        "key": "prototype.help_docs",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 1,
+        "details": "Help coverage script missing"
+      }
+    ],
+    "delta": 0
+  },
+  "real": {
+    "score": 0,
+    "max": 10,
+    "passThreshold": 6,
+    "checks": [
+      {
+        "key": "real.kms_rpt",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "KMS readiness gaps: env KMS keys, rotation artifact, /rpt/health kms:true"
+      },
+      {
+        "key": "real.sandbox_rail",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "Sandbox rail gaps: mTLS envs, provider_ref persistence, recon import settlement link"
+      },
+      {
+        "key": "real.security_controls",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "Security control gaps: security headers, rate limit, PII redaction"
+      },
+      {
+        "key": "real.assurance",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "Assurance artifacts missing: vuln-scan.md, ir-notes.md, dr-notes.md"
+      },
+      {
+        "key": "real.pilot_ops",
+        "ok": false,
+        "points": 0,
+        "maxPoints": 2,
+        "details": "Pilot ops gaps: /ops/slo data, runbooks"
+      }
+    ],
+    "delta": 0
+  },
+  "previous": {
+    "generatedAt": "2025-10-06T17:22:24.967Z",
+    "prototypeScore": 0,
+    "realScore": 0
+  }
+}

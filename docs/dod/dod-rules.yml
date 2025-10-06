@@ -1,0 +1,6 @@
+label: dod:rules
+title: Rules Engine Adjustments
+items:
+  - PAYGW and GST golden tests executed
+  - Rates version incremented and documented
+  - Rules manifest signed and stored

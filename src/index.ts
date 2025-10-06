@@ -1,19 +1,31 @@
-﻿// src/index.ts
+// src/index.ts
+import fs from "node:fs";
+import path from "node:path";
 import express from "express";
 import dotenv from "dotenv";
 
+import { runChecksForCategory, summarizeResults } from "../scripts/scorecard/checks";
+import { createFeatureFlags, assertSafeCombo, featureFlagsToString } from "./config/features";
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
-import { api } from "./api";                  // your existing API router(s)
+import { api } from "./api"; // your existing API router(s)
 
 dotenv.config();
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
 
+const featureFlags = createFeatureFlags(process.env);
+assertSafeCombo(featureFlags);
+console.log(`[features] ${featureFlagsToString(featureFlags)}`);
+app.locals.featureFlags = featureFlags;
+
 // (optional) quick request logger
-app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
+app.use((req, _res, next) => {
+  console.log(`[app] ${req.method} ${req.url}`);
+  next();
+});
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -31,8 +43,49 @@ app.use("/api", paymentsApi);
 // Existing API router(s) after
 app.use("/api", api);
 
+const rubricPath = path.resolve(process.cwd(), "docs", "readiness", "rubric.v1.json");
+const readinessRubric = fs.existsSync(rubricPath)
+  ? JSON.parse(fs.readFileSync(rubricPath, "utf8"))
+  : null;
+
+app.get("/ops/readiness", async (_req, res) => {
+  if (!readinessRubric) {
+    return res.status(500).json({ error: "READINESS_RUBRIC_MISSING" });
+  }
+  try {
+    const baseOptions = {
+      baseUrl: process.env.READINESS_BASE_URL,
+      env: process.env,
+      lite: true,
+    };
+    const prototypeChecks = await runChecksForCategory("prototype", readinessRubric.prototype.weights, baseOptions);
+    const realChecks = await runChecksForCategory("real", readinessRubric.real.weights, baseOptions);
+    const prototypeSummary = summarizeResults(prototypeChecks);
+    const realSummary = summarizeResults(realChecks);
+    res.json({
+      rubric: { version: readinessRubric.version },
+      prototype: {
+        score: prototypeSummary.score,
+        max: prototypeSummary.max,
+        checks: prototypeChecks,
+      },
+      real: {
+        score: realSummary.score,
+        max: realSummary.max,
+        checks: realChecks,
+      },
+      appMode: featureFlags.appMode,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("/ops/readiness error", error);
+    res.status(500).json({ error: "READINESS_ERROR", message: (error as Error).message });
+  }
+});
+
 // 404 fallback (must be last)
 app.use((_req, res) => res.status(404).send("Not found"));
 
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => console.log("APGMS server listening on", port));
+

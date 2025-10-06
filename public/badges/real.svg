@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="40">
+  <rect width="200" height="40" fill="#2D2F36" rx="6"/>
+  <rect x="100" width="100" height="40" fill="#C62828" rx="6"/>
+  <text x="16" y="25" fill="#FFFFFF" font-family="Verdana,Arial,sans-serif" font-size="14">Real</text>
+  <text x="130" y="25" fill="#FFFFFF" font-family="Verdana,Arial,sans-serif" font-size="14">0/10</text>
+</svg>

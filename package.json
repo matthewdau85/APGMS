@@ -4,7 +4,11 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "test": "tsx --test tests/**/*.test.ts",
+        "readiness:score": "tsx scripts/scorecard/score.ts",
+        "readiness:badge": "tsx scripts/scorecard/badge.ts",
+        "dod:check": "tsx scripts/dod/check.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
