@@ -1,8 +1,10 @@
 // src/pages/Dashboard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { HelpTip, useContextHelp } from '../help';
 
 export default function Dashboard() {
+  useContextHelp('dashboard.bas', { mode: 'web' });
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
@@ -19,6 +21,8 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
         <p className="text-sm opacity-90">
           Automating PAYGW & GST compliance with ATO standards. Stay on track with timely lodgments and payments.
+          {' '}
+          <HelpTip slug="/help/rpt-tokens">RPT tokens</HelpTip> keep PAYGW data synchronized hourly.
         </p>
         <div className="mt-4">
           <Link to="/wizard" className="bg-white text-[#00716b] font-semibold px-4 py-2 rounded shadow hover:bg-gray-100">

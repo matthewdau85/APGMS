@@ -1,0 +1,6 @@
+[
+  { "method": "GET", "path": "/api/payments/balance" },
+  { "method": "GET", "path": "/api/payments/ledger" },
+  { "method": "POST", "path": "/api/payments/deposit" },
+  { "method": "POST", "path": "/api/payments/release" }
+]

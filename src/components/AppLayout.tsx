@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import { useHelpCenter } from "../help";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -14,13 +15,14 @@ const navLinks = [
 ];
 
 export default function AppLayout() {
+  const { open } = useHelpCenter();
   return (
     <div>
       <header className="app-header">
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
         <p>ATO-Compliant Tax Management System</p>
-        <nav style={{ marginTop: 16 }}>
+        <nav style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 16 }}>
           {navLinks.map((link) => (
             <NavLink
               key={link.to}
@@ -41,6 +43,22 @@ export default function AppLayout() {
               {link.label}
             </NavLink>
           ))}
+          <button
+            type="button"
+            onClick={() => open()}
+            style={{
+              marginLeft: "auto",
+              background: "rgba(255, 255, 255, 0.2)",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              borderRadius: 8,
+              color: "#fff",
+              padding: "6px 14px",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Help (Shift + /)
+          </button>
         </nav>
       </header>
 
