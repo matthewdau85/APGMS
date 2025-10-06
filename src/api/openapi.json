@@ -1,0 +1,262 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "APGMS Payments API",
+    "version": "1.0.0",
+    "description": "Contract for balance and ledger endpoints consumed by the console UI."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/balance": {
+      "get": {
+        "summary": "Retrieve the running balance for a tax period",
+        "parameters": [
+          {
+            "name": "abn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Australian Business Number"
+          },
+          {
+            "name": "taxType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Tax product code (e.g. GST, PAYGW)"
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Settlement period identifier (YYYY-MM or YYYY-QN)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Balance information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ledger": {
+      "get": {
+        "summary": "List ledger entries for a tax period",
+        "parameters": [
+          {
+            "name": "abn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taxType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BalanceResponse": {
+        "type": "object",
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "balance_cents",
+          "has_release"
+        ],
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "balance_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "has_release": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LedgerRow": {
+        "type": "object",
+        "required": [
+          "id",
+          "amount_cents",
+          "balance_after_cents",
+          "rpt_verified",
+          "release_uuid",
+          "bank_receipt_id",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balance_after_cents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rpt_verified": {
+            "type": "boolean"
+          },
+          "release_uuid": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "bank_receipt_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "LedgerResponse": {
+        "type": "object",
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "rows"
+        ],
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerRow"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

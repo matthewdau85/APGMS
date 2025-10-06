@@ -1,15 +1,38 @@
-import React from 'react';
+import React from "react";
+import { useBasSummary } from "../hooks/usePayments";
+
+const currency = new Intl.NumberFormat("en-AU", {
+  style: "currency",
+  currency: "AUD",
+});
+
+function SkeletonBlock({ height }: { height: number }) {
+  return <div className="skeleton" style={{ height, marginBottom: 16 }} />;
+}
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function BAS() {
-  const complianceStatus = {
-    lodgmentsUpToDate: false,
-    paymentsUpToDate: false,
-    overallCompliance: 65, // percentage from 0 to 100
-    lastBAS: '29 May 2025',
-    nextDue: '28 July 2025',
-    outstandingLodgments: ['Q4 FY23-24'],
-    outstandingAmounts: ['$1,200 PAYGW', '$400 GST']
-  };
+  const { summary, isLoading, isFetching } = useBasSummary();
+  const ledgerRows = summary?.ledger.rows ?? [];
+
+  if (isLoading && !summary) {
+    return (
+      <div className="main-card">
+        <SkeletonBlock height={48} />
+        <SkeletonBlock height={160} />
+        <SkeletonBlock height={220} />
+      </div>
+    );
+  }
 
   return (
     <div className="main-card">
@@ -18,98 +41,129 @@ export default function BAS() {
         Lodge your BAS on time and accurately. Below is a summary of your current obligations.
       </p>
 
-      {!complianceStatus.lodgmentsUpToDate || !complianceStatus.paymentsUpToDate ? (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
-          <p className="font-medium">Reminder:</p>
-          <p>Your BAS is overdue or payments are outstanding. Resolve to avoid penalties.</p>
+      {summary ? (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-900 p-4 rounded mb-4">
+          <p className="font-medium">
+            {summary.outstandingCents > 0 || !summary.hasRelease
+              ? "Action required"
+              : "All lodgments and payments accounted for"}
+          </p>
+          <p>
+            {summary.outstandingCents > 0
+              ? `Outstanding balance ${currency.format(summary.outstandingCents / 100)}.`
+              : "No outstanding balance."}
+            {!summary.hasRelease ? "  Release the lodged BAS to complete the cycle." : ""}
+          </p>
         </div>
       ) : null}
 
       <div className="bg-card p-4 rounded-xl shadow space-y-4">
-        <h2 className="text-lg font-semibold">Current Quarter</h2>
-        <ul className="list-disc pl-5 mt-2 space-y-1 text-sm">
-          <li><strong>W1:</strong> $7,500 (Gross wages)</li>
-          <li><strong>W2:</strong> $1,850 (PAYGW withheld)</li>
-          <li><strong>G1:</strong> $25,000 (Total sales)</li>
-          <li><strong>1A:</strong> $2,500 (GST on sales)</li>
-          <li><strong>1B:</strong> $450 (GST on purchases)</li>
-        </ul>
-        <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
-          Review & Lodge
-        </button>
+        <h2 className="text-lg font-semibold">Current Period</h2>
+        {summary ? (
+          <div className="grid sm:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="font-medium text-gray-700">Period</p>
+              <p>{summary.balance.periodId}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Outstanding balance</p>
+              <p>{currency.format(summary.outstandingCents / 100)}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Release status</p>
+              <p>{summary.hasRelease ? "Release lodged" : "Release pending"}</p>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700">Next due</p>
+              <p>{summary.nextDue}</p>
+            </div>
+          </div>
+        ) : null}
+        {isFetching ? <p className="text-xs text-gray-400">Refreshing…</p> : null}
       </div>
 
       <div className="bg-green-50 border border-green-200 p-4 rounded-xl shadow-md mt-6">
         <h2 className="text-lg font-semibold text-green-800">Compliance Overview</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-3 text-sm">
-          <div className="bg-white p-3 rounded shadow">
-            <p className="font-medium text-gray-700">Lodgments</p>
-            <p className={complianceStatus.lodgmentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-              {complianceStatus.lodgmentsUpToDate ? 'Up to date ✅' : 'Overdue ❌'}
-            </p>
-          </div>
-          <div className="bg-white p-3 rounded shadow">
-            <p className="font-medium text-gray-700">Payments</p>
-            <p className={complianceStatus.paymentsUpToDate ? 'text-green-600' : 'text-red-600'}>
-              {complianceStatus.paymentsUpToDate ? 'All paid ✅' : 'Outstanding ❌'}
-            </p>
-          </div>
-          <div className="bg-white p-3 rounded shadow">
-            <p className="font-medium text-gray-700">Compliance Score</p>
-            <div className="relative w-24 h-24 mx-auto">
-              <svg viewBox="0 0 36 36" className="w-full h-full">
-                <path
-                  d="M18 2.0845
-                     a 15.9155 15.9155 0 0 1 0 31.831
-                     a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#eee"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M18 2.0845
-                     a 15.9155 15.9155 0 0 1 0 31.831"
-                  fill="none"
-                  stroke="url(#grad)"
-                  strokeWidth="2"
-                  strokeDasharray={`${complianceStatus.overallCompliance}, 100`}
-                />
-                <defs>
-                  <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="red" />
-                    <stop offset="50%" stopColor="yellow" />
-                    <stop offset="100%" stopColor="green" />
-                  </linearGradient>
-                </defs>
-                <text x="18" y="20.35" textAnchor="middle" fontSize="6">{complianceStatus.overallCompliance}%</text>
-              </svg>
+        {summary ? (
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mt-3 text-sm">
+            <div className="bg-white p-3 rounded shadow">
+              <p className="font-medium text-gray-700">Lodgments</p>
+              <p className={summary.hasRelease ? "text-green-600" : "text-red-600"}>
+                {summary.hasRelease ? "Release recorded" : "Release required"}
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded shadow">
+              <p className="font-medium text-gray-700">Payments</p>
+              <p className={summary.outstandingCents <= 0 ? "text-green-600" : "text-red-600"}>
+                {summary.outstandingCents <= 0 ? "No balance owing" : "Balance outstanding"}
+              </p>
+            </div>
+            <div className="bg-white p-3 rounded shadow">
+              <p className="font-medium text-gray-700">Compliance Score</p>
+              <p className="text-xl font-semibold">{Math.round(summary.complianceScore)}%</p>
+            </div>
+            <div className="bg-white p-3 rounded shadow">
+              <p className="font-medium text-gray-700">Status</p>
+              <p className="text-sm text-gray-600">
+                {summary.complianceScore >= 90
+                  ? "Excellent compliance"
+                  : summary.complianceScore >= 70
+                  ? "Good standing"
+                  : "Needs attention"}
+              </p>
             </div>
           </div>
-          <div className="bg-white p-3 rounded shadow">
-            <p className="font-medium text-gray-700">Status</p>
-            <p className="text-sm text-gray-600">
-              {complianceStatus.overallCompliance >= 90
-                ? 'Excellent compliance'
-                : complianceStatus.overallCompliance >= 70
-                ? 'Good standing'
-                : 'Needs attention'}
-            </p>
-          </div>
-        </div>
+        ) : null}
         <p className="mt-4 text-sm text-gray-700">
-          Last BAS lodged on <strong>{complianceStatus.lastBAS}</strong>. Next BAS due by <strong>{complianceStatus.nextDue}</strong>.
+          Last BAS activity on <strong>{summary?.lastBasDate ? summary.lastBasDate.toLocaleString() : "—"}</strong>. Next BAS due by
+          <strong> {summary?.nextDue ?? "—"}</strong>.
         </p>
-        <div className="mt-2 text-sm text-red-600">
-          {complianceStatus.outstandingLodgments.length > 0 && (
-            <p>Outstanding Lodgments: {complianceStatus.outstandingLodgments.join(', ')}</p>
-          )}
-          {complianceStatus.outstandingAmounts.length > 0 && (
-            <p>Outstanding Payments: {complianceStatus.outstandingAmounts.join(', ')}</p>
-          )}
+        <div className="mt-2 text-sm text-red-600 space-y-1">
+          {summary?.outstandingLodgments.map((item) => (
+            <p key={item}>Outstanding Lodgment: {item}</p>
+          ))}
+          {summary?.outstandingAmounts.map((item) => (
+            <p key={item}>Outstanding Payment: {item}</p>
+          ))}
         </div>
         <p className="mt-2 text-xs text-gray-500 italic">
           Staying highly compliant may help avoid audits, reduce penalties, and support eligibility for ATO support programs.
         </p>
+      </div>
+
+      <div className="bg-white rounded-xl shadow mt-6 overflow-x-auto">
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ textAlign: "left", background: "#f1f5f9" }}>
+              <th style={{ padding: "10px 14px" }}>ID</th>
+              <th style={{ padding: "10px 14px" }}>Amount</th>
+              <th style={{ padding: "10px 14px" }}>Balance After</th>
+              <th style={{ padding: "10px 14px" }}>Verified</th>
+              <th style={{ padding: "10px 14px" }}>Reference</th>
+              <th style={{ padding: "10px 14px" }}>Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ledgerRows.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: "14px", textAlign: "center", color: "#475569" }}>
+                  No ledger activity for this period.
+                </td>
+              </tr>
+            ) : (
+              ledgerRows.map((row) => (
+                <tr key={row.id} style={{ borderTop: "1px solid #e2e8f0" }}>
+                  <td style={{ padding: "10px 14px" }}>{row.id}</td>
+                  <td style={{ padding: "10px 14px" }}>{currency.format(row.amount_cents / 100)}</td>
+                  <td style={{ padding: "10px 14px" }}>{currency.format(row.balance_after_cents / 100)}</td>
+                  <td style={{ padding: "10px 14px" }}>{row.rpt_verified ? "Yes" : "No"}</td>
+                  <td style={{ padding: "10px 14px" }}>{row.bank_receipt_id ?? row.release_uuid ?? "—"}</td>
+                  <td style={{ padding: "10px 14px" }}>{formatDate(row.created_at)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
