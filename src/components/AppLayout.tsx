@@ -10,6 +10,7 @@ const navLinks = [
   { to: "/audit", label: "Audit" },
   { to: "/fraud", label: "Fraud" },
   { to: "/integrations", label: "Integrations" },
+  { to: "/invoice-ingest", label: "Invoice OCR" },
   { to: "/help", label: "Help" },
 ];
 

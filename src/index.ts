@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { mlRouter } from "./routes/ml";
 
 dotenv.config();
 
@@ -27,6 +28,9 @@ app.get("/api/evidence", evidence);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
+
+// Machine learning ingestion endpoints
+app.use("/ml", mlRouter);
 
 // Existing API router(s) after
 app.use("/api", api);
