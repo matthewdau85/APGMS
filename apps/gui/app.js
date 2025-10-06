@@ -14,6 +14,28 @@
     return ct.includes("application/json") ? r.json() : r.text();
   }
 
+  const glossary = {
+    BAS: "Business Activity Statement",
+    PAYGW: "Pay As You Go Withholding",
+    CDR: "Consumer Data Right (Open Banking)",
+    POS: "Point of Sale",
+    SBR: "Standard Business Reporting"
+  };
+
+  const gloss = (term) => {
+    const desc = glossary[term];
+    if (!desc) return term;
+    return `<abbr data-glossary-term="${term}" title="${desc}">${term}</abbr>`;
+  };
+
+  const contextPanel = (heading, body) => `
+        <aside class="card context-panel" data-testid="context-panel">
+          <h3>${heading}</h3>
+          <p>${body}</p>
+        </aside>`;
+
+  const emptyRow = (cols, message) => `<tr><td colspan="${cols}" class="empty" data-testid="empty-state">${message}</td></tr>`;
+
   const View = {
     nav(active){
       return `
@@ -21,7 +43,7 @@
           <a href="#/home"        class="${active==='home'?'active':''}">Home</a>
           <a href="#/connections" class="${active==='connections'?'active':''}">Connections</a>
           <a href="#/transactions"class="${active==='transactions'?'active':''}">Transactions</a>
-          <a href="#/tax-bas"     class="${active==='tax-bas'?'active':''}">Tax & BAS</a>
+          <a href="#/tax-bas"     class="${active==='tax-bas'?'active':''}">Tax & ${gloss('BAS')}</a>
           <a href="#/help"        class="${active==='help'?'active':''}">Help</a>
           <a href="#/settings"    class="${active==='settings'?'active':''}">Settings</a>
         </nav>`;
@@ -30,6 +52,7 @@
     home(){
       return `
         ${this.nav('home')}
+        ${contextPanel('What can you do here?', `Check service health, review yesterday's activity, and keep ${gloss('PAYGW')} and ${gloss('BAS')} workflows moving.`)}
         <header>
           <h1>${cfg.brand || "APGMS Normalizer"}</h1>
           <p>${cfg.title || "Customer Portal"}</p>
@@ -59,6 +82,7 @@
     connections(){
       return `
         ${this.nav('connections')}
+        ${contextPanel('Link your sources', `Connect bank feeds via ${gloss('CDR')}, payroll/${gloss('POS')} systems, and ${gloss('SBR')} gateways so data keeps flowing.`)}
         <div class="grid" style="grid-template-columns:2fr 1fr; margin-top:12px">
           <div class="card">
             <h3>Connected sources</h3>
@@ -94,6 +118,7 @@
     transactions(){
       return `
         ${this.nav('transactions')}
+        ${contextPanel('Review activity', `Search normalized transactions and confirm ${gloss('PAYGW')} and GST movements look right before lodging.`)}
         <div class="card">
           <h3>Transactions</h3>
           <div style="display:flex; gap:8px; margin-bottom:8px">
@@ -109,6 +134,7 @@
     "tax-bas"(){
       return `
         ${this.nav('tax-bas')}
+        ${contextPanel('Prepare compliance', `Preview, validate, and lodge ${gloss('BAS')} submissions while keeping ${gloss('PAYGW')} balances aligned.`)}
         <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:12px">
           <div class="card">
             <h3>BAS Preparation</h3>
@@ -129,12 +155,13 @@
     help(){
       return `
         ${this.nav('help')}
+        ${contextPanel('Need a refresher?', `Follow these quick steps to stay on top of ${gloss('PAYGW')} and ${gloss('BAS')} obligations.`)}
         <div class="card">
           <h3>Help & Guidance</h3>
           <ol>
-            <li>Use <b>Connections</b> to link Bank (CDR), Payroll/POS, and ATO (SBR).</li>
+            <li>Use <b>Connections</b> to link Bank (${gloss('CDR')}), Payroll/${gloss('POS')}, and ATO (${gloss('SBR')}).</li>
             <li>Import or auto-ingest data; view in <b>Transactions</b>.</li>
-            <li>Prepare and validate <b>Tax & BAS</b>; lodge via SBR when ready.</li>
+            <li>Prepare and validate <b>Tax & ${gloss('BAS')}</b>; lodge via ${gloss('SBR')} when ready.</li>
             <li>See <span class="kbd">/api/openapi.json</span> for API details.</li>
           </ol>
         </div>
@@ -144,6 +171,7 @@
     settings(){
       return `
         ${this.nav('settings')}
+        ${contextPanel('Adjust the experience', `Tweak the appearance and compliance defaults before saving updates across ${gloss('PAYGW')} workflows.`)}
         <div class="grid" style="grid-template-columns:1fr 1fr; margin-top:12px">
           <div class="card">
             <h3>Appearance</h3>
@@ -194,6 +222,10 @@
       async function loadList(){
         const rows = await api('/connections');
         const tb = $('#connTable tbody'); tb.innerHTML = '';
+        if (!Array.isArray(rows) || rows.length === 0) {
+          tb.innerHTML = emptyRow(4, 'No connections yet.');
+          return;
+        }
         rows.forEach(x=>{
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${x.type}</td><td>${x.provider}</td><td>${x.status}</td><td><button class="btn" data-id="${x.id}">Remove</button></td>`;
@@ -219,13 +251,17 @@
         const q = $('#q').value, src = $('#filterSource').value;
         const data = await api(`/transactions?q=${encodeURIComponent(q||'')}&source=${encodeURIComponent(src||'')}`);
         const tb = $('#txTable tbody'); tb.innerHTML='';
-        data.items.forEach(t=>{
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${t.date}</td><td>${t.source}</td><td>${t.description}</td><td style="text-align:right">${t.amount.toFixed(2)}</td><td>${t.category||''}</td>`;
-          tb.appendChild(tr);
-        });
+        if (!data.items || data.items.length === 0) {
+          tb.innerHTML = emptyRow(5, 'No transactions to review yet.');
+        } else {
+          data.items.forEach(t=>{
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${t.date}</td><td>${t.source}</td><td>${t.description}</td><td style="text-align:right">${t.amount.toFixed(2)}</td><td>${t.category||''}</td>`;
+            tb.appendChild(tr);
+          });
+        }
         const sel = $('#filterSource'); sel.innerHTML = '<option value="">All sources</option>';
-        data.sources.forEach(s=>{ const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
+        (data.sources||[]).forEach(s=>{ const o = document.createElement('option'); o.value=s; o.textContent=s; sel.appendChild(o); });
       }
       $('#btnRefresh').onclick = load;
       load();

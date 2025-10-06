@@ -4,7 +4,8 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "test:ux": "playwright test --config=playwright.ux.config.ts"
     },
     "version": "0.1.0",
     "name": "apgms",
@@ -14,6 +15,7 @@
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
         "ts-node": "^10.9.2",
+        "@playwright/test": "^1.48.2",
         "tsx": "^4.20.6",
         "typescript": "^5.9.3"
     },
