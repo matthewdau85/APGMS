@@ -197,3 +197,25 @@ th {
   font-weight: 600;
   color: #00205b;
 }
+
+.suggestion-table tr.applied {
+  background: #ecfdf5;
+}
+
+.suggestion-table textarea,
+.suggestion-table input {
+  font-family: inherit;
+}
+
+.suggestion-table button {
+  background: #00205b;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.suggestion-table button:hover {
+  background: #01348f;
+}
