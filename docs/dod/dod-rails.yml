@@ -1,0 +1,56 @@
+{
+  "id": "rails",
+  "name": "Rails Release Definition of Done",
+  "labels": ["area:rails"],
+  "rules_version": "2025-10-05",
+  "description": "Release flows must remain idempotent, reconcile inputs, persist provider references, and surface mapped errors.",
+  "checks": [
+    {
+      "id": "idempotency-test",
+      "description": "Update the idempotency regression test whenever release behaviour changes.",
+      "patterns": ["apps/services/payments/test/idempotency.test.ts"]
+    },
+    {
+      "id": "recon-import",
+      "description": "Reconciliation import logic or supporting state machines must be updated with release changes.",
+      "patterns": [
+        "src/routes/reconcile.ts",
+        "src/recon/**",
+        "src/settlement/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "provider-ref",
+      "description": "Persist provider references through the rails adapter and downstream release code paths.",
+      "patterns": ["src/rails/adapter.ts"],
+      "mode": "any"
+    },
+    {
+      "id": "error-mapping",
+      "description": "Synchronise error mapping for customer surfaces and release APIs.",
+      "patterns": [
+        "src/routes/reconcile.ts",
+        "src/middleware/**"
+      ],
+      "mode": "any"
+    },
+    {
+      "id": "release-evidence-present",
+      "description": "Release evidence bundle artefacts must exist in the repository.",
+      "patterns": ["evidence_*.json"],
+      "match": "tracked",
+      "mode": "any"
+    },
+    {
+      "id": "release-evidence-updated",
+      "description": "Evidence bundles are refreshed whenever release code changes.",
+      "patterns": ["evidence_*.json"],
+      "onlyWhenChanged": [
+        "src/routes/reconcile.ts",
+        "src/rails/**",
+        "src/recon/**"
+      ]
+    }
+  ]
+}
