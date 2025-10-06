@@ -24,8 +24,8 @@ export async function payAto(req:any, res:any) {
   if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
   const payload = pr.rows[0].payload;
   try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
+    const destination = await resolveDestination(abn, rail, payload.reference);
+    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference, destination);
     await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
     return res.json(r);
   } catch (e:any) {
@@ -44,6 +44,39 @@ export async function settlementWebhook(req:any, res:any) {
   const rows = parseSettlementCSV(csvText);
   // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
   return res.json({ ingested: rows.length });
+}
+
+export async function importSettlement(req:any, res:any) {
+  const providerRef = req.body?.provider_ref || req.body?.providerRef;
+  const paidAtInput = req.body?.paid_at || req.body?.paidAt;
+  if (!providerRef) {
+    return res.status(400).json({ error: "PROVIDER_REF_REQUIRED" });
+  }
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const record = await client.query("select period_id, rail, paid_at from settlements where provider_ref=$1 for update", [providerRef]);
+    if (record.rowCount === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "PROVIDER_REF_NOT_FOUND" });
+    }
+    const paidAt = paidAtInput ? new Date(paidAtInput).toISOString() : record.rows[0].paid_at;
+    await client.query(
+      "update settlements set paid_at=$2, released_at=now() where provider_ref=$1",
+      [providerRef, paidAt]
+    );
+    await client.query(
+      "update periods set state='RELEASED', released_at=now() where period_id=$1",
+      [record.rows[0].period_id]
+    );
+    await client.query("COMMIT");
+    return res.json({ ok: true, provider_ref: providerRef, paid_at: paidAt });
+  } catch (e:any) {
+    await client.query("ROLLBACK");
+    return res.status(500).json({ error: "IMPORT_FAILED", detail: e?.message || String(e) });
+  } finally {
+    client.release();
+  }
 }
 
 export async function evidence(req:any, res:any) {

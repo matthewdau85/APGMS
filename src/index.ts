@@ -3,7 +3,8 @@ import express from "express";
 import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
-import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { closeAndIssue, payAto, paytoSweep, settlementWebhook, importSettlement, evidence } from "./routes/reconcile";
+import { ingestStp, ingestPos, gateTransition } from "./routes/reconGate";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
@@ -23,7 +24,11 @@ app.post("/api/pay", idempotency(), payAto);
 app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
+app.post("/api/settlement/import", importSettlement);
 app.get("/api/evidence", evidence);
+app.post("/ingest/stp", express.json({ type: "application/json" }), ingestStp);
+app.post("/ingest/pos", express.json({ type: "application/json" }), ingestPos);
+app.get("/gate/transition", gateTransition);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
