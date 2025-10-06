@@ -1,18 +1,6 @@
-﻿# Python / venv
-.venv/
-venv/
-__pycache__/
-
-# Node / builds
 node_modules/
-dist/
-.next/
-coverage/
-
-# OS noise
-Thumbs.db
-.DS_Store
-
-# IDE
-.vscode/
-.idea/
+apps/**/node_modules/
+scripts/node_modules/
+artifacts/readiness/report.md
+artifacts/readiness/summary.json
+artifacts/readiness/*.md

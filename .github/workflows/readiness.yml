@@ -1,0 +1,112 @@
+name: Readiness Scorecard
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install payments service dependencies
+        run: npm install
+        working-directory: apps/services/payments
+
+      - name: Run unit tests
+        run: npm test
+        working-directory: apps/services/payments
+
+      - name: Compute readiness score
+        id: readiness
+        run: |
+          set -e
+          npm run readiness:score --silent
+          SUMMARY=$(jq -c '.' artifacts/readiness/summary.json)
+          echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+          echo "READINESS_SUMMARY=$SUMMARY" >> "$GITHUB_ENV"
+
+      - name: Generate readiness badges
+        run: npm run readiness:badge --silent
+
+      - name: Upload readiness report
+        uses: actions/upload-artifact@v4
+        with:
+          name: readiness-report
+          path: artifacts/readiness/report.md
+
+      - name: Post readiness comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          READINESS_SUMMARY: ${{ env.READINESS_SUMMARY }}
+        with:
+          script: |
+            const summary = JSON.parse(process.env.READINESS_SUMMARY);
+            const formatRow = (stage, result) => {
+              const status = result.ok ? '✅' : (result.points > 0 ? '⚠️' : '❌');
+              const points = `${result.points.toFixed(2)}/${result.maxPoints}`;
+              const safeDetails = result.details.replace(/\n/g, '<br />').replace(/\|/g, '\\|');
+              return `| ${stage} | ${result.key} | ${status} | ${points} | ${safeDetails} |`;
+            };
+            const rows = [
+              '| Track | Check | Status | Points | Details |',
+              '| --- | --- | --- | --- | --- |',
+              ...summary.prototype.results.map(r => formatRow('Prototype', r)),
+              ...summary.real.results.map(r => formatRow('Real', r)),
+            ];
+            const repoUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}`;
+            const badgeBase = `${repoUrl}/raw/${context.sha}/public/badges`;
+            const body = [
+              '## Readiness Scorecard',
+              '',
+              `Prototype: **${summary.prototype.score.toFixed(2)} / ${summary.prototype.max}** (Δ ${summary.prototype.delta >= 0 ? '+' : ''}${summary.prototype.delta.toFixed(2)})`,
+              `Real: **${summary.real.score.toFixed(2)} / ${summary.real.max}** (Δ ${summary.real.delta >= 0 ? '+' : ''}${summary.real.delta.toFixed(2)})`,
+              '',
+              `![Prototype](${badgeBase}/prototype.svg) ![Real](${badgeBase}/real.svg)`,
+              '',
+              rows.join('\n'),
+              '',
+              `Report: [readiness report](${repoUrl}/blob/${context.sha}/artifacts/readiness/report.md)`
+            ].join('\n');
+            const header = '## Readiness Scorecard';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(comment => comment.user?.login === 'github-actions[bot]' && comment.body.includes(header));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+      - name: Enforce readiness regression guard
+        env:
+          READINESS_SUMMARY: ${{ steps.readiness.outputs.summary }}
+        run: |
+          node -e "const summary = JSON.parse(process.env.READINESS_SUMMARY); if (summary.prototype.delta < 0) { console.error('Prototype readiness score regressed by', summary.prototype.delta.toFixed(2)); process.exit(1); } if (summary.real.delta < 0) { console.error('Real readiness score regressed by', summary.real.delta.toFixed(2)); process.exit(1); }"
