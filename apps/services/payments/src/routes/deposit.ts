@@ -19,7 +19,7 @@ export async function deposit(req: Request, res: Response) {
          ORDER BY id DESC LIMIT 1`,
         [abn, taxType, periodId]
       );
-      const prevBal = last[0]?.balance_after_cents ?? 0;
+      const prevBal = Number(last[0]?.balance_after_cents ?? 0);
       const newBal = prevBal + amt;
 
       const { rows: ins } = await client.query(
@@ -31,7 +31,12 @@ export async function deposit(req: Request, res: Response) {
       );
 
       await client.query("COMMIT");
-      return res.json({ ok: true, ledger_id: ins[0].id, balance_after_cents: ins[0].balance_after_cents });
+      return res.json({
+        ok: true,
+        ledger_id: ins[0].id,
+        transfer_uuid: ins[0].transfer_uuid,
+        balance_after_cents: ins[0].balance_after_cents
+      });
 
     } catch (e:any) {
       await client.query("ROLLBACK");

@@ -1,7 +1,12 @@
-﻿import pg from "pg";
-export type Dest = { bsb?: string; acct?: string; bpay_biller?: string; crn?: string };
+import { readFileSync } from "fs";
 
-export function isAllowlisted(abn: string, dest: Dest): boolean {
-  if (dest.bpay_biller === "75556" && dest.crn && dest.crn.length >= 10) return true;
-  return false;
+export type AllowListEntry = {
+  abn: string;
+  rail: "EFT" | "BPAY";
+  reference: string;
+};
+
+export function loadAllowList(filePath: string): AllowListEntry[] {
+  const text = readFileSync(filePath, "utf8");
+  return JSON.parse(text) as AllowListEntry[];
 }
