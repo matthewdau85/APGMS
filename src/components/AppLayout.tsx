@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import atoLogo from "../assets/ato-logo.svg";
+import ModeBadge from "./ModeBadge";
 
 const navLinks = [
   { to: "/", label: "Dashboard" },
@@ -20,6 +21,7 @@ export default function AppLayout() {
         <img src={atoLogo} alt="ATO Logo" />
         <h1>APGMS - Automated PAYGW & GST Management</h1>
         <p>ATO-Compliant Tax Management System</p>
+        <ModeBadge mode="Prototype" />
         <nav style={{ marginTop: 16 }}>
           {navLinks.map((link) => (
             <NavLink
