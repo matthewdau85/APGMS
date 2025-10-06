@@ -1,0 +1,276 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS Node API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Node console"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" }
+                  },
+                  "required": ["ok"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/balance": {
+      "get": {
+        "operationId": "getBalance",
+        "parameters": [
+          { "name": "abn", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "taxType", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "periodId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Period balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ledger": {
+      "get": {
+        "operationId": "getLedger",
+        "parameters": [
+          { "name": "abn", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "taxType", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "periodId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deposit": {
+      "post": {
+        "operationId": "postDeposit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DepositRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DepositResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/release": {
+      "post": {
+        "operationId": "postRelease",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ReleaseRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release result",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReleaseResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence": {
+      "get": {
+        "operationId": "getEvidence",
+        "parameters": [
+          { "name": "abn", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "taxType", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "periodId", "in": "query", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence bundle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceBundle"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BalanceResponse": {
+        "type": "object",
+        "properties": {
+          "abn": { "type": "string" },
+          "taxType": { "type": "string" },
+          "periodId": { "type": "string" },
+          "balance_cents": { "type": "integer" },
+          "has_release": { "type": "boolean" }
+        },
+        "required": ["abn", "taxType", "periodId", "balance_cents", "has_release"]
+      },
+      "LedgerRow": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "amount_cents": { "type": "integer" },
+          "balance_after_cents": { "type": "integer" },
+          "rpt_verified": { "type": ["boolean", "null"] },
+          "release_uuid": { "type": ["string", "null"] },
+          "bank_receipt_id": { "type": ["string", "null"] },
+          "created_at": { "type": "string" }
+        },
+        "required": ["id", "amount_cents", "balance_after_cents", "created_at"]
+      },
+      "LedgerResponse": {
+        "type": "object",
+        "properties": {
+          "abn": { "type": "string" },
+          "taxType": { "type": "string" },
+          "periodId": { "type": "string" },
+          "rows": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/LedgerRow" }
+          }
+        },
+        "required": ["abn", "taxType", "periodId", "rows"]
+      },
+      "EvidenceLedgerDelta": {
+        "type": "object",
+        "properties": {
+          "ts": { "type": ["string", "null"] },
+          "amount_cents": { "type": ["integer", "null"] },
+          "hash_after": { "type": ["string", "null"] },
+          "bank_receipt_hash": { "type": ["string", "null"] }
+        }
+      },
+      "EvidenceBundle": {
+        "type": "object",
+        "properties": {
+          "bas_labels": {
+            "type": "object",
+            "additionalProperties": { "type": ["string", "null"] }
+          },
+          "rpt_payload": { "type": ["object", "null", "string"] },
+          "rpt_signature": { "type": ["string", "null"] },
+          "owa_ledger_deltas": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/EvidenceLedgerDelta" }
+          },
+          "bank_receipt_hash": { "type": ["string", "null"] },
+          "anomaly_thresholds": {
+            "type": "object",
+            "additionalProperties": { "type": ["number", "string", "null"] }
+          },
+          "discrepancy_log": {
+            "type": "array",
+            "items": { "type": "object" }
+          }
+        },
+        "required": [
+          "bas_labels",
+          "owa_ledger_deltas",
+          "anomaly_thresholds",
+          "discrepancy_log"
+        ]
+      },
+      "DepositRequest": {
+        "type": "object",
+        "properties": {
+          "abn": { "type": "string" },
+          "taxType": { "type": "string" },
+          "periodId": { "type": "string" },
+          "amountCents": { "type": "integer", "minimum": 1 }
+        },
+        "required": ["abn", "taxType", "periodId", "amountCents"]
+      },
+      "DepositResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" },
+          "ledger_id": { "type": "integer" },
+          "balance_after_cents": { "type": "integer" }
+        },
+        "required": ["ok", "ledger_id", "balance_after_cents"]
+      },
+      "ReleaseRequest": {
+        "type": "object",
+        "properties": {
+          "abn": { "type": "string" },
+          "taxType": { "type": "string" },
+          "periodId": { "type": "string" },
+          "amountCents": { "type": "integer", "maximum": -1 }
+        },
+        "required": ["abn", "taxType", "periodId", "amountCents"]
+      },
+      "ReleaseResponse": {
+        "type": "object",
+        "properties": {
+          "ok": { "type": "boolean" },
+          "ledger_id": { "type": "integer" },
+          "transfer_uuid": { "type": "string" },
+          "release_uuid": { "type": "string" },
+          "balance_after_cents": { "type": "integer" },
+          "rpt_ref": {
+            "type": "object",
+            "properties": {
+              "rpt_id": { "type": ["integer", "null"] },
+              "kid": { "type": ["string", "null"] },
+              "payload_sha256": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "required": ["ok", "ledger_id", "transfer_uuid", "release_uuid", "balance_after_cents"]
+      }
+    }
+  }
+}

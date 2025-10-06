@@ -1,4 +1,11 @@
 import React, { useState } from "react";
+import {
+  useBusinessProfile,
+  useConnections,
+  useSettings,
+  useTransactions,
+  useBalance,
+} from "../hooks/useConsoleData";
 
 const tabs = [
   "Business Profile",
@@ -9,23 +16,34 @@ const tabs = [
   "Compliance & Audit",
   "Customisation",
   "Notifications",
-  "Advanced"
+  "Advanced",
 ];
+
+function formatDate(epoch?: number) {
+  if (!epoch) return "—";
+  return new Date(epoch * 1000).toLocaleString();
+}
+
+function formatCurrency(cents?: number) {
+  if (typeof cents !== "number") return "—";
+  return (cents / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" });
+}
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState(tabs[0]);
-  // Mock business profile state
-  const [profile, setProfile] = useState({
-    abn: "12 345 678 901",
-    name: "Example Pty Ltd",
-    trading: "Example Vending",
-    contact: "info@example.com"
-  });
+  const profileQuery = useBusinessProfile();
+  const connectionsQuery = useConnections();
+  const settingsQuery = useSettings();
+  const transactionsQuery = useTransactions();
+  const balanceQuery = useBalance();
+
+  const profile = profileQuery.data;
+  const settings = settingsQuery.data;
 
   return (
     <div className="settings-card">
       <div className="tabs-row">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <div
             key={tab}
             className={`tab-item${activeTab === tab ? " active" : ""}`}
@@ -39,157 +57,153 @@ export default function Settings() {
 
       <div style={{ marginTop: 30 }}>
         {activeTab === "Business Profile" && (
-          <form
+          <div
             style={{
               background: "#f9f9f9",
               borderRadius: 12,
               padding: 24,
-              maxWidth: 650
+              maxWidth: 650,
             }}
           >
             <div style={{ marginBottom: 16 }}>
               <label>ABN:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.abn}
-                onChange={e => setProfile({ ...profile, abn: e.target.value })}
-              />
+              {profileQuery.isLoading ? (
+                <div className="skeleton" style={{ height: 36, width: "100%", borderRadius: 7 }} />
+              ) : (
+                <input className="settings-input" style={{ width: "100%" }} value={profile?.abn ?? ""} readOnly />
+              )}
             </div>
             <div style={{ marginBottom: 16 }}>
               <label>Legal Name:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.name}
-                onChange={e => setProfile({ ...profile, name: e.target.value })}
-              />
+              {profileQuery.isLoading ? (
+                <div className="skeleton" style={{ height: 36, width: "100%", borderRadius: 7 }} />
+              ) : (
+                <input className="settings-input" style={{ width: "100%" }} value={profile?.name ?? ""} readOnly />
+              )}
             </div>
             <div style={{ marginBottom: 16 }}>
               <label>Trading Name:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.trading}
-                onChange={e => setProfile({ ...profile, trading: e.target.value })}
-              />
+              {profileQuery.isLoading ? (
+                <div className="skeleton" style={{ height: 36, width: "100%", borderRadius: 7 }} />
+              ) : (
+                <input className="settings-input" style={{ width: "100%" }} value={profile?.trading ?? ""} readOnly />
+              )}
             </div>
             <div style={{ marginBottom: 16 }}>
               <label>Contact Email/Phone:</label>
-              <input
-                className="settings-input"
-                style={{ width: "100%" }}
-                value={profile.contact}
-                onChange={e => setProfile({ ...profile, contact: e.target.value })}
-              />
+              {profileQuery.isLoading ? (
+                <div className="skeleton" style={{ height: 36, width: "100%", borderRadius: 7 }} />
+              ) : (
+                <input className="settings-input" style={{ width: "100%" }} value={profile?.contact ?? ""} readOnly />
+              )}
             </div>
-          </form>
+            <p style={{ fontSize: 13, color: "#555" }}>
+              Profile data reflects the latest information registered with the console API.
+            </p>
+          </div>
         )}
         {activeTab === "Accounts" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
+          <div style={{ maxWidth: 700, margin: "0 auto" }}>
             <h3>Linked Accounts</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Account Name</th>
-                  <th>BSB</th>
-                  <th>Account #</th>
-                  <th>Type</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Main Business</td>
-                  <td>123-456</td>
-                  <td>11111111</td>
-                  <td>Operating</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Remove</button></td>
-                </tr>
-                <tr>
-                  <td>PAYGW Saver</td>
-                  <td>123-456</td>
-                  <td>22222222</td>
-                  <td>PAYGW Buffer</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Remove</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={{ marginTop: 18 }}>
-              <button className="button">Link New Account</button>
-            </div>
+            {connectionsQuery.isLoading ? (
+              <div className="skeleton" style={{ height: 160, width: "100%" }} />
+            ) : connectionsQuery.data && connectionsQuery.data.length ? (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Provider</th>
+                    <th>Type</th>
+                    <th>State</th>
+                    <th>Linked</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {connectionsQuery.data.map((conn) => (
+                    <tr key={`${conn.provider}-${conn.id ?? "new"}`}>
+                      <td>{conn.provider}</td>
+                      <td>{conn.type}</td>
+                      <td>{conn.state ?? "Pending"}</td>
+                      <td>{formatDate(conn.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p style={{ marginTop: 12 }}>No bank or payroll accounts linked yet.</p>
+            )}
           </div>
         )}
         {activeTab === "Payroll & Sales" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Payroll Providers</h3>
-            <ul>
-              <li>MYOB</li>
-              <li>QuickBooks</li>
-            </ul>
-            <button className="button" style={{ marginTop: 10 }}>Add Provider</button>
-            <h3 style={{ marginTop: 24 }}>Sales Channels</h3>
-            <ul>
-              <li>Vend</li>
-              <li>Square</li>
-            </ul>
-            <button className="button" style={{ marginTop: 10 }}>Add Channel</button>
+            <h3>Connected Data Sources</h3>
+            {transactionsQuery.isLoading ? (
+              <div className="skeleton" style={{ height: 120, width: "100%" }} />
+            ) : transactionsQuery.data ? (
+              <>
+                <p>Active sources detected:</p>
+                <ul>
+                  {transactionsQuery.data.sources.map((source) => (
+                    <li key={source}>{source}</li>
+                  ))}
+                </ul>
+                <p style={{ marginTop: 12 }}>
+                  Recent transactions: {transactionsQuery.data.items.length} ingested from the connected feeds.
+                </p>
+              </>
+            ) : (
+              <p>No transactions ingested yet.</p>
+            )}
           </div>
         )}
         {activeTab === "Automated Transfers" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Scheduled Transfers</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>Type</th>
-                  <th>Amount</th>
-                  <th>Frequency</th>
-                  <th>Next Date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>PAYGW</td>
-                  <td>$1,000</td>
-                  <td>Weekly</td>
-                  <td>05/06/2025</td>
-                  <td><button className="button" style={{ padding: "2px 14px", fontSize: 14 }}>Edit</button></td>
-                </tr>
-              </tbody>
-            </table>
-            <div style={{ marginTop: 18 }}>
-              <button className="button">Add Transfer</button>
-            </div>
+            <h3>Vault Position</h3>
+            {balanceQuery.isLoading ? (
+              <div className="skeleton" style={{ height: 120, width: "100%" }} />
+            ) : balanceQuery.data ? (
+              <>
+                <p>
+                  Balance for current period: <strong>{formatCurrency(balanceQuery.data.balance_cents)}</strong>
+                </p>
+                <p>Status: {balanceQuery.data.has_release ? "Release completed" : "Awaiting release"}</p>
+              </>
+            ) : (
+              <p>Unable to determine vault position.</p>
+            )}
           </div>
         )}
         {activeTab === "Security" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
             <h3>Security Settings</h3>
-            <label>
-              <input type="checkbox" defaultChecked /> Two-factor authentication enabled
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> SMS alerts on large payments
-            </label>
+            {settingsQuery.isLoading ? (
+              <div className="skeleton" style={{ height: 60, width: "100%" }} />
+            ) : (
+              <ul>
+                <li>Retention: {settings?.retentionMonths ?? "—"} months</li>
+                <li>PII Masking Enabled: {settings?.piiMask ? "Yes" : "No"}</li>
+              </ul>
+            )}
           </div>
         )}
         {activeTab === "Compliance & Audit" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Audit Log (Mock)</h3>
-            <ul>
-              <li>05/06/2025 - PAYGW transfer scheduled</li>
-              <li>29/05/2025 - BAS submitted</li>
-            </ul>
+            <h3>Compliance Snapshot</h3>
+            {balanceQuery.isLoading ? (
+              <div className="skeleton" style={{ height: 60, width: "100%" }} />
+            ) : (
+              <>
+                <p>
+                  Outstanding balance: <strong>{formatCurrency(balanceQuery.data?.balance_cents)}</strong>
+                </p>
+                <p>Last release processed: {balanceQuery.data?.has_release ? "Yes" : "No"}</p>
+              </>
+            )}
           </div>
         )}
         {activeTab === "Customisation" && (
           <div style={{ maxWidth: 600, margin: "0 auto" }}>
             <h3>App Theme</h3>
-            <button className="button" style={{ marginRight: 10 }}>ATO Style</button>
-            <button className="button" style={{ background: "#262626" }}>Dark</button>
+            <p>Theme changes will be available once custom branding endpoints are live.</p>
           </div>
         )}
         {activeTab === "Notifications" && (

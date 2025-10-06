@@ -1,0 +1,1253 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "APGMS Console API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Node console"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "ok"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/balance": {
+      "get": {
+        "operationId": "getBalance",
+        "parameters": [
+          {
+            "name": "abn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taxType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Period balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ledger": {
+      "get": {
+        "operationId": "getLedger",
+        "parameters": [
+          {
+            "name": "abn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taxType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ledger rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LedgerResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/deposit": {
+      "post": {
+        "operationId": "postDeposit",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deposit result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/release": {
+      "post": {
+        "operationId": "postRelease",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Release result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence": {
+      "get": {
+        "operationId": "getEvidence",
+        "parameters": [
+          {
+            "name": "abn",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "taxType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "periodId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evidence bundle",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvidenceBundle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/readyz": {
+      "get": {
+        "summary": "Readyz",
+        "operationId": "readyz_readyz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard/yesterday": {
+      "get": {
+        "summary": "Yesterday",
+        "operationId": "yesterday_dashboard_yesterday_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardYesterday"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/normalize": {
+      "post": {
+        "summary": "Normalize",
+        "operationId": "normalize_normalize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Payload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections": {
+      "get": {
+        "summary": "List Connections",
+        "operationId": "list_connections_connections_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  },
+                  "type": "array",
+                  "title": "Response List Connections Connections Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/start": {
+      "post": {
+        "summary": "Start Conn",
+        "operationId": "start_conn_connections_start_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnStart"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/connections/{conn_id}": {
+      "delete": {
+        "summary": "Delete Conn",
+        "operationId": "delete_conn_connections__conn_id__delete",
+        "parameters": [
+          {
+            "name": "conn_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Conn Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "Transactions",
+        "operationId": "transactions_transactions_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Q"
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "",
+              "title": "Source"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ato/status": {
+      "get": {
+        "summary": "Ato Status",
+        "operationId": "ato_status_ato_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ATOStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bas/validate": {
+      "post": {
+        "summary": "Bas Validate",
+        "operationId": "bas_validate_bas_validate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bas/lodge": {
+      "post": {
+        "summary": "Bas Lodge",
+        "operationId": "bas_lodge_bas_lodge_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bas/preview": {
+      "get": {
+        "summary": "Bas Preview",
+        "operationId": "bas_preview_bas_preview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasPreview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "Get Settings",
+        "operationId": "get_settings_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Settings"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Save Settings",
+        "operationId": "save_settings_settings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Settings"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/profile": {
+      "get": {
+        "summary": "Get Profile",
+        "operationId": "get_profile_profile_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Update Profile",
+        "operationId": "update_profile_profile_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BusinessProfile"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "Openapi Proxy",
+        "operationId": "openapi_proxy_openapi_json_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BalanceResponse": {
+        "type": "object",
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "balance_cents": {
+            "type": "integer"
+          },
+          "has_release": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "balance_cents",
+          "has_release"
+        ]
+      },
+      "LedgerRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "amount_cents": {
+            "type": "integer"
+          },
+          "balance_after_cents": {
+            "type": "integer"
+          },
+          "rpt_verified": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "release_uuid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bank_receipt_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "amount_cents",
+          "balance_after_cents",
+          "created_at"
+        ]
+      },
+      "LedgerResponse": {
+        "type": "object",
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerRow"
+            }
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "rows"
+        ]
+      },
+      "EvidenceLedgerDelta": {
+        "type": "object",
+        "properties": {
+          "ts": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount_cents": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "hash_after": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bank_receipt_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "EvidenceBundle": {
+        "type": "object",
+        "properties": {
+          "bas_labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "rpt_payload": {
+            "type": [
+              "object",
+              "null",
+              "string"
+            ]
+          },
+          "rpt_signature": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "owa_ledger_deltas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EvidenceLedgerDelta"
+            }
+          },
+          "bank_receipt_hash": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "anomaly_thresholds": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "number",
+                "string",
+                "null"
+              ]
+            }
+          },
+          "discrepancy_log": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "bas_labels",
+          "owa_ledger_deltas",
+          "anomaly_thresholds",
+          "discrepancy_log"
+        ]
+      },
+      "DepositRequest": {
+        "type": "object",
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "amountCents": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "amountCents"
+        ]
+      },
+      "DepositResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "ledger_id": {
+            "type": "integer"
+          },
+          "balance_after_cents": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "ledger_id",
+          "balance_after_cents"
+        ]
+      },
+      "ReleaseRequest": {
+        "type": "object",
+        "properties": {
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string"
+          },
+          "periodId": {
+            "type": "string"
+          },
+          "amountCents": {
+            "type": "integer",
+            "maximum": -1
+          }
+        },
+        "required": [
+          "abn",
+          "taxType",
+          "periodId",
+          "amountCents"
+        ]
+      },
+      "ReleaseResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "ledger_id": {
+            "type": "integer"
+          },
+          "transfer_uuid": {
+            "type": "string"
+          },
+          "release_uuid": {
+            "type": "string"
+          },
+          "balance_after_cents": {
+            "type": "integer"
+          },
+          "rpt_ref": {
+            "type": "object",
+            "properties": {
+              "rpt_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "kid": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "payload_sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "ok",
+          "ledger_id",
+          "transfer_uuid",
+          "release_uuid",
+          "balance_after_cents"
+        ]
+      },
+      "ATOStatus": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "ATOStatus"
+      },
+      "BasPreview": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "GSTPayable": {
+            "type": "number",
+            "title": "Gstpayable"
+          },
+          "PAYGW": {
+            "type": "number",
+            "title": "Paygw"
+          },
+          "Total": {
+            "type": "number",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "GSTPayable",
+          "PAYGW",
+          "Total"
+        ],
+        "title": "BasPreview"
+      },
+      "BusinessProfile": {
+        "properties": {
+          "abn": {
+            "type": "string",
+            "title": "Abn"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "trading": {
+            "type": "string",
+            "title": "Trading"
+          },
+          "contact": {
+            "type": "string",
+            "title": "Contact"
+          }
+        },
+        "type": "object",
+        "required": [
+          "abn",
+          "name",
+          "trading",
+          "contact"
+        ],
+        "title": "BusinessProfile"
+      },
+      "ConnStart": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "provider"
+        ],
+        "title": "ConnStart"
+      },
+      "Connection": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "created_at": {
+            "type": "number",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "provider"
+        ],
+        "title": "Connection"
+      },
+      "DashboardYesterday": {
+        "properties": {
+          "jobs": {
+            "type": "integer",
+            "title": "Jobs"
+          },
+          "success_rate": {
+            "type": "number",
+            "title": "Success Rate"
+          },
+          "top_errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobs",
+          "success_rate",
+          "top_errors"
+        ],
+        "title": "DashboardYesterday"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MessageResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "message"
+        ],
+        "title": "MessageResponse"
+      },
+      "Settings": {
+        "properties": {
+          "retentionMonths": {
+            "type": "integer",
+            "title": "Retentionmonths"
+          },
+          "piiMask": {
+            "type": "boolean",
+            "title": "Piimask"
+          }
+        },
+        "type": "object",
+        "required": [
+          "retentionMonths",
+          "piiMask"
+        ],
+        "title": "Settings"
+      },
+      "Transaction": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "source",
+          "description",
+          "amount",
+          "category"
+        ],
+        "title": "Transaction"
+      },
+      "TransactionsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sources"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "sources"
+        ],
+        "title": "TransactionsResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
