@@ -33,8 +33,52 @@ async function main() {
     [abn, taxType, periodId]
   )).rows;
 
-  // You’d normally compute BAS labels from your tax engine; placeholders here
-  const basLabels = { W1: null, W2: null, "1A": null, "1B": null };
+  const basLabels = (() => {
+    const toDollars = value => {
+      if (value === null || value === undefined) return null;
+      const num = Number(value);
+      if (!Number.isFinite(num)) return null;
+      return Math.round(num) / 100;
+    };
+
+    const labels = { W1: null, W2: null, "1A": null, "1B": null };
+    const stored = period.bas_labels || period.bas_summary;
+    if (stored && typeof stored === 'object') {
+      if (stored.W1 !== undefined) labels.W1 = typeof stored.W1 === 'number' ? stored.W1 : toDollars(stored.W1);
+      if (stored.W2 !== undefined) labels.W2 = typeof stored.W2 === 'number' ? stored.W2 : toDollars(stored.W2);
+      if (stored['1A'] !== undefined) labels['1A'] = typeof stored['1A'] === 'number' ? stored['1A'] : toDollars(stored['1A']);
+      if (stored['1B'] !== undefined) labels['1B'] = typeof stored['1B'] === 'number' ? stored['1B'] : toDollars(stored['1B']);
+    }
+
+    if (taxType === 'PAYGW') {
+      if (labels.W2 == null && period.final_liability_cents !== undefined) {
+        labels.W2 = toDollars(period.final_liability_cents) ?? 0;
+      }
+      if (labels.W1 == null && period.accrued_cents !== undefined) {
+        labels.W1 = toDollars(period.accrued_cents);
+      }
+    }
+
+    if (taxType === 'GST') {
+      let gstOnSalesCents = 0;
+      let gstOnPurchasesCents = 0;
+      for (const row of ledger) {
+        const amount = Number(row.amount_cents ?? 0);
+        if (!Number.isFinite(amount)) continue;
+        if (amount >= 0) gstOnSalesCents += amount;
+        else gstOnPurchasesCents += Math.abs(amount);
+      }
+      if (labels['1A'] == null) labels['1A'] = Math.round(gstOnSalesCents) / 100;
+      if (labels['1B'] == null) labels['1B'] = Math.round(gstOnPurchasesCents) / 100;
+    }
+
+    return {
+      W1: labels.W1 ?? 0,
+      W2: labels.W2 ?? 0,
+      '1A': labels['1A'] ?? 0,
+      '1B': labels['1B'] ?? 0,
+    };
+  })();
 
   const bundle = {
     meta: { generated_at: new Date().toISOString(), abn, taxType, periodId },

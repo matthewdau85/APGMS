@@ -17,6 +17,53 @@ const pool = new Pool({
   host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
 });
 
+function centsToDollars(value) {
+  if (value === null || value === undefined) return null;
+  const num = Number(value);
+  if (!Number.isFinite(num)) return null;
+  return Math.round(num) / 100;
+}
+
+function deriveBasLabels(period, ledgerRows) {
+  const labels = { W1: null, W2: null, "1A": null, "1B": null };
+  const stored = period?.bas_labels || period?.bas_summary;
+  if (stored && typeof stored === 'object') {
+    if (stored.W1 !== undefined) labels.W1 = typeof stored.W1 === 'number' ? stored.W1 : centsToDollars(stored.W1);
+    if (stored.W2 !== undefined) labels.W2 = typeof stored.W2 === 'number' ? stored.W2 : centsToDollars(stored.W2);
+    if (stored['1A'] !== undefined) labels['1A'] = typeof stored['1A'] === 'number' ? stored['1A'] : centsToDollars(stored['1A']);
+    if (stored['1B'] !== undefined) labels['1B'] = typeof stored['1B'] === 'number' ? stored['1B'] : centsToDollars(stored['1B']);
+  }
+
+  if (period?.tax_type === 'PAYGW') {
+    if (labels.W2 == null && period?.final_liability_cents !== undefined) {
+      labels.W2 = centsToDollars(period.final_liability_cents) ?? 0;
+    }
+    if (labels.W1 == null && period?.accrued_cents !== undefined) {
+      labels.W1 = centsToDollars(period.accrued_cents);
+    }
+  }
+
+  if (period?.tax_type === 'GST') {
+    let gstOnSalesCents = 0;
+    let gstOnPurchasesCents = 0;
+    for (const row of ledgerRows) {
+      const amount = Number(row.amount_cents ?? 0);
+      if (!Number.isFinite(amount)) continue;
+      if (amount >= 0) gstOnSalesCents += amount;
+      else gstOnPurchasesCents += Math.abs(amount);
+    }
+    if (labels['1A'] == null) labels['1A'] = Math.round(gstOnSalesCents) / 100;
+    if (labels['1B'] == null) labels['1B'] = Math.round(gstOnPurchasesCents) / 100;
+  }
+
+  return {
+    W1: labels.W1 ?? 0,
+    W2: labels.W2 ?? 0,
+    '1A': labels['1A'] ?? 0,
+    '1B': labels['1B'] ?? 0,
+  };
+}
+
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
   console.error(e);
@@ -190,7 +237,7 @@ app.get('/evidence', ah(async (req,res)=>{
     [abn, taxType, periodId]
   );
 
-  const basLabels = { W1:null, W2:null, "1A":null, "1B":null };
+  const basLabels = deriveBasLabels(p, lr.rows);
 
   res.json({
     meta: { generated_at: new Date().toISOString(), abn, taxType, periodId },
