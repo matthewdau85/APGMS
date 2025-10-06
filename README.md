@@ -15,6 +15,9 @@ Automates BAS-time fund transfers to the ATO, with pre-lodgment verification.
 Compliance & Alerts:
 Proactive alerts for discrepancies, insufficient funds, and upcoming deadlines.
 
+Recon Anomaly Ranking:
+Gradient-boosted anomaly scorer with explainability to prioritise reconciliation queue triage via `/api/ml/recon/score`.
+
 Audit Trail & Reporting:
 Dashboard for real-time compliance monitoring and generating audit/compliance reports.
 
