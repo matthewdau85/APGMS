@@ -1,12 +1,11 @@
-﻿import pg from "pg";
-import {KmsProvider} from "./kmsProvider";
+import type { KmsProvider } from "@core/ports/kms";
 import * as ed from "@noble/ed25519";
 import { KeyManagementServiceClient } from "@google-cloud/kms";
 
 export class GcpKmsProvider implements KmsProvider {
   private client = new KeyManagementServiceClient();
 
-  async getPublicKey(kid: string): Promise<Uint8Array> {
+  async getPublicKey(_kid: string): Promise<Uint8Array> {
     const raw = process.env.ED25519_PUB_RAW_BASE64;
     if (!raw) throw new Error("Set ED25519_PUB_RAW_BASE64 when using GCP KMS");
     return Buffer.from(raw, "base64");
