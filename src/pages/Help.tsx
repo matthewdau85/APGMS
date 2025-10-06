@@ -1,38 +1,66 @@
 import React from 'react';
+import { t } from '../ui/i18n';
 
 export default function Help() {
+  const gettingStartedKeys = [
+    'help.getting_started.settings',
+    'help.getting_started.wizard',
+    'help.getting_started.dashboard',
+    'help.getting_started.bas'
+  ];
+
+  const complianceKeys = [
+    'help.compliance.accounts',
+    'help.compliance.audit',
+    'help.compliance.penalties'
+  ];
+
+  const supportLinks = [
+    { href: 'https://www.ato.gov.au/business/payg-withholding/', labelKey: 'help.links.paygw' },
+    { href: 'https://www.ato.gov.au/business/gst/', labelKey: 'help.links.gst' },
+    { href: 'https://www.ato.gov.au/business/business-activity-statements-(bas)/', labelKey: 'help.links.bas' },
+    { href: 'https://www.ato.gov.au/business/super-for-employers/', labelKey: 'help.links.super' },
+    { href: 'https://www.ato.gov.au/General/Online-services/', labelKey: 'help.links.services' }
+  ];
+
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Help & Guidance</h1>
-      <p className="text-sm text-muted-foreground">
-        Access support for PAYGW, GST, BAS and using this system.
-      </p>
+      <h1 className="text-2xl font-bold">{t('help.title')}</h1>
+      <p className="text-sm text-muted-foreground">{t('help.subtitle')}</p>
       <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">Getting Started</h2>
+        <h2 className="text-lg font-semibold">{t('help.section.getting_started')}</h2>
         <ul className="list-disc pl-5 text-sm">
-          <li>Set up your buffer accounts and payment schedule in <strong>Settings</strong>.</li>
-          <li>Use the <strong>Wizard</strong> to define PAYGW and GST split rules.</li>
-          <li>Review <strong>Dashboard</strong> for current obligations and payment alerts.</li>
-          <li>Go to <strong>BAS</strong> to lodge your Business Activity Statement each quarter.</li>
+          {gettingStartedKeys.map(itemKey => (
+            <li key={itemKey}>{t(itemKey)}</li>
+          ))}
         </ul>
       </div>
       <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">ATO Compliance</h2>
+        <h2 className="text-lg font-semibold">{t('help.section.compliance')}</h2>
         <ul className="list-disc pl-5 text-sm">
-          <li>Use one-way tax accounts to prevent accidental use of withheld/collected funds.</li>
-          <li>Audit trail with timestamped actions supports legal protection and evidence.</li>
-          <li>Helps avoid wind-up notices, director penalties, and late lodgment fines.</li>
+          {complianceKeys.map(itemKey => (
+            <li key={itemKey}>{t(itemKey)}</li>
+          ))}
         </ul>
       </div>
       <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">Support Links</h2>
+        <h2 className="text-lg font-semibold">{t('help.section.links')}</h2>
         <ul className="list-disc pl-5 text-sm">
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/payg-withholding/">ATO PAYGW Guide</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/gst/">ATO GST Information</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/business-activity-statements-(bas)/">ATO BAS Portal</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/super-for-employers/">ATO Super Obligations</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/General/Online-services/">ATO Online Services</a></li>
+          {supportLinks.map(link => (
+            <li key={link.href}>
+              <a className="text-blue-600" href={link.href}>
+                {t(link.labelKey)}
+              </a>
+            </li>
+          ))}
         </ul>
+      </div>
+      <div className="bg-card p-4 rounded-xl shadow space-y-2">
+        <h2 className="text-lg font-semibold">{t('help.section.writing')}</h2>
+        <p className="text-sm text-muted-foreground">{t('help.writing_style.desc')}</p>
+        <a className="text-blue-600 text-sm underline" href="/content/style-guide.md">
+          {t('help.writing_style.link')}
+        </a>
       </div>
     </div>
   );
