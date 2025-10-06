@@ -1,6 +1,7 @@
 // src/api/payments.ts
 import express from "express";
 import { Payments } from "../../libs/paymentsClient"; // adjust if your libs path differs
+import { evaluateReleaseGuard, markReleaseComplete } from "./payments/releaseGuard";
 
 export const paymentsApi = express.Router();
 
@@ -59,7 +60,16 @@ paymentsApi.post("/release", async (req, res) => {
     if (amountCents >= 0) {
       return res.status(400).json({ error: "Release must be negative" });
     }
+    const key = `${abn}:${taxType}:${periodId}`;
+    const guard = evaluateReleaseGuard({ key, amountCents, headers: req.headers });
+    for (const [header, value] of Object.entries(guard.headers)) {
+      res.setHeader(header, value);
+    }
+    if (!guard.allowed) {
+      return res.status(guard.status).json({ error: guard.message || "Release blocked" });
+    }
     const data = await Payments.payAto({ abn, taxType, periodId, amountCents });
+    markReleaseComplete(key);
     res.json(data);
   } catch (err: any) {
     res.status(400).json({ error: err?.message || "Release failed" });
