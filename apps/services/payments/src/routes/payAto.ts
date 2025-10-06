@@ -1,8 +1,19 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
+import pg from 'pg';
 import { pool } from '../index.js';
+import { recordReleaseAttempt } from '../ops/metrics.js';
+
+class HttpError extends Error {
+  status: number;
+  code: string;
+  constructor(status: number, message: string, code = "ERROR") {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
 
 function genUUID() {
   return crypto.randomUUID();
@@ -15,31 +26,32 @@ function genUUID() {
  * - Sets rpt_verified=true and a unique release_uuid to satisfy constraints
  */
 export async function payAtoRelease(req: Request, res: Response) {
-  const { abn, taxType, periodId, amountCents } = req.body || {};
-  if (!abn || !taxType || !periodId) {
-    return res.status(400).json({ error: 'Missing abn/taxType/periodId' });
-  }
+  const started = process.hrtime.bigint();
+  let success = false;
+  let errorCode = "UNHANDLED";
+  let client: pg.PoolClient | null = null;
+  let transactionStarted = false;
 
-  // default a tiny test debit if not provided
-  const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
-
-  // must be negative for a release
-  if (amt >= 0) {
-    return res.status(400).json({ error: 'amountCents must be negative for a release' });
-  }
-
-  // rptGate attaches req.rpt when verification succeeds
-  const rpt = (req as any).rpt;
-  if (!rpt) {
-    return res.status(403).json({ error: 'RPT not verified' });
-  }
-
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    const { abn, taxType, periodId, amountCents } = req.body || {};
+    if (!abn || !taxType || !periodId) {
+      throw new HttpError(400, 'Missing abn/taxType/periodId', 'MISSING_FIELDS');
+    }
 
-    // compute running balance AFTER this entry:
-    // fetch last balance in this period (by id order), default 0
+    const amt = Number.isFinite(Number(amountCents)) ? Number(amountCents) : -100;
+    if (amt >= 0) {
+      throw new HttpError(400, 'amountCents must be negative for a release', 'INVALID_AMOUNT');
+    }
+
+    const rpt = (req as any).rpt;
+    if (!rpt) {
+      throw new HttpError(403, 'RPT not verified', 'RPT_NOT_VERIFIED');
+    }
+
+    client = await pool.connect();
+    await client.query('BEGIN');
+    transactionStarted = true;
+
     const { rows: lastRows } = await client.query<{
       balance_after_cents: string | number;
     }>(
@@ -54,6 +66,7 @@ export async function payAtoRelease(req: Request, res: Response) {
     const newBal = lastBal + amt;
 
     const release_uuid = genUUID();
+    const transfer_uuid = genUUID();
 
     const insert = `
       INSERT INTO owa_ledger
@@ -62,7 +75,7 @@ export async function payAtoRelease(req: Request, res: Response) {
       VALUES ($1,$2,$3,$4,$5,$6, TRUE, $7, now())
       RETURNING id, transfer_uuid, balance_after_cents
     `;
-    const transfer_uuid = genUUID();
+
     const { rows: ins } = await client.query(insert, [
       abn,
       taxType,
@@ -74,6 +87,9 @@ export async function payAtoRelease(req: Request, res: Response) {
     ]);
 
     await client.query('COMMIT');
+    transactionStarted = false;
+    success = true;
+    errorCode = 'OK';
 
     return res.json({
       ok: true,
@@ -84,10 +100,24 @@ export async function payAtoRelease(req: Request, res: Response) {
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
     });
   } catch (e: any) {
-    await client.query('ROLLBACK');
-    // common failures: unique single-release-per-period, allow-list, etc.
+    if (client && transactionStarted) {
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackErr) {
+        console.error('[payAtoRelease] rollback failed', rollbackErr);
+      }
+    }
+
+    if (e instanceof HttpError) {
+      errorCode = e.code;
+      return res.status(e.status).json({ error: e.message });
+    }
+
+    errorCode = (e?.code || e?.name || 'RELEASE_FAILED').toString().toUpperCase();
     return res.status(400).json({ error: 'Release failed', detail: String(e?.message || e) });
   } finally {
-    client.release();
+    if (client) client.release();
+    const durationMs = Number(process.hrtime.bigint() - started) / 1_000_000;
+    recordReleaseAttempt(durationMs, success, errorCode);
   }
 }
