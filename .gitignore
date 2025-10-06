@@ -5,6 +5,8 @@ __pycache__/
 
 # Node / builds
 node_modules/
+!node_modules/zod/
+!node_modules/zod/**
 dist/
 .next/
 coverage/
