@@ -1,0 +1,9 @@
+{
+  "generated_at": "2025-10-05",
+  "rule_files": [
+    {
+      "path": "apps/services/tax-engine/app/rules/payg_w_2024_25.json",
+      "sha256": "d3655202868bfa4d56ca1eebfc590808aca60c4cbd7162881d1ab12cd720f53b"
+    }
+  ]
+}
