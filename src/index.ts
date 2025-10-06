@@ -23,7 +23,7 @@ app.post("/api/pay", idempotency(), payAto);
 app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);
-app.get("/api/evidence", evidence);
+app.get("/api/v1/evidence/:abn/:pid", evidence);
 
 // ✅ Payments API first so it isn't shadowed by catch-alls in `api`
 app.use("/api", paymentsApi);
