@@ -197,3 +197,359 @@ th {
   font-weight: 600;
   color: #00205b;
 }
+
+/* Admin Ops */
+.admin-ops {
+  max-width: 1100px;
+  margin: 0 auto 48px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.admin-ops__guardrail {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 18px rgba(0, 32, 91, 0.06);
+}
+
+.admin-ops__guardrail h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #00205b;
+}
+
+.admin-ops__credentials {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.admin-ops__credentials input,
+.admin-ops__launchers input,
+.admin-ops__launchers textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d2d8e4;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.admin-ops__credentials input:focus,
+.admin-ops__launchers input:focus,
+.admin-ops__launchers textarea:focus {
+  border-color: #00716b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 113, 107, 0.12);
+}
+
+.admin-ops__warning {
+  margin-top: 18px;
+  padding: 12px 16px;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 10px;
+}
+
+.admin-ops__error {
+  margin-top: 18px;
+  padding: 12px 16px;
+  background: #ffe6e6;
+  color: #a3001b;
+  border-radius: 10px;
+}
+
+.admin-ops__launchers {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 18px rgba(0, 32, 91, 0.05);
+}
+
+.admin-ops__launchers h3 {
+  margin-top: 0;
+  color: #00205b;
+}
+
+.admin-ops__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.admin-ops__card {
+  border: 1px solid #e5ebf5;
+  border-radius: 14px;
+  padding: 18px;
+  background: #f9fbff;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-ops__card h4 {
+  margin: 0;
+  color: #00205b;
+}
+
+.admin-ops__card button {
+  align-self: flex-start;
+  background: #00716b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.admin-ops__card button:disabled {
+  cursor: not-allowed;
+  background: #9db3b1;
+}
+
+.admin-ops__card button:not(:disabled):hover {
+  background: #005d54;
+}
+
+.admin-ops__hint {
+  font-size: 12px;
+  color: #5b6f82;
+}
+
+.admin-ops__jobs {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 18px rgba(0, 32, 91, 0.05);
+}
+
+.admin-ops__jobs header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.admin-ops__jobs select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #d2d8e4;
+}
+
+.admin-ops__loading {
+  margin-bottom: 12px;
+  color: #5b6f82;
+}
+
+.admin-ops__table .progress-bar {
+  width: 140px;
+  height: 8px;
+  border-radius: 4px;
+  background: #edf2f7;
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00716b, #24b3a8);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-queued {
+  background: #e5ebf5;
+  color: #00205b;
+}
+
+.status-running {
+  background: #d9f2ff;
+  color: #005b8f;
+}
+
+.status-succeeded {
+  background: #d9f5ee;
+  color: #0c6b57;
+}
+
+.status-failed {
+  background: #ffe1e1;
+  color: #a3001b;
+}
+
+.admin-ops__actions button {
+  margin-right: 8px;
+  background: #005b8f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.admin-ops__actions button:last-child {
+  margin-right: 0;
+}
+
+.admin-ops__actions button:hover {
+  background: #004873;
+}
+
+.admin-ops__empty {
+  padding: 12px;
+  color: #5b6f82;
+}
+
+.admin-ops__modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.admin-ops__modal {
+  width: min(720px, 92vw);
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+
+.admin-ops__modal header,
+.admin-ops__modal footer {
+  padding: 16px 20px;
+  background: #f5f7fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-ops__modal header h4 {
+  margin: 0;
+}
+
+.admin-ops__modal header button,
+.admin-ops__modal footer button {
+  background: #00716b;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.admin-ops__modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-ops__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.admin-ops__meta dt {
+  font-weight: 700;
+  color: #00205b;
+}
+
+.admin-ops__meta dd {
+  margin: 4px 0 0 0;
+}
+
+.admin-ops__logs-scroll {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #e5ebf5;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fafcff;
+}
+
+.log-entry {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.log-info span {
+  color: #1f2933;
+}
+
+.log-warn span {
+  color: #8a6d00;
+}
+
+.log-error span {
+  color: #a3001b;
+}
+
+.admin-ops__artifacts ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-ops__artifacts button {
+  background: #005b8f;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.artifact-desc {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #5b6f82;
+}
+
+.admin-ops__summary pre {
+  background: #0b1627;
+  color: #e6f1ff;
+  padding: 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .admin-ops__cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-ops__jobs header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}

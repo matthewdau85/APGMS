@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { opsRouter } from "./routes/ops";
 
 dotenv.config();
 
@@ -30,6 +31,9 @@ app.use("/api", paymentsApi);
 
 // Existing API router(s) after
 app.use("/api", api);
+
+// Admin operations (JWT + MFA + role=admin enforced in router)
+app.use("/ops", opsRouter);
 
 // 404 fallback (must be last)
 app.use((_req, res) => res.status(404).send("Not found"));
