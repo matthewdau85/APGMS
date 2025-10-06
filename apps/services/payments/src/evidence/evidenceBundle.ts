@@ -1,6 +1,5 @@
-﻿import pg from "pg";
-const { PoolClient } = pg;
-import { canonicalJson, sha256Hex } from "../utils/crypto";
+﻿import type { PoolClient } from 'pg';
+import { canonicalJson, sha256Hex } from "../utils/crypto.js";
 
 type BuildParams = {
   abn: string; taxType: string; periodId: string;
@@ -17,6 +16,22 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   );
   if (!rpt.rows.length) throw new Error("Missing RPT for bundle");
   const r = rpt.rows[0];
+
+  const receiptRows = await client.query(
+    `SELECT receipt_id, provider_reference, status, synthetic, shadow_only, created_at
+       FROM bank_receipts
+      WHERE abn=$1 AND tax_type=$2 AND period_id=$3
+      ORDER BY created_at ASC`,
+    [p.abn, p.taxType, p.periodId]
+  );
+  const bankReceipts = receiptRows.rows.map((row: any) => ({
+    receipt_id: row.receipt_id,
+    provider_reference: row.provider_reference,
+    status: row.status,
+    synthetic: row.synthetic,
+    shadow_only: row.shadow_only,
+    created_at: row.created_at,
+  }));
 
   const thresholds = { variance_pct: 0.02, dup_rate: 0.01, gap_allowed: 3 };
   const anomalies = { variance: 0.0, dups: 0, gaps: 0 };
@@ -53,7 +68,9 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
     p.abn, p.taxType, p.periodId, payload_sha256, r.rpt_id, r.payload_c14n, r.signature,
     canonicalJson(thresholds), canonicalJson(anomalies), canonicalJson(normalization),
     balBefore, balAfter,
-    canonicalJson(p.bankReceipts), canonicalJson(p.atoReceipts), canonicalJson(p.operatorOverrides)
+    canonicalJson(bankReceipts.length ? bankReceipts : p.bankReceipts),
+    canonicalJson(p.atoReceipts),
+    canonicalJson(p.operatorOverrides)
   ];
   const out = await client.query(ins, vals);
   return out.rows[0].bundle_id as number;
