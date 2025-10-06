@@ -16,3 +16,8 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Environment overrides
+.env.local
+.env*
+!.env.local.example
