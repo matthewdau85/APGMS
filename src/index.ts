@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { runScorecardLite } from "../scripts/scorecard/checks";
 
 dotenv.config();
 
@@ -17,6 +18,18 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.get("/ops/readiness", (_req, res) => {
+  try {
+    const snapshot = runScorecardLite();
+    res.json(snapshot);
+  } catch (error) {
+    res.status(500).json({
+      error: "Failed to calculate readiness",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
