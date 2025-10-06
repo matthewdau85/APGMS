@@ -28,7 +28,7 @@ import asyncio
 import os
 from typing import Optional
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, Response, status, HTTPException
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 from nats.aio.client import Client as NATS
 from nats.aio.errors import ErrNoServers
@@ -148,9 +148,34 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from .domains import payg_w as payg_w_mod
 import os, json
+from pathlib import Path
 
 TEMPLATES = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "static")), name="static")
+
+RULES_DIR = Path(os.path.dirname(__file__)) / "rules"
+RULES_MANIFEST = RULES_DIR / "rules_manifest.json"
+
+
+@app.get("/rules/version")
+def rules_version():
+    if not RULES_MANIFEST.exists():
+        raise HTTPException(status_code=500, detail="Rules manifest not generated")
+    with RULES_MANIFEST.open("r", encoding="utf-8") as f:
+        manifest = json.load(f)
+    files = []
+    for entry in manifest.get("files", []):
+        files.append(
+            {
+                "name": entry.get("name"),
+                "sha256": entry.get("sha256"),
+                "source_url": entry.get("source_url"),
+                "effective_from": entry.get("effective_from"),
+                "effective_to": entry.get("effective_to"),
+                "last_reviewed": entry.get("last_reviewed"),
+            }
+        )
+    return {"rates_version": manifest.get("rates_version"), "files": files}
 
 @app.get("/ui")
 def ui_index(request: Request):
@@ -171,7 +196,13 @@ async def ui_calc(request: Request):
         "stsl": form.get("stsl") == "true",
         "target_net": float(form.get("target_net")) if form.get("target_net") else None
     }
-    with open(os.path.join(os.path.dirname(__file__), "rules", "payg_w_2024_25.json"), "r", encoding="utf-8") as f:
+    rules_path = os.path.join(
+        os.path.dirname(__file__),
+        "rules",
+        "payg_w_2024_25",
+        "weekly.resident.json",
+    )
+    with open(rules_path, "r", encoding="utf-8") as f:
         rules = json.load(f)
     res = payg_w_mod.compute({"payg_w": pw}, rules)
     return TEMPLATES.TemplateResponse("index.html", {"request": request, "title": "PAYG-W Calculator", "result": res, "badge":"demo"})

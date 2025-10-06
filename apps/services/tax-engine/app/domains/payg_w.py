@@ -1,5 +1,5 @@
 ﻿from __future__ import annotations
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, List
 
 def _round(amount: float, mode: str="HALF_UP") -> float:
     from decimal import Decimal, ROUND_HALF_UP, ROUND_HALF_EVEN, getcontext
@@ -7,13 +7,29 @@ def _round(amount: float, mode: str="HALF_UP") -> float:
     q = Decimal(str(amount)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP if mode=="HALF_UP" else ROUND_HALF_EVEN)
     return float(q)
 
+def _extract_brackets(cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if not cfg:
+        return []
+    if "withholding" in cfg:
+        withholding = cfg.get("withholding") or {}
+        return list(withholding.get("brackets", []))
+    if "brackets" in cfg:
+        return list(cfg.get("brackets", []))
+    formula = cfg.get("formula_progressive") or {}
+    return list(formula.get("brackets", []))
+
+
 def _bracket_withholding(gross: float, cfg: Dict[str, Any]) -> float:
     """Generic progressive bracket formula: tax = a*gross - b + fixed (per period)."""
-    brs = cfg.get("brackets", [])
+    brs = _extract_brackets(cfg)
     for br in brs:
-        if gross <= float(br.get("up_to", 9e9)):
-            a = float(br.get("a", 0.0)); b = float(br.get("b", 0.0)); fixed = float(br.get("fixed", 0.0))
-            return max(0.0, a * gross - b + fixed)
+        up_to = br.get("up_to")
+        if up_to is not None and gross > float(up_to):
+            continue
+        a = float(br.get("a", 0.0))
+        b = float(br.get("b", 0.0))
+        fixed = float(br.get("fixed", 0.0))
+        return max(0.0, a * gross - b + fixed)
     return 0.0
 
 def _percent_simple(gross: float, rate: float) -> float:
@@ -58,6 +74,7 @@ def compute(event: Dict[str, Any], rules: Dict[str, Any]) -> Dict[str, Any]:
     pw = event.get("payg_w", {}) or {}
     method = (pw.get("method") or "table_ato")
     period = (pw.get("period") or "weekly")
+    requested_status = (pw.get("residency_status") or pw.get("status") or "resident").lower()
     params = {
         "period": period,
         "tax_free_threshold": bool(pw.get("tax_free_threshold", True)),
@@ -66,9 +83,11 @@ def compute(event: Dict[str, Any], rules: Dict[str, Any]) -> Dict[str, Any]:
         "extra": float(pw.get("extra", 0.0)),
         "regular_gross": float(pw.get("regular_gross", 0.0)),
         "bonus": float(pw.get("bonus", 0.0)),
-        "formula_progressive": (rules.get("formula_progressive") or {})
+        "formula_progressive": {"brackets": _extract_brackets(rules)}
     }
-    explain = [f"method={method} period={period} TFT={params['tax_free_threshold']} STSL={params['stsl']}"]
+    explain = [
+        f"method={method} period={period} TFT={params['tax_free_threshold']} STSL={params['stsl']} status={requested_status}"
+    ]
     gross = float(pw.get("gross", 0.0) or 0.0)
     target_net = pw.get("target_net")
 

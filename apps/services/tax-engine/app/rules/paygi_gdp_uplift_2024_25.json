@@ -1,0 +1,14 @@
+{
+  "gdp_uplift_factor": 0.06,
+  "metadata": {
+    "effective_from": "2024-07-01",
+    "effective_to": "2025-06-30",
+    "last_reviewed": "2025-10-06",
+    "name": "paygi_gdp_uplift_2024_25.json",
+    "source_url": "https://softwaredevelopers.ato.gov.au/gdp-adjustment-2024-25-gst-and-payg-instalments"
+  },
+  "notes": [
+    "ATO advised GDP uplift factor for 2024-25 PAYG instalments and GST instalments is 6%.",
+    "Factor applies to entities using GDP-adjusted instalment calculations for quarters ending 30 September 2024 through 30 June 2025."
+  ]
+}

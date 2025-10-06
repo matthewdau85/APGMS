@@ -4,7 +4,9 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "rules:fetch": "python scripts/rules/fetch_paygw.py && python scripts/rules/fetch_paygi.py && python scripts/rules/fetch_sg.py && python scripts/rules/fetch_fbt.py && python scripts/rules/fetch_gst_core.py && python scripts/rules/fetch_stp2.py",
+        "rules:hash": "tsx scripts/rules/compute_hashes.ts"
     },
     "version": "0.1.0",
     "name": "apgms",

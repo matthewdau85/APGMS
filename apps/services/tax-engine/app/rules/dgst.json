@@ -1,0 +1,28 @@
+{
+  "bas_mapping": {
+    "credit_adjustment": "1B",
+    "deferred_gst_payable": "1A",
+    "import_deferred_gst": "7"
+  },
+  "eligibility": [
+    "Importer must be approved for the deferred GST scheme by the ATO.",
+    "Customs value of taxable importations reported at label 7 on the BAS.",
+    "GST for deferred importations reported at label 1A in the same period."
+  ],
+  "flags": {
+    "available_to": "monthly_deferrers",
+    "requires_customs_declaration": true
+  },
+  "metadata": {
+    "effective_from": "2010-01-01",
+    "effective_to": null,
+    "last_reviewed": "2025-10-06",
+    "name": "dgst.json",
+    "source_url": "https://www.ato.gov.au/businesses-and-organisations/gst-excise-and-indirect-taxes/gst/in-detail/rules-for-specific-transactions/international-transactions/deferred-gst"
+  },
+  "notes": [
+    "Deferred GST is reported separately on the BAS: importation value at label 7 and GST payable at label 1A.",
+    "Credits for adjustments relating to deferred GST are claimed at label 1B."
+  ],
+  "scheme": "Deferred GST"
+}

@@ -1,0 +1,40 @@
+{
+  "metadata": {
+    "effective_from": "2024-07-01",
+    "effective_to": "2025-06-30",
+    "last_reviewed": "2025-10-06",
+    "name": "payg_w_2024_25/weekly.foreign.json",
+    "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly"
+  },
+  "pay_period": "weekly",
+  "periods_per_year": 52,
+  "resident_status": "foreign",
+  "withholding": {
+    "brackets": [
+      {
+        "a": 0.3,
+        "b": 0.0,
+        "lower_bound": 0.0,
+        "up_to": 2596.1538
+      },
+      {
+        "a": 0.37,
+        "b": 181.73076923,
+        "lower_bound": 2596.1538,
+        "up_to": 3653.8462
+      },
+      {
+        "a": 0.46,
+        "b": 510.57692308,
+        "lower_bound": 3653.8462,
+        "up_to": null
+      }
+    ],
+    "method": "linear_coefficients",
+    "notes": [
+      "Coefficients derived from ATO PAYG withholding tax tables (NAT 1005) effective 1 July 2024.",
+      "Linear coefficients computed from annual tax scale and low-income tax offset rules."
+    ],
+    "rounding": "nearest_cent"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "metadata": {
+    "effective_from": "2024-07-01",
+    "effective_to": "2025-06-30",
+    "last_reviewed": "2025-10-06",
+    "name": "payg_w_2024_25/monthly.resident.json",
+    "source_url": "https://www.ato.gov.au/tax-rates-and-codes/tax-table-weekly"
+  },
+  "pay_period": "monthly",
+  "periods_per_year": 12,
+  "resident_status": "resident",
+  "withholding": {
+    "brackets": [
+      {
+        "a": 0.0,
+        "b": 0.0,
+        "lower_bound": 0.0,
+        "up_to": 1516.6667
+      },
+      {
+        "a": 0.12372869,
+        "b": 187.65518075,
+        "lower_bound": 1516.6667,
+        "up_to": 3125.0
+      },
+      {
+        "a": 0.21,
+        "b": 457.25,
+        "lower_bound": 3125.0,
+        "up_to": 3750.0
+      },
+      {
+        "a": 0.315,
+        "b": 851.0,
+        "lower_bound": 3750.0,
+        "up_to": 5555.5833
+      },
+      {
+        "a": 0.2999999,
+        "b": 767.66569444,
+        "lower_bound": 5555.5833,
+        "up_to": 11250.0
+      },
+      {
+        "a": 0.37,
+        "b": 1555.16666667,
+        "lower_bound": 11250.0,
+        "up_to": 15833.3333
+      },
+      {
+        "a": 0.45,
+        "b": 2821.83333333,
+        "lower_bound": 15833.3333,
+        "up_to": null
+      }
+    ],
+    "method": "linear_coefficients",
+    "notes": [
+      "Coefficients derived from ATO PAYG withholding tax tables (NAT 1005) effective 1 July 2024.",
+      "Linear coefficients computed from annual tax scale and low-income tax offset rules."
+    ],
+    "rounding": "nearest_cent"
+  }
+}
