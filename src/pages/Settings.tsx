@@ -21,6 +21,7 @@ export default function Settings() {
     trading: "Example Vending",
     contact: "info@example.com"
   });
+  const [mlFeatureEnabled, setMlFeatureEnabled] = useState(true);
 
   return (
     <div className="settings-card">
@@ -205,9 +206,36 @@ export default function Settings() {
           </div>
         )}
         {activeTab === "Advanced" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Export Data</h3>
-            <button className="button">Export as CSV</button>
+          <div style={{ maxWidth: 640, margin: "0 auto", display: "grid", gap: 24 }}>
+            <div>
+              <h3 style={{ marginBottom: 8 }}>Export Data</h3>
+              <button className="button">Export as CSV</button>
+            </div>
+            <div
+              style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: 12,
+                padding: 20
+              }}
+            >
+              <h3 style={{ color: "#047857", marginBottom: 6 }}>ML Assist Feature Flag</h3>
+              <p style={{ fontSize: 14, color: "#166534", marginBottom: 12 }}>
+                Toggle whether the advisory ML endpoints are available. When disabled (<code>FEATURE_ML=false</code>),
+                the ML Assist API returns 503 and no ledger state changes automatically.
+              </p>
+              <label style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 15 }}>
+                <input
+                  type="checkbox"
+                  checked={mlFeatureEnabled}
+                  onChange={() => setMlFeatureEnabled(value => !value)}
+                />
+                Enable ML Assist suggestions (<code>FEATURE_ML</code>)
+              </label>
+              <p style={{ fontSize: 12, color: "#047857", marginTop: 10 }}>
+                Overrides are still logged for audit, and statutory PAYGW/GST calculations remain deterministic in the tax engine.
+              </p>
+            </div>
           </div>
         )}
       </div>
