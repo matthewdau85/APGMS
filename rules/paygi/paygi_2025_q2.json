@@ -1,0 +1,8 @@
+{
+  "year": "2025",
+  "quarter": "Q2",
+  "instalment_rate": 0.044,
+  "gdp_uplift": 0.05,
+  "base_notice_amount": 4450.0,
+  "notes": "Sample data for FY25 Q2 instalments"
+}

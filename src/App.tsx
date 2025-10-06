@@ -11,6 +11,7 @@ import Audit from "./pages/Audit";
 import Fraud from "./pages/Fraud";
 import Integrations from "./pages/Integrations";
 import Help from "./pages/Help";
+import PAYGI from "./pages/PAYGI";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="/audit" element={<Audit />} />
           <Route path="/fraud" element={<Fraud />} />
           <Route path="/integrations" element={<Integrations />} />
+          <Route path="/paygi" element={<PAYGI />} />
           <Route path="/help" element={<Help />} />
         </Route>
       </Routes>

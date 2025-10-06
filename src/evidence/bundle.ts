@@ -1,4 +1,5 @@
 ﻿import { Pool } from "pg";
+import { paygiStore } from "../paygi/store";
 const pool = new Pool();
 
 export async function buildEvidenceBundle(abn: string, taxType: string, periodId: string) {
@@ -15,5 +16,6 @@ export async function buildEvidenceBundle(abn: string, taxType: string, periodId
     anomaly_thresholds: p?.thresholds ?? {},
     discrepancy_log: []  // TODO: populate from recon diffs
   };
+  bundle["paygi"] = paygiStore.summary(abn);
   return bundle;
 }
