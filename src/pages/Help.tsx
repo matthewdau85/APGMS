@@ -34,6 +34,20 @@ export default function Help() {
           <li><a className="text-blue-600" href="https://www.ato.gov.au/General/Online-services/">ATO Online Services</a></li>
         </ul>
       </div>
+      <div className="bg-card p-4 rounded-xl shadow space-y-2">
+        <h2 className="text-lg font-semibold">Machine Learning Governance</h2>
+        <ul className="list-disc pl-5 text-sm space-y-1">
+          <li><a className="text-blue-600" href="/docs/ml/model_cards/recon_scorer.md" target="_blank" rel="noopener noreferrer">Recon Scorer model card</a></li>
+          <li><a className="text-blue-600" href="/docs/ml/model_cards/bank_matcher.md" target="_blank" rel="noopener noreferrer">Bank Matcher model card</a></li>
+          <li><a className="text-blue-600" href="/docs/ml/model_cards/forecast.md" target="_blank" rel="noopener noreferrer">Cash Forecast model card</a></li>
+          <li><a className="text-blue-600" href="/docs/ml/model_cards/invoice_ner.md" target="_blank" rel="noopener noreferrer">Invoice NER model card</a></li>
+        </ul>
+        <p className="text-xs text-muted-foreground">
+          Disable all ML features with <code>FEATURE_ML=false</code> or toggle individual models via
+          <code className="mx-1">FEATURE_ML_RECON</code>, <code className="mx-1">FEATURE_ML_MATCH</code>,
+          <code className="mx-1">FEATURE_ML_FORECAST</code>, and <code className="mx-1">FEATURE_ML_INVOICE_NER</code>.
+        </p>
+      </div>
     </div>
   );
 }
