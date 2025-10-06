@@ -37,6 +37,23 @@ npm start
 
 The app will start on http://localhost:3000
 
+Environment Configuration
+Before running the stack you can copy the provided `.env.example` to `.env` to configure runtime behaviour for the mock services:
+
+```
+APP_PROFILE=dev
+PROVIDERS=bank=mock;kms=mock;rates=mock;idp=dev;statements=mock
+PROTO_KILL_SWITCH=true
+SHADOW_MODE=false
+MOCK_LATENCY_MS=200
+MOCK_ERROR_RATE=0
+MOCK_TIMEOUT_RATE=0
+MOCK_REORDER=false
+TZ=Australia/Brisbane
+```
+
+These defaults enable the mock providers and introduce a small artificial latency to better emulate production-like conditions while keeping error and timeout rates at zero. Adjust them as required for specific testing scenarios.
+
 Build for Production
 
 npm run build
