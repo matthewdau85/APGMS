@@ -1,0 +1,77 @@
+{
+  "app": {
+    "title": "APGMS Console",
+    "tagline": "Status tiles and RPT widgets will appear here. (P40, P41, P42)",
+    "skipToContent": "Skip to main content",
+    "lastUpdated": "Last updated on {{date}}",
+    "navigated": "Navigated to {{section}}",
+    "statusGridLabel": "Status tiles"
+  },
+  "nav": {
+    "ariaLabel": "Primary",
+    "dashboard": "Dashboard",
+    "bas": "Business Activity Statements",
+    "evidence": "Evidence library"
+  },
+  "common": {
+    "close": "Close"
+  },
+  "sections": {
+    "dashboard": {
+      "title": "Dashboard overview",
+      "description": "Monitor status tiles across programmes P40, P41, and P42.",
+      "footnote": "Figures are presented in Australian dollars (AUD)."
+    },
+    "bas": {
+      "title": "Business Activity Statements",
+      "description": "Track BAS preparation progress and upcoming lodgement windows.",
+      "footnote": "Ensure submissions are complete ahead of the ATO due date."
+    },
+    "evidence": {
+      "title": "Evidence library",
+      "description": "Review source documents and reconciliation evidence before submission.",
+      "footnote": "Upload new supporting files to keep audit trails current."
+    }
+  },
+  "metrics": {
+    "lodgement": {
+      "label": "BAS lodgement",
+      "description": "October BAS is ready to submit."
+    },
+    "gst": {
+      "label": "GST payable",
+      "description": "Reconciled against current invoices."
+    },
+    "evidence": {
+      "label": "Evidence reviewed",
+      "description": "All mandatory documents verified."
+    }
+  },
+  "commandPalette": {
+    "title": "Command palette",
+    "label": "Search for a destination",
+    "placeholder": "Type to filter destinations",
+    "empty": "No matches for \"{{query}}\"",
+    "actions": {
+      "dashboard": "Go to dashboard",
+      "bas": "Go to Business Activity Statements",
+      "evidence": "Go to evidence library",
+      "help": "Open help"
+    }
+  },
+  "help": {
+    "title": "Keyboard shortcuts",
+    "subtitle": "Use these shortcuts to move quickly without a mouse.",
+    "table": {
+      "action": "Action",
+      "keys": "Shortcut"
+    }
+  },
+  "keyboard": {
+    "commandPalette": "Open command palette",
+    "help": "Open help",
+    "dashboard": "Go to dashboard",
+    "bas": "Go to Business Activity Statements",
+    "evidence": "Go to evidence library"
+  }
+}
