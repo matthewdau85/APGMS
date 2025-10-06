@@ -15,11 +15,14 @@ app.use(express.json({ limit: "2mb" }));
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
 
+// global idempotency middleware
+app.use(idempotency());
+
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 // Existing explicit endpoints
-app.post("/api/pay", idempotency(), payAto);
+app.post("/api/pay", payAto);
 app.post("/api/close-issue", closeAndIssue);
 app.post("/api/payto/sweep", paytoSweep);
 app.post("/api/settlement/webhook", settlementWebhook);

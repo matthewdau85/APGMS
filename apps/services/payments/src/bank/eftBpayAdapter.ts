@@ -1,6 +1,7 @@
 ﻿import pg from "pg";
 import https from "https";
 import axios from "axios";
+import { attachAxiosIdempotencyInterceptor } from "../../../../../libs/idempotency/express.js";
 import { createHash, randomUUID } from "crypto";
 
 type Params = {
@@ -22,6 +23,8 @@ const client = axios.create({
   timeout: Number(process.env.BANK_TIMEOUT_MS || "8000"),
   httpsAgent: agent
 });
+
+attachAxiosIdempotencyInterceptor(client);
 
 export async function sendEftOrBpay(p: Params): Promise<{transfer_uuid: string; bank_receipt_hash: string; provider_receipt_id: string}> {
   const transfer_uuid = randomUUID();

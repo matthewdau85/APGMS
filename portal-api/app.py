@@ -3,7 +3,12 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 import time
 
+from pyshared.idempotency import IdempotencyMiddleware, install_httpx_idempotency
+
 app = FastAPI(title="APGMS Portal API", version="0.1.0")
+
+install_httpx_idempotency()
+app.add_middleware(IdempotencyMiddleware)
 
 @app.get("/readyz")
 def readyz(): return {"ok": True, "ts": time.time()}

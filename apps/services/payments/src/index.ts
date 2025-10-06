@@ -5,6 +5,12 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
+import {
+  createExpressIdempotencyMiddleware,
+  derivePayoutKey,
+  installFetchIdempotencyPropagation,
+} from '../../../../libs/idempotency/express.js';
+
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
@@ -23,8 +29,28 @@ const connectionString =
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
 
+installFetchIdempotencyPropagation();
+
 const app = express();
 app.use(express.json());
+
+const idempotencyMiddleware = createExpressIdempotencyMiddleware({
+  pool,
+  deriveKey: (req) => {
+    if (!req?.method) return undefined;
+    const method = req.method.toUpperCase();
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      return undefined;
+    }
+    const path = (req.path || req.originalUrl || '').toLowerCase();
+    if (path.includes('payato')) {
+      return derivePayoutKey(req.body) ?? undefined;
+    }
+    return undefined;
+  },
+});
+
+app.use(idempotencyMiddleware);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
