@@ -62,6 +62,7 @@ create table if not exists remittance_destinations (
   reference text not null,
   account_bsb text,
   account_number text,
+  config jsonb default '{}',
   unique (abn, rail, reference)
 );
 
@@ -71,3 +72,45 @@ create table if not exists idempotency_keys (
   last_status text,
   response_hash text
 );
+
+create table if not exists settlements (
+  id bigserial primary key,
+  txn_id text unique,
+  gst_cents bigint default 0,
+  net_cents bigint default 0,
+  total_cents bigint not null,
+  settlement_ts timestamptz not null,
+  reference text,
+  reference_normalized text,
+  status text not null default 'PENDING',
+  matched_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_settlements_total_date on settlements(total_cents, settlement_ts);
+
+create table if not exists bank_statements (
+  id bigserial primary key,
+  source text not null,
+  format text not null,
+  ingested_at timestamptz default now()
+);
+
+create table if not exists bank_lines (
+  id bigserial primary key,
+  statement_id bigint references bank_statements(id) on delete cascade,
+  line_no integer not null,
+  value_date date not null,
+  amount_cents bigint not null,
+  reference text,
+  reference_normalized text,
+  raw jsonb not null,
+  status text not null default 'PENDING',
+  settlement_id bigint references settlements(id),
+  dlq_reason text,
+  replayed_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_bank_lines_status on bank_lines(status);
+create index if not exists idx_bank_lines_amount_date on bank_lines(amount_cents, value_date);

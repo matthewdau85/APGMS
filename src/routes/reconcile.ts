@@ -4,6 +4,7 @@ import { releasePayment, resolveDestination } from "../rails/adapter";
 import { debit as paytoDebit } from "../payto/adapter";
 import { parseSettlementCSV } from "../settlement/splitParser";
 import { Pool } from "pg";
+import { normalizeReference } from "../bankFeed/util";
 const pool = new Pool();
 
 export async function closeAndIssue(req:any, res:any) {
@@ -20,13 +21,21 @@ export async function closeAndIssue(req:any, res:any) {
 
 export async function payAto(req:any, res:any) {
   const { abn, taxType, periodId, rail } = req.body; // EFT|BPAY
-  const pr = await pool.query("select * from rpt_tokens where abn= and tax_type= and period_id= order by id desc limit 1", [abn, taxType, periodId]);
+  const pr = await pool.query(
+    "select * from rpt_tokens where abn=$1 and tax_type=$2 and period_id=$3 order by id desc limit 1",
+    [abn, taxType, periodId]
+  );
   if (pr.rowCount === 0) return res.status(400).json({error:"NO_RPT"});
   const payload = pr.rows[0].payload;
   try {
-    await resolveDestination(abn, rail, payload.reference);
-    const r = await releasePayment(abn, taxType, periodId, payload.amount_cents, rail, payload.reference);
-    await pool.query("update periods set state='RELEASED' where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
+    const destination = await resolveDestination(abn, rail, payload.reference);
+    const amountCents = Number(payload.amount_cents);
+    if (!Number.isFinite(amountCents)) throw new Error("INVALID_AMOUNT");
+    const r = await releasePayment(abn, taxType, periodId, amountCents, destination);
+    await pool.query(
+      "update periods set state='RELEASED' where abn=$1 and tax_type=$2 and period_id=$3",
+      [abn, taxType, periodId]
+    );
     return res.json(r);
   } catch (e:any) {
     return res.status(400).json({ error: e.message });
@@ -42,8 +51,42 @@ export async function paytoSweep(req:any, res:any) {
 export async function settlementWebhook(req:any, res:any) {
   const csvText = req.body?.csv || "";
   const rows = parseSettlementCSV(csvText);
-  // TODO: For each row, post GST and NET into your ledgers, maintain txn_id reversal map
-  return res.json({ ingested: rows.length });
+  if (rows.length === 0) return res.status(400).json({ error: "NO_ROWS" });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const row of rows) {
+      const gst = Number(row.gst_cents) || 0;
+      const net = Number(row.net_cents) || 0;
+      const total = gst + net;
+      const settlementTs = new Date(row.settlement_ts);
+      if (Number.isNaN(settlementTs.valueOf())) {
+        throw new Error("INVALID_SETTLEMENT_TS");
+      }
+      const reference = row.txn_id || "";
+      const normalizedRef = normalizeReference(reference);
+      await client.query(
+        `insert into settlements(txn_id,gst_cents,net_cents,total_cents,settlement_ts,reference,reference_normalized,status)
+         values ($1,$2,$3,$4,$5,$6,$7,'PENDING')
+         on conflict (txn_id) do update set
+           gst_cents=excluded.gst_cents,
+           net_cents=excluded.net_cents,
+           total_cents=excluded.total_cents,
+           settlement_ts=excluded.settlement_ts,
+           reference=excluded.reference,
+           reference_normalized=excluded.reference_normalized,
+           status=case when settlements.status='MATCHED' then 'MATCHED' else 'PENDING' end`,
+        [reference, gst, net, total, settlementTs.toISOString(), reference, normalizedRef]
+      );
+    }
+    await client.query("COMMIT");
+    return res.json({ ingested: rows.length });
+  } catch (err:any) {
+    await client.query("ROLLBACK");
+    return res.status(400).json({ error: err?.message || String(err) });
+  } finally {
+    client.release();
+  }
 }
 
 export async function evidence(req:any, res:any) {
