@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { EmptyState } from "../ui/states";
 
 interface PayrollIntegrationProps {
   payroll: { employee: string; gross: number; withheld: number }[];
@@ -58,7 +59,7 @@ export default function PayrollIntegration({ payroll, onAdd }: PayrollIntegratio
         />
       </label>
       <button onClick={handleAdd}>Add Payroll Entry</button>
-      {payroll.length > 0 && (
+      {payroll.length > 0 ? (
         <>
           <h4>Payroll Entries</h4>
           <ul>
@@ -69,6 +70,15 @@ export default function PayrollIntegration({ payroll, onAdd }: PayrollIntegratio
             ))}
           </ul>
         </>
+      ) : (
+        <EmptyState
+          title="No payroll entries yet"
+          body="Sync your payroll provider or add the first employee so PAYGW calculations can begin."
+          ctaLabel="Import from payroll"
+          onCta={() => {
+            alert("Connect a payroll provider to import recent pay runs.");
+          }}
+        />
       )}
     </div>
   );

@@ -1,8 +1,20 @@
 import React, { useContext } from "react";
 import { AppContext } from "../context/AppContext";
+import { EmptyState } from "../ui/states";
 
 export default function AuditLog() {
   const { auditLog } = useContext(AppContext);
+
+  if (!auditLog || auditLog.length === 0) {
+    return (
+      <EmptyState
+        title="Audit log is empty"
+        body="Start routing PAYGW and GST activity through APGMS to capture a defensible evidence trail."
+        ctaLabel="Record a manual note"
+        onCta={() => alert("Audit note saved. We'll include it in your evidence pack.")}
+      />
+    );
+  }
 
   return (
     <div className="card">

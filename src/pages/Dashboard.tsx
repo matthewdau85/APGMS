@@ -1,8 +1,15 @@
 // src/pages/Dashboard.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LoadingState } from '../ui/states';
 
 export default function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const complianceStatus = {
     lodgmentsUpToDate: false,
     paymentsUpToDate: false,
@@ -15,6 +22,12 @@ export default function Dashboard() {
 
   return (
     <div className="main-card">
+      {isLoading && (
+        <div className="mb-6">
+          <LoadingState label="Loading your PAYGW and GST summary" />
+        </div>
+      )}
+
       <div className="bg-gradient-to-r from-[#00716b] to-[#009688] text-white p-6 rounded-xl shadow mb-6">
         <h1 className="text-3xl font-bold mb-2">Welcome to APGMS</h1>
         <p className="text-sm opacity-90">
