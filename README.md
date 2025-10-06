@@ -41,6 +41,16 @@ Build for Production
 
 npm run build
 
+Codex feed utilities
+--------------------
+
+The repository ships with a loader for the chunked ingestion located in `docs/_codex_feed`.
+
+* `src/utils/codexFeed.ts` exposes helpers that return manifest entries, chunk contents, or the stitched text for each original source file.
+* `npm run codex:dump -- <filter>` prints the reconstructed files to stdout, optionally filtering by the original file name fragment.
+
+Example: `npm run codex:dump -- chunk_000123` will show the text that originated from `chunk_000123.txt`.
+
 Project Structure
 apgms/
 ├── public/ # Static assets and HTML
