@@ -1,0 +1,27 @@
+{
+  "version": "v1",
+  "groups": {
+    "prototype": {
+      "label": "Prototype",
+      "checks": {
+        "rails_sim": { "label": "Rails simulation parity", "weight": 2 },
+        "evidence_v2": { "label": "Evidence bundle v2", "weight": 2 },
+        "rules_correct": { "label": "Rules manifest correctness", "weight": 2 },
+        "security_thin": { "label": "Security controls (thin slice)", "weight": 1 },
+        "observability": { "label": "Observability instrumentation", "weight": 1 },
+        "seed_smoke": { "label": "Seed + smoke flow", "weight": 1 },
+        "help_docs": { "label": "Help / runbook docs", "weight": 1 }
+      }
+    },
+    "real": {
+      "label": "Real-world",
+      "checks": {
+        "kms_rpt": { "label": "KMS-backed RPT issuance", "weight": 2 },
+        "sandbox_rail": { "label": "Sandbox rail enforcement", "weight": 2 },
+        "security_controls": { "label": "Security controls coverage", "weight": 2 },
+        "assurance": { "label": "Assurance evidence", "weight": 2 },
+        "pilot_ops": { "label": "Pilot operations readiness", "weight": 2 }
+      }
+    }
+  }
+}

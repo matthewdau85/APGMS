@@ -1,0 +1,8 @@
+{
+  "label": "rules",
+  "description": "Rules label indicates recon or rules manifest logic changes.",
+  "requires": [
+    { "path": "src/recon/", "hint": "Update recon state machine or rule evaluation." },
+    { "path": "tests/sim/", "hint": "Ensure parity tests cover rules outcomes." }
+  ]
+}

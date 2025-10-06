@@ -1,0 +1,8 @@
+{
+  "label": "evidence",
+  "description": "Evidence changes must keep bundle + documentation aligned.",
+  "requires": [
+    { "path": "src/evidence/", "hint": "Update evidence bundle implementation." },
+    { "path": "docs/readiness/", "hint": "Refresh readiness docs when evidence flows shift." }
+  ]
+}

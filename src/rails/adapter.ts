@@ -15,14 +15,25 @@ export async function resolveDestination(abn: string, rail: "EFT"|"BPAY", refere
 }
 
 /** Idempotent release with a stable transfer_uuid (simulate bank release) */
-export async function releasePayment(abn: string, taxType: string, periodId: string, amountCents: number, rail: "EFT"|"BPAY", reference: string) {
-  const transfer_uuid = uuidv4();
+export async function releasePayment(
+  abn: string,
+  taxType: string,
+  periodId: string,
+  amountCents: number,
+  rail: "EFT"|"BPAY",
+  reference: string,
+  opts?: { idempotencyKey?: string }
+) {
+  const provider_ref = opts?.idempotencyKey || uuidv4();
+  const transfer_uuid = provider_ref;
   try {
     await pool.query("insert into idempotency_keys(key,last_status) values(,)", [transfer_uuid, "INIT"]);
   } catch {
-    return { transfer_uuid, status: "DUPLICATE" };
+    if (!opts?.idempotencyKey) {
+      return { provider_ref, status: "DUPLICATE" };
+    }
   }
-  const bank_receipt_hash = "bank:" + transfer_uuid.slice(0,12);
+  const bank_receipt_hash = "bank:" + sha256Hex(provider_ref).slice(0, 24);
 
   const { rows } = await pool.query(
     "select balance_after_cents, hash_after from owa_ledger where abn= and tax_type= and period_id= order by id desc limit 1",
@@ -36,7 +47,16 @@ export async function releasePayment(abn: string, taxType: string, periodId: str
     "insert into owa_ledger(abn,tax_type,period_id,transfer_uuid,amount_cents,balance_after_cents,bank_receipt_hash,prev_hash,hash_after) values (,,,,,,,,)",
     [abn, taxType, periodId, transfer_uuid, -amountCents, newBal, bank_receipt_hash, prevHash, hashAfter]
   );
-  await appendAudit("rails", "release", { abn, taxType, periodId, amountCents, rail, reference, bank_receipt_hash });
+  await appendAudit("rails", "release", {
+    abn,
+    taxType,
+    periodId,
+    amountCents,
+    rail,
+    reference,
+    provider_ref,
+    bank_receipt_hash
+  });
   await pool.query("update idempotency_keys set last_status= where key=", [transfer_uuid, "DONE"]);
-  return { transfer_uuid, bank_receipt_hash };
+  return { provider_ref, bank_receipt_hash };
 }

@@ -1,0 +1,8 @@
+{
+  "label": "security",
+  "description": "Security changes must update controls and supporting docs.",
+  "requires": [
+    { "path": "src/components/SecuritySettings.tsx", "hint": "Ensure UI surfaces new security controls." },
+    { "path": "ops/", "hint": "Update operational runbooks or configs." }
+  ]
+}
