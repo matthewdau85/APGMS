@@ -1,0 +1,30 @@
+{
+  "versions": [
+    {
+      "id": "2024-25",
+      "effectiveFrom": "2024-07-01",
+      "source": "ATO NAT 1004 - Statement of formulas for PAYG withholding (Schedule 1) 2024-25",
+      "payPeriods": {
+        "weekly": { "periodsPerYear": 52, "description": "Weekly" },
+        "fortnightly": { "periodsPerYear": 26, "description": "Fortnightly" },
+        "monthly": { "periodsPerYear": 12, "description": "Monthly" },
+        "quarterly": { "periodsPerYear": 4, "description": "Quarterly" }
+      },
+      "marginalRates": [
+        { "threshold": 0, "base": 0, "rate": 0 },
+        { "threshold": 18200, "base": 0, "rate": 0.16 },
+        { "threshold": 45000, "base": 4288, "rate": 0.30 },
+        { "threshold": 135000, "base": 31288, "rate": 0.37 },
+        { "threshold": 190000, "base": 51638, "rate": 0.45 }
+      ],
+      "offsets": {
+        "lowIncomeTaxOffset": [
+          { "threshold": 0, "upper": 37500, "baseOffset": 700, "taperRate": 0 },
+          { "threshold": 37500, "upper": 45000, "baseOffset": 700, "taperRate": 0.05 },
+          { "threshold": 45000, "upper": 66667, "baseOffset": 325, "taperRate": 0.015 }
+        ]
+      },
+      "rounding": "nearestDollar"
+    }
+  ]
+}

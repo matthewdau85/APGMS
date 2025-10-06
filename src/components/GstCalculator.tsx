@@ -1,9 +1,20 @@
 import React, { useState } from "react";
-import { GstInput } from "../types/tax";
+import { GstCalculation, GstInput } from "../types/tax";
 import { calculateGst } from "../utils/gst";
 
-export default function GstCalculator({ onResult }: { onResult: (liability: number) => void }) {
-  const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false });
+type Props = {
+  onResult?: (result: GstCalculation) => void;
+};
+
+export default function GstCalculator({ onResult }: Props) {
+  const [form, setForm] = useState<GstInput>({ saleAmount: 0, exempt: false, purchaseAmount: 0 });
+  const [result, setResult] = useState<GstCalculation | null>(null);
+
+  const handleCalculate = () => {
+    const calc = calculateGst(form);
+    setResult(calc);
+    onResult?.(calc);
+  };
 
   return (
     <div className="card">
@@ -24,6 +35,16 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
           onChange={e => setForm({ ...form, saleAmount: +e.target.value })}
         />
       </label>
+      <label>
+        Purchases (including GST) claimable at 1B:
+        <input
+          type="number"
+          placeholder="e.g. 110"
+          min={0}
+          value={form.purchaseAmount ?? 0}
+          onChange={e => setForm({ ...form, purchaseAmount: +e.target.value })}
+        />
+      </label>
       <label style={{ display: "inline-flex", alignItems: "center", gap: "0.5em" }}>
         <input
           type="checkbox"
@@ -32,9 +53,25 @@ export default function GstCalculator({ onResult }: { onResult: (liability: numb
         />
         GST Exempt
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculateGst(form))}>
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate}>
         Calculate GST
       </button>
+      {result && (
+        <div style={{ marginTop: "1em", fontSize: "0.95em", color: "#1f2933" }}>
+          <p>
+            <strong>G1 Total sales:</strong> ${result.basLabels.G1.toFixed(2)}
+          </p>
+          <p>
+            <strong>1A GST on sales:</strong> ${result.basLabels["1A"].toFixed(2)}
+          </p>
+          <p>
+            <strong>1B GST on purchases:</strong> ${result.basLabels["1B"].toFixed(2)}
+          </p>
+          <p>
+            <strong>Net GST payable:</strong> ${result.netGst.toFixed(2)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

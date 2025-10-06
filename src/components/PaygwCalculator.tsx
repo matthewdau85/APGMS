@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import { PaygwInput } from "../types/tax";
+import { PaygwCalculation, PaygwInput } from "../types/tax";
 import { calculatePaygw } from "../utils/paygw";
 
-export default function PaygwCalculator({ onResult }: { onResult: (liability: number) => void }) {
+type Props = {
+  onResult?: (result: PaygwCalculation) => void;
+};
+
+export default function PaygwCalculator({ onResult }: Props) {
   const [form, setForm] = useState<PaygwInput>({
     employeeName: "",
     grossIncome: 0,
@@ -10,6 +14,13 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
     period: "monthly",
     deductions: 0,
   });
+  const [result, setResult] = useState<PaygwCalculation | null>(null);
+
+  const handleCalculate = () => {
+    const calc = calculatePaygw(form);
+    setResult(calc);
+    onResult?.(calc);
+  };
 
   return (
     <div className="card">
@@ -71,9 +82,28 @@ export default function PaygwCalculator({ onResult }: { onResult: (liability: nu
           <option value="quarterly">Quarterly</option>
         </select>
       </label>
-      <button style={{ marginTop: "0.7em" }} onClick={() => onResult(calculatePaygw(form))}>
+      <button style={{ marginTop: "0.7em" }} onClick={handleCalculate}>
         Calculate PAYGW
       </button>
+      {result && (
+        <div style={{ marginTop: "1em", fontSize: "0.95em", color: "#1f2933" }}>
+          <p>
+            <strong>Schedule:</strong> {result.scheduleVersion} (effective {new Date(result.effectiveFrom).toLocaleDateString()})
+          </p>
+          <p>
+            <strong>Recommended withholding (W2):</strong> ${result.recommendedWithholding.toFixed(2)}
+          </p>
+          <p>
+            <strong>Gross wages (W1):</strong> ${result.basLabels.W1.toFixed(2)}
+          </p>
+          <p>
+            <strong>Low income tax offset applied:</strong> ${result.lowIncomeTaxOffset.toFixed(2)}
+          </p>
+          <p>
+            <strong>Outstanding liability:</strong> ${result.outstandingLiability.toFixed(2)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
