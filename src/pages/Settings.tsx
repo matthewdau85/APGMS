@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Page from "../components/Page";
+import type { PageMeta } from "../help/HelpContext";
 
 const tabs = [
   "Business Profile",
@@ -12,6 +14,13 @@ const tabs = [
   "Advanced"
 ];
 
+export const meta: PageMeta = {
+  title: "Settings",
+  description: "Configure accounts, automation modes and notifications for your workspace.",
+  helpSlug: "modes",
+  route: "/settings",
+};
+
 export default function Settings() {
   const [activeTab, setActiveTab] = useState(tabs[0]);
   // Mock business profile state
@@ -23,21 +32,22 @@ export default function Settings() {
   });
 
   return (
-    <div className="settings-card">
-      <div className="tabs-row">
-        {tabs.map(tab => (
-          <div
-            key={tab}
-            className={`tab-item${activeTab === tab ? " active" : ""}`}
-            onClick={() => setActiveTab(tab)}
-            tabIndex={0}
-          >
-            {tab}
-          </div>
-        ))}
-      </div>
+    <Page meta={meta}>
+      <div className="settings-card">
+        <div className="tabs-row">
+          {tabs.map(tab => (
+            <div
+              key={tab}
+              className={`tab-item${activeTab === tab ? " active" : ""}`}
+              onClick={() => setActiveTab(tab)}
+              tabIndex={0}
+            >
+              {tab}
+            </div>
+          ))}
+        </div>
 
-      <div style={{ marginTop: 30 }}>
+        <div style={{ marginTop: 30 }}>
         {activeTab === "Business Profile" && (
           <form
             style={{
@@ -211,6 +221,7 @@ export default function Settings() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </Page>
   );
 }

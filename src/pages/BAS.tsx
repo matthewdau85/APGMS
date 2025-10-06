@@ -1,4 +1,13 @@
 import React from 'react';
+import Page from '../components/Page';
+import type { PageMeta } from '../help/HelpContext';
+
+export const meta: PageMeta = {
+  title: 'BAS',
+  description: 'Reconcile PAYGW and GST before lodging Business Activity Statements.',
+  helpSlug: 'reconciliation',
+  route: '/bas',
+};
 
 export default function BAS() {
   const complianceStatus = {
@@ -12,11 +21,12 @@ export default function BAS() {
   };
 
   return (
-    <div className="main-card">
-      <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
-      <p className="text-sm text-muted-foreground mb-4">
-        Lodge your BAS on time and accurately. Below is a summary of your current obligations.
-      </p>
+    <Page meta={meta}>
+      <div className="main-card">
+        <h1 className="text-2xl font-bold">Business Activity Statement (BAS)</h1>
+        <p className="text-sm text-muted-foreground mb-4">
+          Lodge your BAS on time and accurately. Below is a summary of your current obligations.
+        </p>
 
       {!complianceStatus.lodgmentsUpToDate || !complianceStatus.paymentsUpToDate ? (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded">
@@ -111,6 +121,6 @@ export default function BAS() {
           Staying highly compliant may help avoid audits, reduce penalties, and support eligibility for ATO support programs.
         </p>
       </div>
-    </div>
+    </Page>
   );
 }
