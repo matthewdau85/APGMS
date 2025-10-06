@@ -1,0 +1,33 @@
+{
+  "id": "dod-prototype",
+  "name": "Definition of Done - Prototype",
+  "labels": ["area:prototype"],
+  "requirements": [
+    {
+      "id": "help-coverage",
+      "description": "Prototype help coverage documented and exercised.",
+      "anyChanged": [
+        "docs/prototype/help/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-prototype/help.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-prototype/help.md"
+      ]
+    },
+    {
+      "id": "seed-smoke",
+      "description": "Prototype seed and smoke tests executed with recorded output.",
+      "anyChanged": [
+        "tests/prototype/results/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-prototype/seed-smoke.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-prototype/seed-smoke.md"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "dod-security",
+  "name": "Definition of Done - Security",
+  "labels": ["area:security"],
+  "requirements": [
+    {
+      "id": "release-mode",
+      "description": "Release mode enforces JWT and MFA with documented validation.",
+      "anyChanged": [
+        "security/jwt/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-security/release-modes.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-security/release-modes.md"
+      ]
+    },
+    {
+      "id": "headers",
+      "description": "Security headers verified and recorded.",
+      "anyChanged": [
+        "security/headers/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-security/headers.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-security/headers.md"
+      ]
+    },
+    {
+      "id": "logs",
+      "description": "Security logs reviewed with supporting notes.",
+      "anyChanged": [
+        "security/logs/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-security/logs.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-security/logs.md"
+      ]
+    },
+    {
+      "id": "dual-approval",
+      "description": "Dual approval workflow updated and evidenced.",
+      "anyChanged": [
+        "docs/security/dual-approval/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-security/dual-approval.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-security/dual-approval.md"
+      ]
+    }
+  ]
+}

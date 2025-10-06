@@ -1,0 +1,30 @@
+{
+  "id": "dod-rules",
+  "name": "Definition of Done - Rules",
+  "labels": ["area:rules"],
+  "requirements": [
+    {
+      "id": "golden-tests",
+      "description": "Golden tests updated and recorded for rule changes.",
+      "anyChanged": [
+        "tests/compliance/golden/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-rules/golden-tests.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-rules/golden-tests.md"
+      ]
+    },
+    {
+      "id": "rates-version",
+      "description": "RATES_VERSION bumped alongside rule adjustments.",
+      "changed": [
+        "libs/rates/RATES_VERSION"
+      ],
+      "evidence": [
+        "libs/rates/RATES_VERSION"
+      ]
+    }
+  ]
+}

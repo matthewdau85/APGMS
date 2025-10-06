@@ -1,0 +1,63 @@
+{
+  "id": "dod-rails",
+  "name": "Definition of Done - Rails",
+  "labels": ["area:rails"],
+  "requirements": [
+    {
+      "id": "idempotency",
+      "description": "Rails idempotency regression coverage is updated and documented.",
+      "anyChanged": [
+        "tests/acceptance/rails/**/*",
+        "tests/e2e/rails/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-rails/idempotency.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-rails/idempotency.md"
+      ]
+    },
+    {
+      "id": "recon-import",
+      "description": "Reconciliation import data refreshed with the change.",
+      "anyChanged": [
+        "evidence/recon/**/*",
+        "tests/acceptance/rails/**/*recon*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-rails/recon-import.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-rails/recon-import.md"
+      ]
+    },
+    {
+      "id": "provider-ref",
+      "description": "provider_ref persistence updated with supporting artifacts.",
+      "anyChanged": [
+        "schema/provider_ref/**/*",
+        "libs/provider_ref/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-rails/provider-ref.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-rails/provider-ref.md"
+      ]
+    },
+    {
+      "id": "error-mapping",
+      "description": "Error mapping coverage updated to reflect new behavior.",
+      "anyChanged": [
+        "docs/errors/**/*",
+        "tests/acceptance/rails/**/*error*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-rails/error-mapping.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-rails/error-mapping.md"
+      ]
+    }
+  ]
+}
