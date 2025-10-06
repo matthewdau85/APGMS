@@ -1,0 +1,59 @@
+{
+  "id": "dod-evidence",
+  "name": "Definition of Done - Evidence",
+  "labels": ["area:evidence"],
+  "requirements": [
+    {
+      "id": "rules-hash",
+      "description": "Rules hash updated with supporting artifacts.",
+      "anyChanged": [
+        "evidence/rules/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-evidence/rules-hash.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-evidence/rules-hash.md"
+      ]
+    },
+    {
+      "id": "settlement",
+      "description": "Settlement walkthrough and fixtures refreshed.",
+      "anyChanged": [
+        "evidence/settlement/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-evidence/settlement.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-evidence/settlement.md"
+      ]
+    },
+    {
+      "id": "approvals",
+      "description": "Approval log captured for the change.",
+      "anyChanged": [
+        "evidence/approvals/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-evidence/approvals.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-evidence/approvals.md"
+      ]
+    },
+    {
+      "id": "narrative",
+      "description": "Narrative updated to reflect current scope and mitigations.",
+      "anyChanged": [
+        "docs/evidence/narrative/**/*"
+      ],
+      "changed": [
+        "docs/dod/artifacts/dod-evidence/narrative.md"
+      ],
+      "evidence": [
+        "docs/dod/artifacts/dod-evidence/narrative.md"
+      ]
+    }
+  ]
+}
