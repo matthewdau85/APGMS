@@ -22,6 +22,19 @@ CREATE TABLE IF NOT EXISTS owa_ledger (
   audit_hash CHAR(64)
 );
 
+CREATE TABLE IF NOT EXISTS settlement_reversals (
+  id BIGSERIAL PRIMARY KEY,
+  txn_id VARCHAR(64) NOT NULL,
+  component VARCHAR(10) NOT NULL CHECK (component IN ('GST','NET')),
+  reversal_transfer_uuid UUID NOT NULL,
+  amount_cents BIGINT NOT NULL,
+  settlement_ts TIMESTAMP NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE (txn_id, component, reversal_transfer_uuid)
+);
+
+CREATE INDEX IF NOT EXISTS settlement_reversals_txn_idx ON settlement_reversals (txn_id);
+
 CREATE TABLE IF NOT EXISTS audit_log (
   id BIGSERIAL PRIMARY KEY,
   event_time TIMESTAMP NOT NULL DEFAULT NOW(),
