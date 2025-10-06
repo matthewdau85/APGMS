@@ -1,0 +1,9 @@
+{
+  "version": "2024-25",
+  "generated_at": "2025-10-06T16:55:46Z",
+  "sha256": "fb8a8a965e64043f5239ef2d3e1e3e7c728266ef7168e3d22e7a642749f9d232",
+  "files": {
+    "gst_rates_2000_current.json": "6bf2c3e4cdaab111a79d3285553e624d17abacad09db9054a4d359ed189d666b",
+    "payg_w_2024_25.json": "6ddce5f194816239c5be60ccf7b32e36329e447913f4b597e72042762955dc72"
+  }
+}

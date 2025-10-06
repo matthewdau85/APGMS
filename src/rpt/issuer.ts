@@ -1,6 +1,7 @@
 ﻿import { Pool } from "pg";
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
+import { RATES_VERSION, RULES_MANIFEST_SHA256 } from "../constants/tax";
 import { exceeds } from "../anomaly/deterministic";
 const pool = new Pool();
 const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
@@ -27,7 +28,9 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     amount_cents: Number(row.final_liability_cents),
     merkle_root: row.merkle_root, running_balance_hash: row.running_balance_hash,
     anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
-    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
+    expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID(),
+    rates_version: RATES_VERSION,
+    rules_manifest_sha256: RULES_MANIFEST_SHA256,
   };
   const signature = signRpt(payload, new Uint8Array(secretKey));
   await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",

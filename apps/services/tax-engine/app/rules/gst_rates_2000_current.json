@@ -1,0 +1,26 @@
+{
+  "version": "2000-current",
+  "notes": "Australian GST baseline rates for BAS labelling across sales and purchases.",
+  "codes": {
+    "GST": { "rate": 0.10, "label": "Taxable supplies" },
+    "GST_FREE": { "rate": 0.0, "label": "GST-free supplies" },
+    "EXEMPT": { "rate": 0.0, "label": "Input-taxed supplies" },
+    "ZERO_RATED": { "rate": 0.0, "label": "Exports / zero-rated" }
+  },
+  "labels": {
+    "sales": {
+      "G1": { "description": "Total sales", "codes": ["GST", "GST_FREE", "EXEMPT", "ZERO_RATED"] },
+      "G2": { "description": "Exports (GST-free)", "codes": ["ZERO_RATED"] },
+      "G3": { "description": "Other GST-free sales", "codes": ["GST_FREE", "EXEMPT"] },
+      "1A": { "description": "GST on sales", "codes": ["GST"], "type": "tax" }
+    },
+    "purchases": {
+      "G10": { "description": "Capital purchases", "codes": ["GST"], "type": "capital" },
+      "G11": { "description": "Non-capital purchases", "codes": ["GST", "GST_FREE", "EXEMPT", "ZERO_RATED"] },
+      "1B": { "description": "GST on purchases", "codes": ["GST"], "type": "tax" }
+    }
+  },
+  "rounding": {
+    "mode": "NEAREST_DOLLAR"
+  }
+}
