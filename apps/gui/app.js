@@ -1,17 +1,382 @@
 (() => {
   const cfg = window.GUI_CONFIG || {};
+  const role = String(cfg.role || "user").toLowerCase();
   const base = (cfg.baseUrl || "/api").replace(/\/+$/, "");
   const $ = (sel, root=document) => root.querySelector(sel);
 
   const routes = ["home","connections","transactions","tax-bas","help","settings"];
   function currentRoute(){ const h = location.hash.replace(/^#\/?/, "").toLowerCase(); return routes.includes(h) ? h : "home"; }
-  window.addEventListener("hashchange", () => render());
+
+  function escapeHtml(str=""){
+    return str.replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[ch] || ch);
+  }
+
+  function ensureToast(){
+    let el = document.querySelector('.toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'toast';
+      el.setAttribute('role','status');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  const toastEl = ensureToast();
+  let toastTimer = null;
+  function showToast(msg, ok=true){
+    toastEl.textContent = msg;
+    toastEl.classList.toggle('error', !ok);
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toastEl.classList.remove('show'), 2600);
+  }
 
   async function api(path, init={}) {
-    const r = await fetch(base + path, { headers: { "Content-Type":"application/json" }, ...init });
-    if (!r.ok) throw new Error(String(r.status));
-    const ct = r.headers.get("content-type") || "";
-    return ct.includes("application/json") ? r.json() : r.text();
+    const opts = { ...init };
+    const headers = { ...(opts.headers || {}) };
+    if (opts.body && !('Content-Type' in headers)) headers['Content-Type'] = 'application/json';
+    opts.headers = headers;
+    const res = await fetch(base + path, opts);
+    const text = await res.text();
+    const ct = res.headers.get('content-type') || '';
+    let data = text;
+    if (ct.includes('application/json') && text) {
+      try { data = JSON.parse(text); } catch { data = text; }
+    }
+    if (!res.ok) {
+      const msg = typeof data === 'string'
+        ? (data.trim() || String(res.status))
+        : (data.error || data.message || String(res.status));
+      throw new Error(msg);
+    }
+    if (ct.includes('application/json')) return data;
+    return text;
+  }
+
+  const PERIOD_STORE = 'apgms.cmd.lastPeriod';
+  const RECENT_STORE = 'apgms.cmd.recents';
+
+  function loadJSON(key, fallback){
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      const val = JSON.parse(raw);
+      return val ?? fallback;
+    } catch { return fallback; }
+  }
+  function saveJSON(key, value){
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
+  }
+
+  function loadPeriodDefaults(){
+    return loadJSON(PERIOD_STORE, {});
+  }
+  function savePeriodDefaults(details){
+    const keep = (({abn,taxType,periodId})=>({abn,taxType,periodId}))(details);
+    saveJSON(PERIOD_STORE, keep);
+  }
+  function promptPeriodDetails(context){
+    const saved = loadPeriodDefaults();
+    const abn = window.prompt(`[${context}] ABN`, saved.abn || '12345678901');
+    if (!abn) return null;
+    const taxType = window.prompt(`[${context}] Tax type`, saved.taxType || 'GST');
+    if (!taxType) return null;
+    const periodId = window.prompt(`[${context}] Period ID`, saved.periodId || '2024-Q4');
+    if (!periodId) return null;
+    const details = {
+      abn: abn.trim(),
+      taxType: taxType.trim().toUpperCase(),
+      periodId: periodId.trim()
+    };
+    savePeriodDefaults(details);
+    return details;
+  }
+
+  function openInWindow(title, payload){
+    const text = typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(`<!doctype html><title>${escapeHtml(title)}</title><pre style="white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;margin:16px;">${escapeHtml(text)}</pre>`);
+      w.document.close();
+      return true;
+    }
+    console.log(title, payload);
+    return false;
+  }
+
+  const actions = {
+    goto(route){ location.hash = '#/' + route; },
+    openHelp(){ location.hash = '#/help'; },
+    openSwagger(){ const url = cfg.swaggerPath || (base + '/openapi.json'); window.open(url, '_blank'); },
+    openSupport(){ window.open('mailto:support@apgms.example'); },
+    async checkReady(){
+      try {
+        const text = await api('/readyz', { cache:'no-store' });
+        showToast(`Service ready (${String(text).trim() || 'ok'})`);
+      } catch(e){ showToast('Ready check failed: ' + e.message, false); }
+    },
+    async showMetrics(){
+      try {
+        const metrics = await api('/metrics', { cache:'no-store' });
+        const opened = openInWindow('APGMS Metrics', metrics);
+        showToast(opened ? 'Metrics opened in a new window.' : 'Metrics written to console (popup blocked).');
+      } catch(e){ showToast('Metrics failed: ' + e.message, false); }
+    },
+    async issueRpt(){
+      const details = promptPeriodDetails('Issue RPT');
+      if (!details) return;
+      try {
+        const res = await api('/rpt/issue', { method:'POST', body: JSON.stringify(details) });
+        showToast(`RPT issued for ${details.periodId}.`);
+        console.log('RPT issued', res);
+      } catch(e){ showToast('Issue RPT failed: ' + e.message, false); }
+    },
+    async viewEvidence(){
+      const details = promptPeriodDetails('View Evidence');
+      if (!details) return;
+      try {
+        const query = new URLSearchParams(details).toString();
+        const data = await api('/evidence?' + query);
+        const ok = openInWindow('RPT Evidence', data);
+        showToast(ok ? 'Evidence opened in a new window.' : 'Evidence logged to console (popup blocked).');
+      } catch(e){ showToast('Evidence fetch failed: ' + e.message, false); }
+    },
+    async release(){
+      const details = promptPeriodDetails('Release payment');
+      if (!details) return;
+      try {
+        const data = await api('/release', { method:'POST', body: JSON.stringify(details) });
+        const ref = data?.bank_receipt_hash || 'released';
+        showToast(`Release triggered (${ref}).`);
+        console.log('Release', data);
+      } catch(e){ showToast('Release failed: ' + e.message, false); }
+    }
+  };
+
+  const commandDefinitions = [
+    { id:'route:home', label:'Home', description:'Go to dashboard overview', section:'Routes', hint:'G H', keywords:'home dashboard main', run:()=>actions.goto('home') },
+    { id:'route:connections', label:'Connections', description:'Manage data sources', section:'Routes', hint:'G C', keywords:'connections bank payroll', run:()=>actions.goto('connections') },
+    { id:'route:transactions', label:'Transactions', description:'Review normalized activity', section:'Routes', hint:'G T', keywords:'transactions search ledger', run:()=>actions.goto('transactions') },
+    { id:'route:tax-bas', label:'Tax & BAS', description:'Prepare BAS and validate', section:'Routes', hint:'G B', keywords:'tax bas ato', run:()=>actions.goto('tax-bas') },
+    { id:'route:help', label:'Help & Guidance', description:'Read how-to content', section:'Routes', hint:'G ?', keywords:'help guidance support', run:()=>actions.goto('help') },
+    { id:'route:settings', label:'Settings', description:'Portal preferences', section:'Routes', hint:'G ,', keywords:'settings preferences theme', run:()=>actions.goto('settings') },
+
+    { id:'action:ready', label:'Check service readiness', description:'Ping /readyz endpoint', section:'Actions', hint:'↵', keywords:'health ready readyz status', run:()=>actions.checkReady() },
+    { id:'action:metrics', label:'View live metrics', description:'Open Prometheus metrics stream', section:'Actions', hint:'M', keywords:'metrics monitoring prometheus', run:()=>actions.showMetrics() },
+    { id:'action:issue-rpt', label:'Issue RPT', description:'Sign and stage a Real-time Payment Token', section:'Actions', hint:'I', keywords:'rpt issue token compliance', run:()=>actions.issueRpt() },
+    { id:'action:view-evidence', label:'View evidence bundle', description:'Open the evidence package for a period', section:'Actions', hint:'E', keywords:'evidence audit rpt bundle', run:()=>actions.viewEvidence() },
+    { id:'action:open-swagger', label:'Open API reference', description:'Launch OpenAPI schema', section:'Help', hint:'?', keywords:'swagger api reference docs', run:()=>actions.openSwagger() },
+    { id:'help:shortcuts', label:'Keyboard shortcuts', description:'See available operations', section:'Help', hint:'/', keywords:'keyboard shortcuts help', run:()=>{ actions.openHelp(); showToast('Help opened.'); } },
+    { id:'help:support', label:'Contact support', description:'Email the APGMS support desk', section:'Help', hint:'@', keywords:'support email contact helpdesk', run:()=>actions.openSupport() },
+
+    { id:'admin:release', label:'Admin: Release payment', description:'Debit OWA and mark period released', section:'Admin Ops', hint:'A R', keywords:'admin release funds owa', roles:['admin'], run:()=>actions.release() },
+    { id:'admin:metrics-snapshot', label:'Admin: Capture metrics snapshot', description:'Download metrics output to a window', section:'Admin Ops', hint:'A M', keywords:'admin metrics snapshot monitoring', roles:['admin'], run:()=>actions.showMetrics() }
+  ];
+
+  const palette = createCommandPalette();
+
+  window.addEventListener('hashchange', () => render());
+
+  function createCommandPalette(){
+    const overlay = document.createElement('div');
+    overlay.className = 'cmdk-root hidden';
+    overlay.setAttribute('aria-hidden', 'true');
+    overlay.innerHTML = `
+      <div class="cmdk-panel" role="dialog" aria-modal="true" aria-label="Command palette">
+        <input class="cmdk-input" type="text" placeholder="Search actions, navigation, or help…" autocomplete="off" />
+        <div class="cmdk-results" role="listbox"></div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const panel = overlay.querySelector('.cmdk-panel');
+    const input = overlay.querySelector('.cmdk-input');
+    const results = overlay.querySelector('.cmdk-results');
+
+    commandDefinitions.forEach(cmd => {
+      cmd.search = `${cmd.label} ${(cmd.keywords||'')} ${(cmd.description||'')}`.toLowerCase();
+    });
+
+    let open = false;
+    let items = [];
+    let activeIndex = -1;
+    let recent = loadJSON(RECENT_STORE, []);
+    const commandMap = new Map(commandDefinitions.map(cmd => [cmd.id, cmd]));
+
+    function allowedCommands(){
+      return commandDefinitions.filter(cmd => {
+        if (!cmd.roles) return true;
+        return cmd.roles.includes(role);
+      });
+    }
+
+    function remember(id){
+      recent = [id, ...recent.filter(x => x !== id)];
+      if (recent.length > 7) recent = recent.slice(0,7);
+      saveJSON(RECENT_STORE, recent);
+    }
+
+    function renderList(query){
+      const q = (query || '').trim().toLowerCase();
+      const allowed = allowedCommands();
+      const allowedIds = new Set(allowed.map(c => c.id));
+      const groups = [];
+      items = [];
+      results.innerHTML = '';
+
+      if (!q && recent.length){
+        const recentItems = recent.map(id => commandMap.get(id)).filter(cmd => cmd && allowedIds.has(cmd.id));
+        if (recentItems.length){
+          groups.push({ title:'Recent', commands: recentItems });
+        }
+      }
+
+      const matches = allowed.filter(cmd => !q || cmd.search.includes(q));
+      const sectionOrder = ['Routes','Actions','Admin Ops','Help'];
+      sectionOrder.forEach(section => {
+        const list = matches.filter(cmd => cmd.section === section);
+        if (list.length) groups.push({ title: section, commands: list });
+      });
+
+      if (!groups.length){
+        const empty = document.createElement('div');
+        empty.className = 'cmdk-empty';
+        empty.textContent = 'No results';
+        results.appendChild(empty);
+        activeIndex = -1;
+        return;
+      }
+
+      groups.forEach(group => {
+        const wrap = document.createElement('div');
+        wrap.className = 'cmdk-section';
+        const heading = document.createElement('h3');
+        heading.textContent = group.title;
+        wrap.appendChild(heading);
+        group.commands.forEach(cmd => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'cmdk-item';
+          btn.dataset.commandId = cmd.id;
+          const left = document.createElement('div');
+          left.style.display = 'flex';
+          left.style.flexDirection = 'column';
+          left.style.alignItems = 'flex-start';
+          const title = document.createElement('span');
+          title.textContent = cmd.label;
+          left.appendChild(title);
+          if (cmd.description){
+            const sub = document.createElement('small');
+            sub.textContent = cmd.description;
+            left.appendChild(sub);
+          }
+          btn.appendChild(left);
+          if (cmd.hint){
+            const hint = document.createElement('span');
+            hint.className = 'cmdk-hint';
+            hint.textContent = cmd.hint;
+            btn.appendChild(hint);
+          }
+          const idx = items.length;
+          btn.addEventListener('click', () => execute(idx));
+          btn.addEventListener('mouseenter', () => highlight(idx));
+          wrap.appendChild(btn);
+          items.push({ cmd, el: btn });
+        });
+        results.appendChild(wrap);
+      });
+
+      highlight(items.length ? 0 : -1);
+    }
+
+    function highlight(idx){
+      if (idx < 0 || idx >= items.length){
+        items.forEach(entry => entry.el.classList.remove('active'));
+        activeIndex = -1;
+        return;
+      }
+      items.forEach((entry, i) => entry.el.classList.toggle('active', i === idx));
+      activeIndex = idx;
+      const el = items[idx].el;
+      const rect = el.getBoundingClientRect();
+      const containerRect = results.getBoundingClientRect();
+      if (rect.top < containerRect.top) el.scrollIntoView({ block:'nearest' });
+      if (rect.bottom > containerRect.bottom) el.scrollIntoView({ block:'nearest' });
+    }
+
+    function execute(idx){
+      if (idx < 0 || idx >= items.length) return;
+      const { cmd } = items[idx];
+      remember(cmd.id);
+      close();
+      try {
+        const out = cmd.run();
+        if (out && typeof out.then === 'function') {
+          out.catch(err => { console.error(err); showToast(err.message || 'Command failed', false); });
+        }
+      } catch(err){
+        console.error(err);
+        showToast(err.message || 'Command failed', false);
+      }
+    }
+
+    function openPalette(){
+      if (open) return;
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden','false');
+      open = true;
+      input.value = '';
+      renderList('');
+      setTimeout(()=>input.focus(), 10);
+    }
+
+    function close(){
+      if (!open) return;
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden','true');
+      open = false;
+      input.value = '';
+      items = [];
+      activeIndex = -1;
+    }
+
+    input.addEventListener('input', e => renderList(e.target.value));
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown'){
+        e.preventDefault();
+        if (items.length) highlight((activeIndex + 1) % items.length);
+      } else if (e.key === 'ArrowUp'){
+        e.preventDefault();
+        if (items.length) highlight((activeIndex - 1 + items.length) % items.length);
+      } else if (e.key === 'Enter'){
+        e.preventDefault();
+        execute(activeIndex >= 0 ? activeIndex : 0);
+      } else if (e.key === 'Tab'){
+        e.preventDefault();
+        if (items.length) highlight((activeIndex + (e.shiftKey ? -1 : 1) + items.length) % items.length);
+      }
+    });
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+    panel.addEventListener('click', e => e.stopPropagation());
+
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){
+        e.preventDefault();
+        open ? close() : openPalette();
+      } else if (open && e.key === 'Escape'){
+        e.preventDefault();
+        close();
+      }
+    });
+
+    return {
+      open: openPalette,
+      close,
+      remember,
+      recordRoute(view){
+        const id = `route:${view}`;
+        if (commandMap.has(id)) remember(id);
+      }
+    };
   }
 
   const View = {
@@ -135,6 +500,7 @@
             <li>Use <b>Connections</b> to link Bank (CDR), Payroll/POS, and ATO (SBR).</li>
             <li>Import or auto-ingest data; view in <b>Transactions</b>.</li>
             <li>Prepare and validate <b>Tax & BAS</b>; lodge via SBR when ready.</li>
+            <li>Use <span class="kbd">⌘K</span> for quick navigation and operations.</li>
             <li>See <span class="kbd">/api/openapi.json</span> for API details.</li>
           </ol>
         </div>
@@ -261,6 +627,7 @@
     const root = document.getElementById('app');
     root.innerHTML = View[view] ? View[view]() : View.home();
     wire(view);
+    palette.recordRoute(view);
   }
 
   render();
