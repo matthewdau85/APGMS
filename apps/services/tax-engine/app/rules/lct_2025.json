@@ -1,0 +1,24 @@
+{
+  "bas_label": "1E",
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "95edc6b73a95a10dbb096090d7a6de7ff0f8f2b73d161dcf0b6450c32038da4d",
+    "source_url": "https://www.ato.gov.au/business/luxury-car-tax/"
+  },
+  "rule_hash": "a13eead1426b1f14453d46ef434ae4ab228455fd6ba32e0ca4da336220930f2f",
+  "thresholds": {
+    "fuel_efficient": {
+      "fuel_efficiency_test_l_per_100km": 7.0,
+      "rate": 0.33,
+      "rule_hash": "a5c32e59129f7e19267171593eb62e59859a7896862074aaa0d6a194cd1f636d",
+      "threshold": 91507
+    },
+    "other": {
+      "rate": 0.33,
+      "rule_hash": "fa1c043bd8dbec01355c36a0db60a703b283d1168af5621889a41e0430c61d68",
+      "threshold": 76901
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "bas_label": "1C",
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "436c37fcc2b736c4f1c567e96a2a1123450c26dbe54563cb177f89da578f1872",
+    "source_url": "https://www.ato.gov.au/business/wine-equalisation-tax/"
+  },
+  "rate": 0.29,
+  "rebate_cap": 100000,
+  "rule_hash": "b73325a137990c18235d256ebd94f0a479af9738cda08d65dcef8e87d4868cae"
+}

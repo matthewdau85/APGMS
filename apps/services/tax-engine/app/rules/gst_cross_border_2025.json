@@ -1,0 +1,35 @@
+{
+  "lvig": {
+    "description": "Low value imported goods deemed supplies to Australian consumers.",
+    "labels": {
+      "gst": "1A",
+      "sale": "G3"
+    },
+    "rule_hash": "41830270d377be44bf95737ab15d11fee03470ee0f73e51a2398deefbe602805",
+    "threshold": 1000
+  },
+  "marketplace": {
+    "deemed_supplier": true,
+    "description": "Electronic distribution platforms responsible for GST on supplies.",
+    "labels": {
+      "gst": "1A",
+      "sale": "G1"
+    },
+    "rule_hash": "c7877d1a5c815c18fab3671679b02fd9df5fa6f1985de8764c874576e9f0c56b"
+  },
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "31b00061fa437d2c867e957bf36ff1d7b1aa531e43c55f8d6ba3c744c5f60d69",
+    "source_url": "https://www.ato.gov.au/business/gst/in-detail/non-residents-and-gst/"
+  },
+  "simplified": {
+    "description": "Simplified GST for non-residents providing digital products or services.",
+    "labels": {
+      "gst": "1A",
+      "sale": "G2"
+    },
+    "rule_hash": "922805bde4a55fa1cc80fe313327703759e88e5794b0fb76fcaa69ebe38adeca"
+  }
+}

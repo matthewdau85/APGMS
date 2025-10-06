@@ -1,0 +1,37 @@
+{
+  "accrual": {
+    "description": "Recognise GST on the earlier of invoice issue or consideration.",
+    "labels": {
+      "purchase_amount": "G11",
+      "purchase_gst": "1B",
+      "sale_amount": "G1",
+      "sale_gst": "1A"
+    },
+    "recognition": "invoice_date",
+    "rule_hash": "72932b7341663fbee174ebd9de0a6c6a2676e1a3d4e83f6d7ad8d44f8b6990b6"
+  },
+  "cash": {
+    "description": "Recognise GST when consideration is received or paid.",
+    "labels": {
+      "purchase_amount": "G11",
+      "purchase_gst": "1B",
+      "sale_amount": "G1",
+      "sale_gst": "1A"
+    },
+    "recognition": "payment_date",
+    "rule_hash": "0e9459beeaa4eff21f6928138368ece0458d24c9c4bd7c8a682c0d3d5151a00b"
+  },
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "d886c6c7c1380025537b9a4c75c7981c39d9b4af180675f93ec56087769e7003",
+    "source_url": "https://www.ato.gov.au/business/gst/accounting-for-gst/choose-an-accounting-method/"
+  },
+  "switch_rules": {
+    "description": "Split tax periods into segments when a basis change occurs mid-period.",
+    "notice_period_days": 14,
+    "rule_hash": "bdb77b47c666ecf8e967634183f8fdc9070ac4959204ef121ee3ce5efac43f9f",
+    "segment_method": "calendar_split"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "categories": {
+    "financial_supplies": {
+      "percentage": 0.75,
+      "rule_hash": "06640696fae035777ccc2464a46f2e9ce859f52eb7d75206d5df81f26f025a1b"
+    },
+    "managed_investment": {
+      "percentage": 0.55,
+      "rule_hash": "905312413dde23f543ab6cae223940a9560628277c7bf5a29343bf09cdabbb1b"
+    },
+    "residential_rent": {
+      "percentage": 0.0,
+      "rule_hash": "87c870277544861fa66220afdcdd905c9174b65a8806279a709cfb33848c8457"
+    }
+  },
+  "metadata": {
+    "effective_from": "2025-07-01",
+    "effective_to": null,
+    "last_reviewed": "2025-07-01",
+    "sha256": "37a0442856bfbdfb5c9f0551b8aaefb63f5987e0656bfc461dcf82684018a6de",
+    "source_url": "https://www.ato.gov.au/business/gst/in-detail/financial-services-and-insurance/reduced-input-tax-credits/"
+  }
+}
