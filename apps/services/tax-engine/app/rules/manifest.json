@@ -1,0 +1,9 @@
+{
+  "version": "2024-25",
+  "files": [
+    "paygw_weekly.json",
+    "paygw_fortnightly.json",
+    "paygw_monthly.json",
+    "rounding.json"
+  ]
+}

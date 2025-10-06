@@ -1,0 +1,14 @@
+{
+  "version": "2024-25",
+  "period": "monthly",
+  "rounding": "HALF_UP",
+  "notes": "ATO 2024-25 Schedule 1 monthly calculations with tax-free threshold",
+  "brackets": [
+    { "up_to_cents": 155567, "a": 0.0, "b": 0.0, "fixed": 0.0 },
+    { "up_to_cents": 189800, "a": 0.19, "b": 294.6667, "fixed": 0.0 },
+    { "up_to_cents": 237467, "a": 0.234, "b": 380.5533, "fixed": 0.0 },
+    { "up_to_cents": 312433, "a": 0.347, "b": 643.5, "fixed": 0.0 },
+    { "up_to_cents": 374833, "a": 0.345, "b": 637.0, "fixed": 0.0 },
+    { "up_to_cents": 433332900, "a": 0.39, "b": 793.0, "fixed": 0.0 }
+  ]
+}
