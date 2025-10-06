@@ -1,4 +1,4 @@
-﻿// src/index.ts
+// src/index.ts
 import express from "express";
 import dotenv from "dotenv";
 
@@ -6,6 +6,7 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { buildPublicRuntimeConfig } from "./utils/runtimeConfig";
 
 dotenv.config();
 
@@ -17,6 +18,10 @@ app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); ne
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+app.get("/api/config", (_req, res) => {
+  res.json(buildPublicRuntimeConfig(process.env as Record<string, string | undefined>));
+});
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
