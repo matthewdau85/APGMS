@@ -1,6 +1,6 @@
-﻿import { createHash } from "crypto";
+import { createHash } from "crypto";
 
-export function sha256Hex(input: Buffer | string) {
+export function sha256Hex(input: Buffer | string): string {
   const h = createHash("sha256");
   h.update(input);
   return h.digest("hex");
@@ -8,7 +8,7 @@ export function sha256Hex(input: Buffer | string) {
 
 export function merkleRootHex(leaves: string[]): string {
   if (leaves.length === 0) return sha256Hex("");
-  let level = leaves.map(x => sha256Hex(x));
+  let level = leaves.map((x) => sha256Hex(x));
   while (level.length > 1) {
     const next: string[] = [];
     for (let i = 0; i < level.length; i += 2) {
@@ -19,4 +19,8 @@ export function merkleRootHex(leaves: string[]): string {
     level = next;
   }
   return level[0];
+}
+
+export function buildMerkleRoot(payloads: string[]): string {
+  return merkleRootHex(payloads);
 }
