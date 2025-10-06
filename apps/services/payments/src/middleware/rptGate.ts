@@ -1,7 +1,7 @@
 // apps/services/payments/src/middleware/rptGate.ts
 import { Request, Response, NextFunction } from "express";
 import pg from "pg"; const { Pool } = pg;
-import { sha256Hex } from "../utils/crypto";
+import { sha256Hex } from "../utils/crypto.js";
 import { selectKms } from "../kms/kmsProvider";
 
 const kms = selectKms();
@@ -38,12 +38,24 @@ export async function rptGate(req: Request, res: Response, next: NextFunction) {
     }
 
     // Signature verify (signature is stored as base64 text in your seed)
-    const payload = Buffer.from(r.payload_c14n);
+    const payloadBuffer = Buffer.from(r.payload_c14n);
     const sig = Buffer.from(r.signature, "base64");
-    const ok = await kms.verify(payload, sig);
+    const ok = await kms.verify(payloadBuffer, sig);
     if (!ok) return res.status(403).json({ error: "RPT signature invalid" });
 
-    (req as any).rpt = { rpt_id: r.rpt_id, nonce: r.nonce, payload_sha256: r.payload_sha256 };
+    let payload: any = null;
+    try {
+      payload = JSON.parse(r.payload_c14n);
+    } catch {
+      // ignore JSON parse error; payload stays null but gate should still pass for legacy tokens
+    }
+
+    (req as any).rpt = {
+      rpt_id: r.rpt_id,
+      nonce: r.nonce,
+      payload_sha256: r.payload_sha256,
+      payload,
+    };
     return next();
   } catch (e: any) {
     return res.status(500).json({ error: "RPT verification error", detail: String(e?.message || e) });

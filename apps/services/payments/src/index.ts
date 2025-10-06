@@ -10,6 +10,7 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { ingestPos, ingestStp } from './routes/ingest.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -24,7 +25,14 @@ const connectionString =
 export const pool = new Pool({ connectionString });
 
 const app = express();
-app.use(express.json());
+app.use(
+  express.json({
+    limit: '1mb',
+    verify: (req: any, _res, buf) => {
+      req.rawBody = Buffer.from(buf);
+    },
+  })
+);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -34,6 +42,8 @@ app.post('/deposit', deposit);
 app.post('/payAto', rptGate, payAtoRelease);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
+app.post('/ingest/stp', ingestStp);
+app.post('/ingest/pos', ingestPos);
 
 // 404 fallback
 app.use((_req, res) => res.status(404).send('Not found'));

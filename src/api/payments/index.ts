@@ -8,6 +8,7 @@ import { ledger } from "../../../apps/services/payments/src/routes/ledger.js";
 import { deposit } from "../../../apps/services/payments/src/routes/deposit.js";
 import { rptGate } from "../../../apps/services/payments/src/middleware/rptGate.js";
 import { payAtoRelease } from "../../../apps/services/payments/src/routes/payAto.js";
+import { ingestPos, ingestStp } from "../../../apps/services/payments/src/routes/ingest.js";
 
 export const paymentsApi = Router();
 
@@ -18,3 +19,5 @@ paymentsApi.get("/ledger", ledger);
 // write
 paymentsApi.post("/deposit", deposit);
 paymentsApi.post("/release", rptGate, payAtoRelease);
+paymentsApi.post("/ingest/stp", ingestStp);
+paymentsApi.post("/ingest/pos", ingestPos);
