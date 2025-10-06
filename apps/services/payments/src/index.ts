@@ -4,6 +4,7 @@ import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
+import { bindings, reloadBindings } from '@core/providers';
 
 import { rptGate } from './middleware/rptGate.js';
 import { payAtoRelease } from './routes/payAto.js';
@@ -23,11 +24,14 @@ const connectionString =
 // Export pool for other modules
 export const pool = new Pool({ connectionString });
 
+reloadBindings();
+
 const app = express();
 app.use(express.json());
 
 // Health check
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/debug/providers', (_req, res) => res.json({ bindings: bindings() }));
 
 // Endpoints
 app.post('/deposit', deposit);

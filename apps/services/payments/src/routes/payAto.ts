@@ -1,7 +1,8 @@
 ﻿// apps/services/payments/src/routes/payAto.ts
 import { Request, Response } from 'express';
 import crypto from 'crypto';
-import pg from 'pg'; const { Pool } = pg;
+import { getAnomaly, getBank } from '@core/providers';
+import type { AnomalyScore, PayoutResult } from '@core/ports';
 import { pool } from '../index.js';
 
 function genUUID() {
@@ -32,6 +33,17 @@ export async function payAtoRelease(req: Request, res: Response) {
   const rpt = (req as any).rpt;
   if (!rpt) {
     return res.status(403).json({ error: 'RPT not verified' });
+  }
+
+  const anomaly = getAnomaly();
+  let anomalyResult: AnomalyScore | null = null;
+  try {
+    anomalyResult = await anomaly.score({ abn, taxType, periodId, amount_cents: amt });
+    if (anomalyResult.decision === 'block') {
+      return res.status(403).json({ error: 'Release blocked by anomaly service', anomaly: anomalyResult });
+    }
+  } catch (err) {
+    return res.status(503).json({ error: 'Anomaly service failure', detail: String((err as Error).message || err) });
   }
 
   const client = await pool.connect();
@@ -73,6 +85,19 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
     ]);
 
+    let payout: PayoutResult | null = null;
+    try {
+      const bank = getBank();
+      payout = await bank.payout(
+        rpt,
+        Math.abs(amt),
+        { abn, taxType, periodId, ledgerId: String(ins[0].id), transfer_uuid }
+      );
+    } catch (err) {
+      await client.query('ROLLBACK');
+      return res.status(502).json({ error: 'Bank payout failed', detail: String((err as Error).message || err) });
+    }
+
     await client.query('COMMIT');
 
     return res.json({
@@ -82,6 +107,8 @@ export async function payAtoRelease(req: Request, res: Response) {
       release_uuid,
       balance_after_cents: ins[0].balance_after_cents,
       rpt_ref: { rpt_id: rpt.rpt_id, kid: rpt.kid, payload_sha256: rpt.payload_sha256 },
+      payout,
+      anomaly: anomalyResult,
     });
   } catch (e: any) {
     await client.query('ROLLBACK');
