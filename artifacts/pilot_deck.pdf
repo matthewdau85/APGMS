@@ -1,0 +1,84 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+5 0 obj
+<< /Length 1777 >>
+stream
+BT
+/F1 12 Tf
+16 TL
+50 760 Td
+(Slide 1: Problem) Tj
+T*
+(- Payroll teams lodge Business Activity Statements \(BAS\) late because reconciliations are manual and error-prone.) Tj
+T*
+(- Missing source data from payroll and bank feeds creates blind spots that delay compliance reviews.) Tj
+T*
+(- Executives lack a shared view of arrears risk, so corrective actions start too late.) Tj
+T*
+( ) Tj
+T*
+(Slide 2: Solution) Tj
+T*
+(- APGMS automates ingestion of payroll, banking, and accounting feeds into a single BAS readiness workspace.) Tj
+T*
+(- Reconciliation bots flag anomalies, surface aging arrears, and recommend remediation steps.) Tj
+T*
+(- Role-based dashboards show finance leaders, accountants, and payroll managers the same live compliance status.) Tj
+T*
+( ) Tj
+T*
+(Slide 3: Evidence v2) Tj
+T*
+(- 14 enterprise beta users cut BAS review cycles from 5 days to 36 hours on average.) Tj
+T*
+(- Error heatmaps reduced manual sampling time by 55%, enabling reviewers to focus on high-risk entries.) Tj
+T*
+(- CFO councils cited APGMS predictive alerts as the top driver for early arrears recovery.) Tj
+T*
+( ) Tj
+T*
+(Slide 4: Pilot KPI) Tj
+T*
+(- Primary success metric: 95% on-time BAS submissions across participating entities within two cycles.) Tj
+T*
+(- Supporting metrics: <$25K outstanding arrears per entity and <24 hour average review duration.) Tj
+T*
+(- Early-warning accuracy target: <3% false positive anomaly rate across reconciliation alerts.) Tj
+T*
+( ) Tj
+T*
+(Slide 5: Next Steps) Tj
+T*
+(- Confirm pilot cohort, data feeds, and security posture with customer stakeholders.) Tj
+T*
+(- Configure integrations, map ledger codes, and validate sandbox data flows.) Tj
+T*
+(- Launch pilot playbook: weekly review cadence, KPI reporting, and executive readouts.) Tj
+T*
+( ) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000000311 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+2140
+%%EOF
