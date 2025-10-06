@@ -22,24 +22,68 @@ Security:
 Placeholder for MFA and encryption; easy to extend for production environments.
 
 Getting Started
-Clone the Repository
 
-git clone <your-repo-url>
-cd apgms
+1. **Clone the repository**
 
-Install Dependencies
+   ```bash
+   git clone <your-repo-url>
+   cd apgms
+   ```
 
-npm install
+2. **Install dependencies with pnpm**
 
-Run the Development Server
+   This workspace is configured for [pnpm](https://pnpm.io/) (see the
+   `packageManager` entry in `package.json`). If pnpm is not enabled on your
+   machine yet, run `corepack enable` once, then install dependencies:
 
-npm start
+   ```bash
+   pnpm install
+   ```
 
-The app will start on http://localhost:3000
+3. **Configure environment variables**
 
-Build for Production
+   ```bash
+   cp .env.local.example .env.local
+   # then edit .env.local as needed for your setup
+   ```
 
-npm run build
+   The variables in `.env.local` are described in detail in
+   [docs/environment.md](docs/environment.md).
+
+4. **Run the application**
+
+   For the TypeScript development server with automatic reload:
+
+   ```bash
+   pnpm dev
+   ```
+
+   To run the compiled JavaScript output (after building):
+
+   ```bash
+   pnpm start
+   ```
+
+5. **Build for production**
+
+   ```bash
+   pnpm build
+   ```
+
+The default API server listens on <http://localhost:3000>.
+
+### Available scripts
+
+The root `package.json` exposes a few scripts you can run with `pnpm` (or
+`npm run`/`yarn` if you prefer those CLIs):
+
+| Script | Command | When to use it |
+| --- | --- | --- |
+| `pnpm dev` | `tsx src/index.ts` | Start the TypeScript server with hot reloading during development. |
+| `pnpm start` | `node dist/index.js` | Run the compiled server output (make sure to run `pnpm build` first). |
+| `pnpm build` | `echo build root` | Placeholder build step; replace with a real bundler when you add one. |
+| `pnpm typecheck` | `echo typecheck root` | Stub that you can expand to run TypeScript type checks in CI. |
+| `pnpm lint` | `echo lint root` | Stub for linting. Hook up ESLint/biome/etc. as needed. |
 
 Project Structure
 apgms/
@@ -89,3 +133,5 @@ For demonstration and prototyping only—real-world deployments require further 
 Contributing
 Pull requests are welcome!
 For major changes, please open an issue first to discuss what you’d like to change.
+
+Additional documentation is available in [docs/environment.md](docs/environment.md).
