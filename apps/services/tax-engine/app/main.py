@@ -2,6 +2,8 @@
 from fastapi import FastAPI, Response
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
+from libs.observability import instrument_app
+
 app = FastAPI(title="APGMS Tax Engine")
 
 # Counter you can bump in your message handler
@@ -181,3 +183,6 @@ def ui_help(request: Request):
     return TEMPLATES.TemplateResponse("help.html", {"request": request, "title": "Help", "badge":"demo"})
 # --- END MINI_UI ---
 
+
+
+instrument_app(app, "tax-engine")

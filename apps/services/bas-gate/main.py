@@ -3,7 +3,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os, psycopg2, json, time
 
+from libs.observability import instrument_app
+
 app = FastAPI(title="bas-gate")
+instrument_app(app, "bas-gate")
 
 class TransitionReq(BaseModel):
     period_id: str

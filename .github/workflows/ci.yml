@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: apgms
+          POSTGRES_PASSWORD: apgms
+          POSTGRES_DB: apgms
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U apgms" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgres://apgms:apgms@127.0.0.1:5432/apgms
+      PGHOST: 127.0.0.1
+      PGUSER: apgms
+      PGPASSWORD: apgms
+      PGDATABASE: apgms
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch base branch
+        if: github.event_name == 'pull_request'
+        run: git fetch origin ${{ github.base_ref }} --depth=1
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+      - name: Verify migration manifest
+        run: python scripts/check_migration_checksums.py
+      - name: Run migrations
+        run: scripts/run_migrations.sh
+      - name: Sync OpenAPI & types
+        run: npm run check:openapi
+      - name: Run Python tests
+        run: npm run test:python
+      - name: Run payments tests
+        run: npm run test:payments
+      - name: Seed database
+        run: npm run seed
+      - name: Smoke checks
+        run: npm run smoke
+      - name: Validate rules manifest and changelog
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          REF=""
+          if [ -n "${BASE_REF}" ]; then
+            REF="origin/${BASE_REF}"
+          fi
+          python scripts/check_rules_guard.py "$REF"

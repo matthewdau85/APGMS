@@ -1,0 +1,16 @@
+{
+  "migrations": [
+    {
+      "path": "migrations/001_apgms_core.sql",
+      "sha256": "e99eb138985ab3ea548c376bcca738fad11f72a8f8ba7c1c968909d5b14820cb"
+    },
+    {
+      "path": "migrations/002_apgms_patent_core.sql",
+      "sha256": "da08d33bd4e74a52d35a7c77b1fdb937920eb72ebc0055a77b39a4b7f4e7416e"
+    },
+    {
+      "path": "migrations/002_patent_extensions.sql",
+      "sha256": "275ada26d1a8af2ed87a5cc5ed2a4eef4053487fac3ead9d6e69e960ef6dedd2"
+    }
+  ]
+}

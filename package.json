@@ -4,12 +4,19 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "echo lint root",
+        "seed": "tsx scripts/seed.ts",
+        "smoke": "tsx scripts/smoke.ts",
+        "openapi:sync": "tsx scripts/sync_openapi.ts && tsx scripts/sync_types.ts",
+        "check:openapi": "npm run openapi:sync && git diff --exit-code -- schema/openapi.json src/types/tax.ts",
+        "test:payments": "pnpm --filter payments test",
+        "test:python": "PYTHONPATH=.:libs/py-sdk pytest",
+        "test:ci": "npm run test:payments && npm run test:python"
     },
     "version": "0.1.0",
     "name": "apgms",
     "private": true,
-    "packageManager": "pnpm@9",
+    "packageManager": "pnpm@9.0.0",
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",

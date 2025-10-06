@@ -2,7 +2,10 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import nacl.signing, nacl.encoding, hashlib
 
+from libs.observability import instrument_app
+
 app = FastAPI()
+instrument_app(app, "rpt-verify")
 
 class VerifyIn(BaseModel):
     kid: str

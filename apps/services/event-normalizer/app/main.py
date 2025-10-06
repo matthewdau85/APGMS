@@ -3,6 +3,8 @@ from fastapi.responses import PlainTextResponse
 from typing import Optional
 from prometheus_client import REGISTRY, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
+from libs.observability import instrument_app
+
 APP_NAME = "event-normalizer"
 app = FastAPI(title=APP_NAME)
 
@@ -39,3 +41,5 @@ def readyz() -> str:
 def metrics() -> Response:
     payload = generate_latest(REGISTRY)
     return Response(payload, media_type=CONTENT_TYPE_LATEST)
+
+instrument_app(app, APP_NAME)

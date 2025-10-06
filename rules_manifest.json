@@ -1,0 +1,10 @@
+{
+  "rates_version": "2024.07",
+  "rules": [
+    {
+      "name": "PAYG withholding 2024/25",
+      "path": "apps/services/tax-engine/app/rules/payg_w_2024_25.json",
+      "sha256": "d3655202868bfa4d56ca1eebfc590808aca60c4cbd7162881d1ab12cd720f53b"
+    }
+  ]
+}

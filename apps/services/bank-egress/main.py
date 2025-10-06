@@ -2,9 +2,12 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import os, psycopg2, json
+
+from libs.observability import instrument_app
 from libs.rpt.rpt import verify
 
 app = FastAPI(title="bank-egress")
+instrument_app(app, "bank-egress")
 
 class EgressReq(BaseModel):
     period_id: str
