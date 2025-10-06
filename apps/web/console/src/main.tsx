@@ -1,12 +1,31 @@
-﻿import React from "react";
+import React from "react";
 import { createRoot } from "react-dom/client";
+import { QueryErrorResetBoundary } from "@tanstack/react-query";
+import { AppProviders, AppShell } from "./App";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { GlobalErrorFallback } from "./components/GlobalErrorFallback";
 
-function App() {
-  return (
-    <div style={{padding:16,fontFamily:"system-ui"}}>
-      <h1>APGMS Console</h1>
-      <p>Status tiles and RPT widgets will appear here. (P40, P41, P42)</p>
-    </div>
-  );
+const container = document.getElementById("root");
+
+if (!container) {
+  throw new Error("Root element with id 'root' was not found");
 }
-createRoot(document.getElementById("root")!).render(<App />);
+
+createRoot(container).render(
+  <React.StrictMode>
+    <AppProviders>
+      <QueryErrorResetBoundary>
+        {({ reset }) => (
+          <ErrorBoundary
+            onReset={reset}
+            fallback={({ error, resetErrorBoundary }) => (
+              <GlobalErrorFallback error={error} onRetry={resetErrorBoundary} />
+            )}
+          >
+            <AppShell />
+          </ErrorBoundary>
+        )}
+      </QueryErrorResetBoundary>
+    </AppProviders>
+  </React.StrictMode>,
+);
