@@ -68,6 +68,29 @@ create table if not exists remittance_destinations (
 create table if not exists idempotency_keys (
   key text primary key,
   created_at timestamptz default now(),
+  updated_at timestamptz default now(),
   last_status text,
-  response_hash text
+  request_hash text,
+  response_hash text,
+  response_body text,
+  response_is_json boolean default false,
+  status_code integer
 );
+
+create table if not exists settlement_exceptions (
+  id bigserial primary key,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  txn_id text not null,
+  bank_reference text not null,
+  reason text not null,
+  status text not null default 'OPEN',
+  raw_payload jsonb,
+  resolved_at timestamptz,
+  resolution_notes text,
+  unique (txn_id, bank_reference)
+);
+
+create index if not exists idx_settlement_exceptions_status on settlement_exceptions(status);
+create index if not exists idx_settlement_exceptions_txn on settlement_exceptions(txn_id);
+create index if not exists idx_settlement_exceptions_bank on settlement_exceptions(bank_reference);
