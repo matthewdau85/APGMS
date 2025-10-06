@@ -1,4 +1,3 @@
-﻿import pg from "pg";
 import { createHash } from "crypto";
 
 export function sha256Hex(input: string | Buffer): string {
@@ -13,7 +12,11 @@ function sortKeysDeep(value: any): any {
   if (Array.isArray(value)) return value.map(sortKeysDeep);
   if (value && typeof value === "object") {
     const out: Record<string, any> = {};
-    Object.keys(value).sort().forEach(k => { out[k] = sortKeysDeep(value[k]); });
+    Object.keys(value)
+      .sort()
+      .forEach(key => {
+        out[key] = sortKeysDeep(value[key]);
+      });
     return out;
   }
   return value;

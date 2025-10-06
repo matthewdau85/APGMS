@@ -1,7 +1,17 @@
-import { isAllowlisted } from "../src/utils/allowlist";
-test("allowlist ok for ATO BPAY", () => {
-  expect(isAllowlisted("123", { bpay_biller:"75556", crn:"12345678901" })).toBe(true);
+import { isValidAbn, isValidBsb, isValidCrn } from "../src/utils/allowlist";
+
+test("validates ABN with checksum", () => {
+  expect(isValidAbn("51824753556")).toBe(true);
+  expect(isValidAbn("51824753557")).toBe(false);
 });
-test("deny non-ATO", () => {
-  expect(isAllowlisted("123", { bsb:"012345", acct:"999999" })).toBe(false);
+
+test("validates BSB formatting", () => {
+  expect(isValidBsb("092-009")).toBe(true);
+  expect(isValidBsb("092009")).toBe(true);
+  expect(isValidBsb("92009")).toBe(false);
+});
+
+test("validates CRN length", () => {
+  expect(isValidCrn("12345678901")).toBe(true);
+  expect(isValidCrn("123")).toBe(false);
 });
