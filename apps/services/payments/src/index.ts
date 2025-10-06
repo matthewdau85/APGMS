@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import './loadEnv.js'; // ensures .env.local is loaded when running with tsx
 
+import { assertSafeCombo, loadFeatureFlags, logFeatureFlags } from './config/features.js';
+
 import express from 'express';
 import pg from 'pg'; const { Pool } = pg;
 
@@ -12,6 +14,10 @@ import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
 
 // Port (defaults to 3000)
+const featureFlags = loadFeatureFlags();
+assertSafeCombo(featureFlags);
+logFeatureFlags(featureFlags);
+
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 // Prefer DATABASE_URL; else compose from PG* vars
