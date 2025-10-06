@@ -1,0 +1,9 @@
+{
+  "rates": [
+    { "category": "standard", "rate": 0.1 },
+    { "category": "reduced", "rate": 0.05 },
+    { "category": "zero", "rate": 0.0 }
+  ],
+  "effective_from": "2025-07-01",
+  "effective_to": "2025-12-31"
+}
