@@ -1,0 +1,37 @@
+{
+  "period": "quarterly",
+  "brackets": [
+    {
+      "threshold": 0,
+      "limit": 11245,
+      "rate": 0.15,
+      "base": 0.0
+    },
+    {
+      "threshold": 11245,
+      "limit": 21502,
+      "rate": 0.32,
+      "base": 1686.75
+    },
+    {
+      "threshold": 21502,
+      "limit": 44993,
+      "rate": 0.37,
+      "base": 4968.99
+    },
+    {
+      "threshold": 44993,
+      "limit": null,
+      "rate": 0.45,
+      "base": 13175.5
+    }
+  ],
+  "rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  },
+  "tiers": [
+    37000,
+    90000
+  ]
+}

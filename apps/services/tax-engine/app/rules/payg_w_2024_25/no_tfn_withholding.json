@@ -1,0 +1,32 @@
+{
+  "rates": {
+    "weekly": {
+      "rate": 0.47,
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    },
+    "fortnightly": {
+      "rate": 0.47,
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    },
+    "monthly": {
+      "rate": 0.47,
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    },
+    "quarterly": {
+      "rate": 0.47,
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    }
+  }
+}

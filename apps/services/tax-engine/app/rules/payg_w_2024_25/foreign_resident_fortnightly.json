@@ -1,0 +1,33 @@
+{
+  "period": "fortnightly",
+  "brackets": [
+    {
+      "threshold": 0,
+      "limit": 1000,
+      "rate": 0.325,
+      "base": 0.0
+    },
+    {
+      "threshold": 1000,
+      "limit": 2000,
+      "rate": 0.37,
+      "base": 325.0
+    },
+    {
+      "threshold": 2000,
+      "limit": 6000,
+      "rate": 0.45,
+      "base": 695.0
+    },
+    {
+      "threshold": 6000,
+      "limit": null,
+      "rate": 0.45,
+      "base": 2495.0
+    }
+  ],
+  "rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  }
+}

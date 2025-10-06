@@ -1,0 +1,33 @@
+{
+  "period": "weekly",
+  "brackets": [
+    {
+      "threshold": 0,
+      "limit": 500,
+      "rate": 0.325,
+      "base": 0.0
+    },
+    {
+      "threshold": 500,
+      "limit": 1000,
+      "rate": 0.37,
+      "base": 162.5
+    },
+    {
+      "threshold": 1000,
+      "limit": 3000,
+      "rate": 0.45,
+      "base": 347.5
+    },
+    {
+      "threshold": 3000,
+      "limit": null,
+      "rate": 0.45,
+      "base": 1247.5
+    }
+  ],
+  "rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  }
+}

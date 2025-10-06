@@ -1,0 +1,81 @@
+{
+  "period": "weekly",
+  "tables": {
+    "with_tax_free_threshold": {
+      "tax_free_threshold": true,
+      "brackets": [
+        {
+          "threshold": 0,
+          "limit": 370,
+          "rate": 0.0,
+          "base": 0.0
+        },
+        {
+          "threshold": 370,
+          "limit": 900,
+          "rate": 0.19,
+          "base": 0.0
+        },
+        {
+          "threshold": 900,
+          "limit": 1400,
+          "rate": 0.325,
+          "base": 100.3
+        },
+        {
+          "threshold": 1400,
+          "limit": 3111,
+          "rate": 0.37,
+          "base": 262.8
+        },
+        {
+          "threshold": 3111,
+          "limit": null,
+          "rate": 0.45,
+          "base": 895.87
+        }
+      ],
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    },
+    "no_tax_free_threshold": {
+      "tax_free_threshold": false,
+      "brackets": [
+        {
+          "threshold": 0,
+          "limit": 500,
+          "rate": 0.19,
+          "base": 0.0
+        },
+        {
+          "threshold": 500,
+          "limit": 1000,
+          "rate": 0.32,
+          "base": 95.0
+        },
+        {
+          "threshold": 1000,
+          "limit": 3000,
+          "rate": 0.37,
+          "base": 255.0
+        },
+        {
+          "threshold": 3000,
+          "limit": null,
+          "rate": 0.45,
+          "base": 995.0
+        }
+      ],
+      "rounding": {
+        "mode": "NEAREST",
+        "increment": 1
+      }
+    }
+  },
+  "default_rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "life_benefit_cap": 235000,
+  "death_benefit_cap": 235000,
+  "whole_of_income_cap": 180000,
+  "components": {
+    "A": {
+      "under_preservation": {
+        "below_cap": 0.17,
+        "above_cap": 0.47
+      },
+      "at_or_above_preservation": {
+        "below_cap": 0.15,
+        "above_cap": 0.47
+      }
+    },
+    "B": {
+      "under_preservation": {
+        "below_cap": 0.32,
+        "above_cap": 0.47
+      },
+      "at_or_above_preservation": {
+        "below_cap": 0.17,
+        "above_cap": 0.47
+      }
+    },
+    "D": {
+      "all": {
+        "below_cap": 0.32,
+        "above_cap": 0.47
+      }
+    }
+  },
+  "lump_sum_rates": {
+    "E": 0.32
+  },
+  "rounding": {
+    "mode": "NEAREST",
+    "increment": 1
+  },
+  "stp2_codes": {
+    "A": "ETP-TYPE-A",
+    "B": "ETP-TYPE-B",
+    "D": "ETP-TYPE-D",
+    "E": "LUMP-SUM-E",
+    "R": "LUMP-SUM-R"
+  }
+}
