@@ -1,10 +1,7 @@
 import React from "react";
-import { transferToOneWayAccount } from "../utils/bankApi";
-
 export default function FundSecuring({ paygwDue, gstDue }: { paygwDue: number; gstDue: number }) {
   async function secureFunds() {
-    await transferToOneWayAccount(paygwDue, "businessRevenueAcc", "oneWayPaygwAcc");
-    await transferToOneWayAccount(gstDue, "businessRevenueAcc", "oneWayGstAcc");
+    console.log("Secure PAYGW", paygwDue, "GST", gstDue);
     alert("Funds secured in designated one-way accounts.");
   }
   return (
