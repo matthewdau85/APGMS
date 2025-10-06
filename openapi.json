@@ -1,0 +1,196 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "APGMS Node API",
+    "version": "1.0.0",
+    "description": "Endpoints served by the Node/Express application."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/v1/periods": {
+      "get": {
+        "summary": "List accounting periods",
+        "responses": {
+          "200": {
+            "description": "Known periods",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "periods": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PeriodSummary"
+                      }
+                    }
+                  },
+                  "required": [
+                    "periods"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/periods/{periodId}": {
+      "get": {
+        "summary": "Fetch a single accounting period",
+        "parameters": [
+          {
+            "name": "periodId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Period details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PeriodSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No period found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BasLabels": {
+        "type": "object",
+        "properties": {
+          "W1": {
+            "type": "integer",
+            "description": "Gross wages (cents)"
+          },
+          "W2": {
+            "type": "integer",
+            "description": "PAYGW withheld (cents)"
+          },
+          "G1": {
+            "type": "integer",
+            "description": "Total sales (cents)"
+          },
+          "1A": {
+            "type": "integer",
+            "description": "GST on sales (cents)"
+          },
+          "1B": {
+            "type": "integer",
+            "description": "GST on purchases (cents)"
+          }
+        },
+        "required": [
+          "W1",
+          "W2",
+          "G1",
+          "1A",
+          "1B"
+        ]
+      },
+      "PeriodSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "abn": {
+            "type": "string"
+          },
+          "taxType": {
+            "type": "string",
+            "enum": [
+              "GST",
+              "PAYGW"
+            ]
+          },
+          "periodLabel": {
+            "type": "string"
+          },
+          "lodgmentsUpToDate": {
+            "type": "boolean"
+          },
+          "paymentsUpToDate": {
+            "type": "boolean"
+          },
+          "complianceScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "lastBasLodgedAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "nextDueAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "outstandingLodgments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "outstandingAmounts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bas": {
+            "$ref": "#/components/schemas/BasLabels"
+          }
+        },
+        "required": [
+          "id",
+          "abn",
+          "taxType",
+          "periodLabel",
+          "lodgmentsUpToDate",
+          "paymentsUpToDate",
+          "complianceScore",
+          "lastBasLodgedAt",
+          "nextDueAt",
+          "outstandingLodgments",
+          "outstandingAmounts",
+          "bas"
+        ]
+      }
+    }
+  }
+}

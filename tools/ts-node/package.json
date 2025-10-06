@@ -1,0 +1,11 @@
+{
+  "name": "ts-node",
+  "version": "10.9.2",
+  "type": "commonjs",
+  "bin": {
+    "ts-node": "bin/ts-node.js"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
+  }
+}

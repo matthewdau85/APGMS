@@ -1,0 +1,7 @@
+{
+  "name": "openapi-typescript",
+  "version": "7.5.2",
+  "bin": {
+    "openapi-typescript": "bin/openapi-typescript.js"
+  }
+}
