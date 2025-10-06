@@ -1,0 +1,14 @@
+{
+  "regime": "paygw",
+  "variant": "foreign",
+  "description": "Non-resident flat percentage schedule at 32.5%",
+  "payload": {
+    "method": "percent_simple",
+    "period": "weekly",
+    "gross": 900.0,
+    "percent": 0.325
+  },
+  "expected": {
+    "withholding_cents": 29250
+  }
+}

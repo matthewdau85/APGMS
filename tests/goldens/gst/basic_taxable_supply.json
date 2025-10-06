@@ -1,0 +1,16 @@
+{
+  "regime": "gst",
+  "description": "Single taxable supply with GST-free and exempt lines",
+  "payload": {
+    "lines": [
+      {"amount_cents": 12000, "tax_code": "GST"},
+      {"amount_cents": 3000, "tax_code": "GST_FREE"},
+      {"amount_cents": 1500, "tax_code": ""}
+    ]
+  },
+  "expected": {
+    "net_cents": 16500,
+    "tax_cents": 1200,
+    "gross_cents": 17700
+  }
+}

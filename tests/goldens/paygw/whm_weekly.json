@@ -1,0 +1,15 @@
+{
+  "regime": "paygw",
+  "variant": "whm",
+  "description": "Working holiday maker withholding at 15%",
+  "payload": {
+    "method": "flat_plus_percent",
+    "period": "weekly",
+    "gross": 900.0,
+    "percent": 0.15,
+    "extra": 0.0
+  },
+  "expected": {
+    "withholding_cents": 13500
+  }
+}

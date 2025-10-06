@@ -1,0 +1,11 @@
+{
+  "regime": "payroll_tax",
+  "description": "NSW payroll tax on $1.5m annual wages",
+  "payload": {
+    "annual_wages_cents": 150000000,
+    "state": "NSW"
+  },
+  "expected": {
+    "tax_cents": 1635000
+  }
+}

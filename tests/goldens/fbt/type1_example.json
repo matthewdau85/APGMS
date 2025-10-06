@@ -1,0 +1,12 @@
+{
+  "regime": "fbt",
+  "description": "Type 1 benefit gross-up at 47%",
+  "payload": {
+    "taxable_value_cents": 1000000,
+    "benefits_type": "type1",
+    "rate": 0.47
+  },
+  "expected": {
+    "fbt_cents": 977694
+  }
+}

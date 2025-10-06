@@ -1,0 +1,11 @@
+{
+  "regime": "sg",
+  "description": "Quarterly super guarantee on $50,000 OTE at 11.5%",
+  "payload": {
+    "ordinary_time_earnings_cents": 5000000,
+    "rate": 0.115
+  },
+  "expected": {
+    "contribution_cents": 575000
+  }
+}
