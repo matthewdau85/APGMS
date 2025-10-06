@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 const tabs = [
   "Business Profile",
@@ -21,6 +21,120 @@ export default function Settings() {
     trading: "Example Vending",
     contact: "info@example.com"
   });
+  const [authToken, setAuthToken] = useState<string>("");
+  const [mfaCode, setMfaCode] = useState<string>("");
+  const [mfaStatus, setMfaStatus] = useState<"unknown" | "enrolled" | "not-enrolled">("unknown");
+  const [enrollResponse, setEnrollResponse] = useState<{ secretHex: string; otpauth: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>("");
+  const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("apgms_auth_token") || "";
+      if (stored) {
+        setAuthToken(stored);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if (authToken) {
+        window.localStorage.setItem("apgms_auth_token", authToken);
+      } else {
+        window.localStorage.removeItem("apgms_auth_token");
+      }
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    if (activeTab === "Security" && authToken) {
+      refreshStatus();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, authToken]);
+
+  async function callSecurity(path: string, init?: RequestInit & { skipMfaHeader?: boolean }) {
+    if (!authToken) {
+      throw new Error("Set an API token first");
+    }
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    };
+    if (!init?.skipMfaHeader && mfaCode) {
+      headers["x-mfa-code"] = mfaCode;
+    }
+    const response = await fetch(`/api/security${path}`, {
+      method: init?.method ?? "GET",
+      headers,
+      body: init?.body,
+    });
+    const text = await response.text();
+    let json: any;
+    try {
+      json = text ? JSON.parse(text) : null;
+    } catch {
+      json = text;
+    }
+    if (!response.ok) {
+      throw new Error(json?.error || json || `HTTP ${response.status}`);
+    }
+    return json;
+  }
+
+  async function refreshStatus() {
+    try {
+      setIsBusy(true);
+      setStatusMessage("");
+      const res = await callSecurity("/mfa/status");
+      setMfaStatus(res.enrolled ? "enrolled" : "not-enrolled");
+      setStatusMessage(res.enrolled ? "MFA is enrolled." : "MFA not yet enrolled.");
+    } catch (err: any) {
+      setStatusMessage(err?.message || "Failed to load status");
+      setMfaStatus("unknown");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function enroll() {
+    try {
+      setIsBusy(true);
+      setStatusMessage("Generating secret...");
+      const res = await callSecurity("/mfa/enroll", { method: "POST", body: JSON.stringify({}) });
+      setEnrollResponse(res);
+      setMfaStatus("not-enrolled");
+      setStatusMessage("Scan the QR code URL or enter the secret, then verify a code.");
+    } catch (err: any) {
+      setStatusMessage(err?.message || "Failed to enroll");
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function verify() {
+    try {
+      setIsBusy(true);
+      setStatusMessage("Validating code...");
+      const res = await callSecurity("/mfa/verify", {
+        method: "POST",
+        body: JSON.stringify({ code: mfaCode }),
+        skipMfaHeader: true,
+      });
+      if (res?.ok) {
+        setStatusMessage("MFA verified. Codes will be required for sensitive actions.");
+        setMfaStatus("enrolled");
+        await refreshStatus();
+      } else {
+        setStatusMessage("Verification failed");
+      }
+    } catch (err: any) {
+      setStatusMessage(err?.message || "Failed to verify");
+    } finally {
+      setIsBusy(false);
+    }
+  }
 
   return (
     <div className="settings-card">
@@ -165,15 +279,57 @@ export default function Settings() {
           </div>
         )}
         {activeTab === "Security" && (
-          <div style={{ maxWidth: 600, margin: "0 auto" }}>
-            <h3>Security Settings</h3>
-            <label>
-              <input type="checkbox" defaultChecked /> Two-factor authentication enabled
-            </label>
-            <br />
-            <label>
-              <input type="checkbox" /> SMS alerts on large payments
-            </label>
+          <div style={{ maxWidth: 700, margin: "0 auto" }}>
+            <h3>Authentication &amp; MFA</h3>
+            <p style={{ fontSize: 14, color: "#555" }}>
+              Provide an API token issued by the platform security team to manage your profile.
+              Sensitive operations require a TOTP code that expires every 30 seconds.
+            </p>
+            <label style={{ display: "block", marginTop: 12 }}>API Token</label>
+            <input
+              className="settings-input"
+              style={{ width: "100%" }}
+              value={authToken}
+              onChange={(e) => setAuthToken(e.target.value.trim())}
+              placeholder="Bearer token"
+            />
+            <label style={{ display: "block", marginTop: 12 }}>Current MFA Code</label>
+            <input
+              className="settings-input"
+              style={{ width: 220 }}
+              value={mfaCode}
+              onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="123456"
+            />
+            <div style={{ marginTop: 16, display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button className="button" disabled={isBusy || !authToken} onClick={refreshStatus}>
+                Check Status
+              </button>
+              <button className="button" disabled={isBusy || !authToken} onClick={enroll}>
+                Generate MFA Secret
+              </button>
+              <button className="button" disabled={isBusy || !authToken || !mfaCode} onClick={verify}>
+                Verify Code
+              </button>
+            </div>
+            {statusMessage && (
+              <div style={{ marginTop: 14, fontSize: 14, color: mfaStatus === "enrolled" ? "#067647" : "#9f580a" }}>
+                {statusMessage}
+              </div>
+            )}
+            {enrollResponse && (
+              <div style={{ marginTop: 16, background: "#f4f7ff", padding: 16, borderRadius: 8 }}>
+                <h4 style={{ marginTop: 0 }}>Enrollment details</h4>
+                <p style={{ wordBreak: "break-all", fontFamily: "monospace" }}>
+                  Secret (hex): {enrollResponse.secretHex}
+                </p>
+                <p>
+                  <a href={enrollResponse.otpauth} target="_blank" rel="noreferrer">
+                    Open in authenticator
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
         )}
         {activeTab === "Compliance & Audit" && (

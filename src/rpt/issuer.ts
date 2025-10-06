@@ -2,10 +2,23 @@
 import crypto from "crypto";
 import { signRpt, RptPayload } from "../crypto/ed25519";
 import { exceeds } from "../anomaly/deterministic";
-const pool = new Pool();
-const secretKey = Buffer.from(process.env.RPT_ED25519_SECRET_BASE64 || "", "base64");
+import { loadRptSigningKey } from "../crypto/keyManager";
 
-export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: string, thresholds: Record<string, number>) {
+export interface IssueContext {
+  actorId: string;
+  actorRoles: string[];
+  requestId?: string;
+  requestIp?: string;
+}
+const pool = new Pool();
+
+export async function issueRPT(
+  abn: string,
+  taxType: "PAYGW" | "GST",
+  periodId: string,
+  thresholds: Record<string, number>,
+  context: IssueContext,
+) {
   const p = await pool.query("select * from periods where abn= and tax_type= and period_id=", [abn, taxType, periodId]);
   if (p.rowCount === 0) throw new Error("PERIOD_NOT_FOUND");
   const row = p.rows[0];
@@ -29,9 +42,10 @@ export async function issueRPT(abn: string, taxType: "PAYGW"|"GST", periodId: st
     anomaly_vector: v, thresholds, rail_id: "EFT", reference: process.env.ATO_PRN || "",
     expiry_ts: new Date(Date.now() + 15*60*1000).toISOString(), nonce: crypto.randomUUID()
   };
-  const signature = signRpt(payload, new Uint8Array(secretKey));
-  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature) values (,,,,)",
-    [abn, taxType, periodId, payload, signature]);
+  const { key, keyId } = loadRptSigningKey();
+  const signature = signRpt(payload, key);
+  await pool.query("insert into rpt_tokens(abn,tax_type,period_id,payload,signature,kms_key_id,issued_by,issued_request_id,issued_ip) values (,,,,,,,,)",
+    [abn, taxType, periodId, payload, signature, keyId, context.actorId, context.requestId, context.requestIp]);
   await pool.query("update periods set state='READY_RPT' where id=", [row.id]);
   return { payload, signature };
 }
