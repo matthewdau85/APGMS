@@ -6,12 +6,14 @@ export function PaymentsForm() {
   const [taxType, setTaxType] = React.useState("GST");
   const [periodId, setPeriodId] = React.useState("2025Q2");
   const [amountCents, setAmountCents] = React.useState<number>(2500); // positive = deposit
+  const [rptHead, setRptHead] = React.useState("");
+  const [rptToken, setRptToken] = React.useState("");
   const [status, setStatus] = React.useState<string>("");
 
-  async function post(path: string, body: any) {
+  async function post(path: string, body: any, extraHeaders?: Record<string, string>) {
     const r = await fetch(path, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(extraHeaders ?? {}) },
       body: JSON.stringify(body),
     });
     const data = await r.json();
@@ -36,12 +38,22 @@ export function PaymentsForm() {
     e.preventDefault();
     setStatus("Submitting release…");
     try {
-      const res = await post("/api/payments/release", {
-        abn,
-        taxType,
-        periodId,
-        amountCents: -Math.abs(amountCents), // negative
-      });
+      const headers: Record<string, string> = {};
+      if (rptHead) headers["X-RPT-Head"] = rptHead.trim();
+      if (rptToken) headers["X-RPT-Token"] = rptToken.trim();
+
+      const res = await post(
+        "/api/payments/release",
+        {
+          abn,
+          taxType,
+          periodId,
+          amountCents: -Math.abs(amountCents), // negative
+          rptHead: rptHead.trim() || undefined,
+          rptToken: rptToken.trim() || undefined,
+        },
+        headers
+      );
       setStatus(`✅ Released. Transfer ${res.transfer_uuid}. Balance ${res.balance_after_cents}`);
     } catch (err: any) {
       // Example messages:
@@ -61,6 +73,17 @@ export function PaymentsForm() {
         value={amountCents}
         onChange={e => setAmountCents(Number(e.target.value))}
         placeholder="Amount cents (positive for deposit)"
+      />
+
+      <input
+        value={rptHead}
+        onChange={e => setRptHead(e.target.value)}
+        placeholder="RPT head (payload_sha256)"
+      />
+      <input
+        value={rptToken}
+        onChange={e => setRptToken(e.target.value)}
+        placeholder="RPT token (base64 signature)"
       />
 
       <div style={{ display: "flex", gap: 8 }}>
