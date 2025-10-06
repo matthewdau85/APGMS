@@ -4,19 +4,28 @@ import dotenv from "dotenv";
 
 import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
+import { ingestRouter } from "./routes/ingest";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
 
 dotenv.config();
 
 const app = express();
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({
+  limit: "2mb",
+  verify: (req: any, _res, buf) => {
+    (req as any).rawBody = Buffer.from(buf);
+  }
+}));
 
 // (optional) quick request logger
 app.use((req, _res, next) => { console.log(`[app] ${req.method} ${req.url}`); next(); });
 
 // Simple health check
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// Webhook ingestion (HMAC verified)
+app.use("/ingest", ingestRouter);
 
 // Existing explicit endpoints
 app.post("/api/pay", idempotency(), payAto);
