@@ -1,0 +1,7 @@
+[
+  { "amount_cents": 0, "tax_code": "GST", "expected": 0 },
+  { "amount_cents": 1250, "tax_code": "GST", "expected": 125 },
+  { "amount_cents": 3333, "tax_code": "GST", "expected": 333 },
+  { "amount_cents": 5000, "tax_code": "GST_FREE", "expected": 0 },
+  { "amount_cents": 7500, "tax_code": "", "expected": 0 }
+]

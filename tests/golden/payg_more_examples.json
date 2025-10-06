@@ -1,0 +1,7 @@
+[
+  { "gross": 0, "expected": 0 },
+  { "gross": 30000, "expected": 4500 },
+  { "gross": 80000, "expected": 12000 },
+  { "gross": 90000, "expected": 14000 },
+  { "gross": 120000, "expected": 20000 }
+]

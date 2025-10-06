@@ -1,5 +1,15 @@
+import json
+from pathlib import Path
+
 import pytest
 from app.tax_rules import gst_line_tax, paygw_weekly
+
+GOLDEN_DIR = Path(__file__).parent / "golden"
+
+
+def load_golden(name: str):
+    with open(GOLDEN_DIR / name, "r", encoding="utf-8") as fh:
+        return json.load(fh)
 
 @pytest.mark.parametrize("amount_cents, expected", [
     (0, 0),
@@ -16,3 +26,18 @@ def test_gst(amount_cents, expected):
 ])
 def test_paygw(gross, expected):
     assert paygw_weekly(gross) == expected
+
+
+def test_gst_golden_samples():
+    for case in load_golden("gst_more_examples.json"):
+        amount = case["amount_cents"]
+        tax_code = case.get("tax_code", "GST")
+        expected = case["expected"]
+        assert gst_line_tax(amount, tax_code) == expected
+
+
+def test_paygw_golden_samples():
+    for case in load_golden("payg_more_examples.json"):
+        gross = case["gross"]
+        expected = case["expected"]
+        assert paygw_weekly(gross) == expected
