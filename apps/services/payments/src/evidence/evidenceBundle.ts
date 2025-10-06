@@ -1,13 +1,16 @@
-﻿import pg from "pg";
+import pg from "pg";
 const { PoolClient } = pg;
 import { canonicalJson, sha256Hex } from "../utils/crypto";
 
+type BankReceipt = { provider: string; receipt_id: string; receipt_uuid?: string };
 type BuildParams = {
   abn: string; taxType: string; periodId: string;
-  bankReceipts: Array<{provider: string; receipt_id: string}>;
+  bankReceipts: Array<BankReceipt>;
   atoReceipts: Array<{submission_id: string; receipt_id: string}>;
   operatorOverrides: Array<{who: string; why: string; ts: string}>;
   owaAfterHash: string;
+  settlement?: { channel: string; provider_ref: string; amount_cents: number; paidAt: string } | null;
+  receipt_id?: string | null;
 };
 
 export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
@@ -23,7 +26,7 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
   const normalization = { payroll_hash: "NA", pos_hash: "NA" };
 
   const beforeQ = await client.query(
-    "SELECT COALESCE(SUM(amount_cents),0) bal FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND entry_id < (SELECT max(entry_id) FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3)",
+    "SELECT COALESCE(SUM(amount_cents),0) bal FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3 AND id < (SELECT max(id) FROM owa_ledger WHERE abn=$1 AND tax_type=$2 AND period_id=$3)",
     [p.abn, p.taxType, p.periodId]
   );
   const afterQ = await client.query(
@@ -40,20 +43,24 @@ export async function buildEvidenceBundle(client: PoolClient, p: BuildParams) {
       abn, tax_type, period_id, payload_sha256, rpt_id, rpt_payload, rpt_signature,
       thresholds_json, anomaly_vector, normalization_hashes,
       owa_balance_before, owa_balance_after,
-      bank_receipts, ato_receipts, operator_overrides
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12,$13::jsonb,$14::jsonb,$15::jsonb)
+      bank_receipts, ato_receipts, operator_overrides,
+      settlement, bank_receipt_id
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10::jsonb,$11,$12,$13::jsonb,$14::jsonb,$15::jsonb,$16::jsonb,$17)
     ON CONFLICT (abn, tax_type, period_id) DO UPDATE SET
       bank_receipts = EXCLUDED.bank_receipts,
       ato_receipts = EXCLUDED.ato_receipts,
       owa_balance_before = EXCLUDED.owa_balance_before,
-      owa_balance_after = EXCLUDED.owa_balance_after
+      owa_balance_after = EXCLUDED.owa_balance_after,
+      settlement = EXCLUDED.settlement,
+      bank_receipt_id = EXCLUDED.bank_receipt_id
     RETURNING bundle_id
   `;
   const vals = [
     p.abn, p.taxType, p.periodId, payload_sha256, r.rpt_id, r.payload_c14n, r.signature,
     canonicalJson(thresholds), canonicalJson(anomalies), canonicalJson(normalization),
     balBefore, balAfter,
-    canonicalJson(p.bankReceipts), canonicalJson(p.atoReceipts), canonicalJson(p.operatorOverrides)
+    canonicalJson(p.bankReceipts), canonicalJson(p.atoReceipts), canonicalJson(p.operatorOverrides),
+    canonicalJson(p.settlement ?? null), p.receipt_id ?? null
   ];
   const out = await client.query(ins, vals);
   return out.rows[0].bundle_id as number;

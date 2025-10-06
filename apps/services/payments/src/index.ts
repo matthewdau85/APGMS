@@ -10,6 +10,7 @@ import { payAtoRelease } from './routes/payAto.js';
 import { deposit } from './routes/deposit';
 import { balance } from './routes/balance';
 import { ledger } from './routes/ledger';
+import { importBankReconciliation } from './recon/bankReconcile.js';
 
 // Port (defaults to 3000)
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
@@ -32,6 +33,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 // Endpoints
 app.post('/deposit', deposit);
 app.post('/payAto', rptGate, payAtoRelease);
+app.post('/recon/bank/import', importBankReconciliation);
 app.get('/balance', balance);
 app.get('/ledger', ledger);
 
