@@ -4,6 +4,8 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const nacl = require('tweetnacl');
 const crypto = require('crypto');
+const fs = require('fs/promises');
+const path = require('path');
 
 const app = express();
 app.use(bodyParser.json());
@@ -16,6 +18,8 @@ const {
 const pool = new Pool({
   host: PGHOST, user: PGUSER, password: PGPASSWORD, database: PGDATABASE, port: +PGPORT
 });
+
+const PROOFS_FILE = path.join(__dirname, 'ops', 'compliance', 'proofs.json');
 
 // small async handler wrapper
 const ah = fn => (req,res)=>fn(req,res).catch(e=>{
@@ -209,6 +213,30 @@ app.get('/evidence', ah(async (req,res)=>{
     bas_labels: basLabels,
     discrepancy_log: []
   });
+}));
+
+app.get('/ops/compliance/proofs', ah(async (req,res)=>{
+  try {
+    const raw = await fs.readFile(PROOFS_FILE, 'utf8');
+    const data = JSON.parse(raw);
+    const body = {
+      generated_at: data.generated_at || new Date().toISOString(),
+      mfa_stepups_7d: Number(data.mfa_stepups_7d || 0),
+      dual_approvals_7d: Number(data.dual_approvals_7d || 0),
+      dlq_count: Number(data.dlq_count || 0),
+      mean_replay_latency_ms: Number(data.mean_replay_latency_ms || 0),
+      last_ir_dr_date: data.last_ir_dr_date || null,
+      last_pentest_date: data.last_pentest_date || null,
+      access_review_status: data.access_review_status || 'unknown'
+    };
+    res.json(body);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      res.status(503).json({ error: 'PROOFS_UNAVAILABLE', message: 'Daily compliance proofs have not been generated yet.' });
+      return;
+    }
+    throw err;
+  }
 }));
 
 const port = process.env.PORT ? +process.env.PORT : 8080;

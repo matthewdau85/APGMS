@@ -1,0 +1,10 @@
+{
+  "generated_at": "2025-10-06T10:21:31.385Z",
+  "mfa_stepups_7d": 57,
+  "dual_approvals_7d": 36,
+  "dlq_count": 1,
+  "mean_replay_latency_ms": 410,
+  "last_ir_dr_date": "2025-09-12",
+  "last_pentest_date": "2025-08-22",
+  "access_review_status": "Current – completed 2025-09-30 (tracked via https://github.com/apgms/security/issues/88)"
+}

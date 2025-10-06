@@ -1,0 +1,31 @@
+name: compliance:daily
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  compliance-daily:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate compliance proofs
+        run: npm run compliance:daily
+
+      - name: Upload compliance artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-daily-report
+          path: |
+            ops/compliance/reports/compliance_daily_*.json
+            ops/compliance/reports/metrics_*.prom
+            ops/compliance/pentest/latest_pentest.pdf
+          if-no-files-found: error

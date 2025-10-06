@@ -1,0 +1,18 @@
+# HELP apgms_mfa_stepup_success_total Count of MFA step-up successes
+# TYPE apgms_mfa_stepup_success_total counter
+apgms_mfa_stepup_success_total 77
+# HELP apgms_dual_approval_total Approvals requiring dual control
+# TYPE apgms_dual_approval_total counter
+apgms_dual_approval_total 47
+# HELP apgms_dlq_visible_messages Dead letter queue backlog size
+# TYPE apgms_dlq_visible_messages gauge
+apgms_dlq_visible_messages 1
+# HELP apgms_dlq_replay_latency_seconds Mean replay latency in seconds
+# TYPE apgms_dlq_replay_latency_seconds gauge
+apgms_dlq_replay_latency_seconds 0.41
+# HELP apgms_last_ir_dr_timestamp_seconds Last IR/DR drill completion unix seconds
+# TYPE apgms_last_ir_dr_timestamp_seconds gauge
+apgms_last_ir_dr_timestamp_seconds 1.7252232e+09
+# HELP apgms_last_pentest_timestamp_seconds Last pentest completion unix seconds
+# TYPE apgms_last_pentest_timestamp_seconds gauge
+apgms_last_pentest_timestamp_seconds 1.7231152e+09
