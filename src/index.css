@@ -33,6 +33,70 @@ body {
   font-weight: 400;
 }
 
+.mode-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  cursor: default;
+  outline: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mode-badge:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.mode-badge__tooltip {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  padding: 10px 14px;
+  max-width: 260px;
+  width: max-content;
+  background: rgba(9, 15, 35, 0.94);
+  color: #f5f7fa;
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  text-align: left;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 2;
+}
+
+.mode-badge__tooltip::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent rgba(9, 15, 35, 0.94) transparent;
+}
+
+.mode-badge:hover .mode-badge__tooltip,
+.mode-badge:focus .mode-badge__tooltip,
+.mode-badge:focus-within .mode-badge__tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .app-footer {
   color: #888;
   text-align: center;
