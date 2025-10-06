@@ -4,18 +4,29 @@
         "build": "echo build root",
         "typecheck": "echo typecheck root",
         "dev": "tsx src/index.ts",
-        "lint": "echo lint root"
+        "lint": "eslint --ext .ts,.tsx scripts src \"apps/services/payments/src\" \"apps/services/payments/test\" --max-warnings=0",
+        "test": "pnpm -r --if-present test",
+        "migrate": "tsx scripts/migrate.ts",
+        "openapi": "tsx scripts/openapi.ts",
+        "docs:coverage": "tsx scripts/docs-coverage.ts",
+        "docs:links": "tsx scripts/docs-links.ts",
+        "prepare": "husky install"
     },
     "version": "0.1.0",
     "name": "apgms",
     "private": true,
-    "packageManager": "pnpm@9",
+    "packageManager": "pnpm@9.12.2",
     "devDependencies": {
         "@types/express": "^5.0.3",
         "@types/node": "^24.6.2",
         "ts-node": "^10.9.2",
         "tsx": "^4.20.6",
-        "typescript": "^5.9.3"
+        "typescript": "^5.9.3",
+        "eslint": "^9.14.0",
+        "@typescript-eslint/parser": "^8.12.2",
+        "@typescript-eslint/eslint-plugin": "^8.12.2",
+        "husky": "^9.0.11",
+        "lint-staged": "^15.2.10"
     },
     "dependencies": {
         "csv-parse": "^6.1.0",
@@ -24,5 +35,8 @@
         "pg": "^8.16.3",
         "tweetnacl": "^1.0.3",
         "uuid": "^13.0.0"
+    },
+    "lint-staged": {
+        "*.{ts,tsx}": "eslint --max-warnings=0"
     }
 }

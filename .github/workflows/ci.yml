@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: apgms
+          POSTGRES_PASSWORD: apgms
+          POSTGRES_DB: apgms
+        options: >-
+          --health-cmd "pg_isready -U apgms" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgres://apgms:apgms@localhost:5432/apgms
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable Corepack
+        run: corepack enable
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 9.12.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install
+      - name: Lint
+        run: pnpm lint
+      - name: Run database migrations
+        run: pnpm migrate
+      - name: Run tests
+        run: pnpm test --if-present
+      - name: Generate OpenAPI specification
+        run: pnpm openapi
+      - name: Documentation coverage
+        run: pnpm docs:coverage
+      - name: Validate documentation links
+        run: pnpm docs:links
+      - name: Upload OpenAPI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-spec
+          path: public/openapi.json
+      - name: Run gitleaks
+        uses: zricethezav/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
