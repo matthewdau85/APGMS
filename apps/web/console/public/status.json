@@ -1,0 +1,25 @@
+{
+  "tiles": [
+    {
+      "id": "ingestion",
+      "title": "Ingestion",
+      "summary": "Event ingestion pipeline is processing 98% of messages within the SLA.",
+      "status": "healthy",
+      "helpUrl": "https://docs.apgms.local/runbooks/ingestion"
+    },
+    {
+      "id": "normalizer",
+      "title": "Normalizer",
+      "summary": "Normalizer lag is elevated for US-East tenants after the latest deploy.",
+      "status": "degraded",
+      "helpUrl": "https://docs.apgms.local/runbooks/normalizer"
+    },
+    {
+      "id": "rpt",
+      "title": "RPT Refresh",
+      "summary": "Last refresh completed 47 minutes ago. Next run scheduled at 20:15 UTC.",
+      "status": "healthy",
+      "helpUrl": "https://docs.apgms.local/runbooks/rpt"
+    }
+  ]
+}
