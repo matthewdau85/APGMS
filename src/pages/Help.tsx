@@ -1,39 +1,46 @@
 import React from 'react';
+import Page from '../components/Page';
+import type { PageMeta } from '../help/HelpContext';
+import { helpArticles } from '../help/helpArticles';
+
+export const meta: PageMeta = {
+  title: 'Help Center',
+  description: 'Browse help topics and open the in-app help drawer.',
+  helpSlug: 'getting-started',
+  route: '/help',
+};
 
 export default function Help() {
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Help & Guidance</h1>
-      <p className="text-sm text-muted-foreground">
-        Access support for PAYGW, GST, BAS and using this system.
-      </p>
-      <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">Getting Started</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li>Set up your buffer accounts and payment schedule in <strong>Settings</strong>.</li>
-          <li>Use the <strong>Wizard</strong> to define PAYGW and GST split rules.</li>
-          <li>Review <strong>Dashboard</strong> for current obligations and payment alerts.</li>
-          <li>Go to <strong>BAS</strong> to lodge your Business Activity Statement each quarter.</li>
-        </ul>
+    <Page meta={meta}>
+      <div className="p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Help & Guidance</h1>
+          <p className="text-sm text-muted-foreground">
+            Use <strong>Shift + /</strong> anywhere in the app to open the help drawer. Search articles below
+            or jump straight to the documentation site.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {helpArticles.map((article) => (
+            <div key={article.slug} className="bg-card p-4 rounded-xl shadow space-y-2">
+              <h2 className="text-lg font-semibold">{article.title}</h2>
+              <p className="text-sm text-muted-foreground">{article.summary}</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-[#00716b]">Help drawer search: "{article.title}"</span>
+                <a
+                  className="text-blue-600 hover:underline"
+                  href={article.docsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open in docs ↗
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">ATO Compliance</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li>Use one-way tax accounts to prevent accidental use of withheld/collected funds.</li>
-          <li>Audit trail with timestamped actions supports legal protection and evidence.</li>
-          <li>Helps avoid wind-up notices, director penalties, and late lodgment fines.</li>
-        </ul>
-      </div>
-      <div className="bg-card p-4 rounded-xl shadow space-y-2">
-        <h2 className="text-lg font-semibold">Support Links</h2>
-        <ul className="list-disc pl-5 text-sm">
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/payg-withholding/">ATO PAYGW Guide</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/gst/">ATO GST Information</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/business-activity-statements-(bas)/">ATO BAS Portal</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/business/super-for-employers/">ATO Super Obligations</a></li>
-          <li><a className="text-blue-600" href="https://www.ato.gov.au/General/Online-services/">ATO Online Services</a></li>
-        </ul>
-      </div>
-    </div>
+    </Page>
   );
 }

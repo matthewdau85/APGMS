@@ -1,0 +1,33 @@
+---
+title: Releases
+slug: releases
+summary: Promote configuration changes safely across sandboxes, UAT and production workspaces.
+---
+
+# Releases
+
+Releases coordinate how configuration, integrations and automation changes move between
+non-production and production environments.
+
+## Release stages
+
+1. **Draft** – Capture the intent of the change, impacted obligations and stakeholders who must
+   approve.
+2. **UAT** – Validate behaviour in an Advisory-mode workspace before automation triggers real-world
+   transfers.
+3. **Ready for production** – Secure approvals, attach evidence exports and schedule the change.
+4. **Production** – Monitor the first automated cycle after deployment and roll back if needed.
+
+## Managing releases in APGMS
+
+* Use **Settings → Customisation** to prepare configuration changes, then attach screenshots to the
+  release record.
+* Integrations updated via **Integrations → Connections** inherit the release identifier so you can
+  trace which version is active.
+* Link evidence exports to releases so auditors understand the decision trail.
+
+## Controls checklist
+
+* Segregate duties: preparer, approver and deployer roles must remain distinct.
+* Capture test results within the release card before promoting to production.
+* If automation fails post-release, open the **Errors** workflow to coordinate remediation.

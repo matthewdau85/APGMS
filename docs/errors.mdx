@@ -1,0 +1,28 @@
+---
+title: Errors
+slug: errors
+summary: Manage exceptions when automation encounters missing data, rejected payments or compliance risks.
+---
+
+# Errors
+
+Errors capture issues that require human intervention so APGMS stays compliant even when external
+systems fail.
+
+## When to raise an error
+
+* Transfers rejected by the bank or payments that exceed account balances.
+* Missing payroll submissions, late sales uploads or API outages from source systems.
+* Variances discovered during reconciliation that cannot be auto-resolved.
+
+## Workflow
+
+1. Create an error record with context, impacted obligation and severity.
+2. Assign an owner and due date. Attach screenshots or exports that assist in remediation.
+3. Monitor resolution progress on the **Fraud & Errors** page and capture final outcome notes.
+
+## Links to other modules
+
+* From **Reconciliation**, convert a variance directly into an error for tracking.
+* **Releases** must reference any open errors before deployment proceeds.
+* Evidence exports automatically include the audit history of related errors.

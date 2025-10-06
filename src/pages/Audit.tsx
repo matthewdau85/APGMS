@@ -1,4 +1,13 @@
 import React, { useState } from 'react';
+import Page from '../components/Page';
+import type { PageMeta } from '../help/HelpContext';
+
+export const meta: PageMeta = {
+  title: 'Audit',
+  description: 'Review evidence packages and compliance activity for PAYGW and GST.',
+  helpSlug: 'evidence',
+  route: '/audit',
+};
 
 export default function Audit() {
   const [logs] = useState([
@@ -12,30 +21,32 @@ export default function Audit() {
   ]);
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Compliance & Audit</h1>
-      <p className="text-sm text-muted-foreground">
-        Track every action in your PAYGW and GST account for compliance.
-      </p>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm border border-gray-300 rounded-lg">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 text-left border-b">Date</th>
-              <th className="px-4 py-2 text-left border-b">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {logs.map((log, i) => (
-              <tr key={i} className="border-t">
-                <td className="px-4 py-2">{log.date}</td>
-                <td className="px-4 py-2">{log.action}</td>
+    <Page meta={meta}>
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold">Compliance & Audit</h1>
+        <p className="text-sm text-muted-foreground">
+          Track every action in your PAYGW and GST account for compliance.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm border border-gray-300 rounded-lg">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="px-4 py-2 text-left border-b">Date</th>
+                <th className="px-4 py-2 text-left border-b">Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {logs.map((log, i) => (
+                <tr key={i} className="border-t">
+                  <td className="px-4 py-2">{log.date}</td>
+                  <td className="px-4 py-2">{log.action}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <button className="mt-4 bg-primary text-white p-2 rounded-md">Download Full Log</button>
       </div>
-      <button className="mt-4 bg-primary text-white p-2 rounded-md">Download Full Log</button>
-    </div>
+    </Page>
   );
 }

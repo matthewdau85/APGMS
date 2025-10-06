@@ -1,0 +1,32 @@
+---
+title: Modes
+slug: modes
+summary: Configure PAYGW and GST collection modes to reflect how revenue and payroll data arrive.
+---
+
+# Modes
+
+Modes describe how APGMS should interpret incoming transactions and obligations. They keep
+automation predictable when business processes vary by channel or employee type.
+
+## Operating modes
+
+| Mode | Primary use | Notes |
+| ---- | ------------ | ----- |
+| Real-time | Stream data from integrated payroll or POS tools for immediate withholding. | Ideal when APIs push events as they happen. |
+| Batch | Upload CSV or manual journals on a schedule. | Use for legacy systems without live integrations. |
+| Advisory | Track obligations without triggering transfers. | Great for modelling new business units or sandboxes. |
+
+## Selecting a mode
+
+* **Wizard** steps prompt for a mode per revenue stream.
+* **Settings → Payroll & Sales** lets you adjust assignments after onboarding.
+* Switching from Advisory to Real-time recalculates standing transfer schedules so no obligation is
+  missed.
+
+## Governance tips
+
+* Keep sandbox or UAT workspaces in Advisory to prevent unintended banking activity.
+* Document who can promote a workspace to Real-time in the Releases process.
+* Pair modes with alerts in **Settings → Notifications** so stakeholders know when automation
+  changes.
