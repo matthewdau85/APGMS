@@ -1,18 +1,49 @@
-﻿{
+{
   "version": "2024-25",
-  "notes": "Replace with ATO-published formulas/tables each 1 July before production.",
-  "methods_enabled": ["table_ato","formula_progressive","percent_simple","flat_plus_percent","bonus_marginal","net_to_gross"],
-  "formula_progressive": {
-    "period": "weekly",
-    "brackets": [
-      { "up_to": 359.00,   "a": 0.00,  "b":   0.0,  "fixed": 0.0 },
-      { "up_to": 438.00,   "a": 0.19,  "b":  68.0,  "fixed": 0.0 },
-      { "up_to": 548.00,   "a": 0.234, "b":  87.82, "fixed": 0.0 },
-      { "up_to": 721.00,   "a": 0.347, "b": 148.50, "fixed": 0.0 },
-      { "up_to": 865.00,   "a": 0.345, "b": 147.00, "fixed": 0.0 },
-      { "up_to": 999999.0, "a": 0.39,  "b": 183.0,  "fixed": 0.0 }
+  "notes": "PAYG withholding schedule derived from ATO stage 3 personal income tax rates effective 1 July 2024.",
+  "periods": {
+    "weekly":   { "per_year": 52, "rounding": "NEAREST_DOLLAR" },
+    "fortnightly": { "per_year": 26, "rounding": "NEAREST_DOLLAR" },
+    "monthly":  { "per_year": 12, "rounding": "NEAREST_DOLLAR" }
+  },
+  "scales": {
+    "tax_free_threshold": [
+      { "threshold": 0, "limit": 18200, "rate": 0.0 },
+      { "threshold": 18200, "limit": 45000, "rate": 0.16 },
+      { "threshold": 45000, "limit": 135000, "rate": 0.30 },
+      { "threshold": 135000, "limit": 190000, "rate": 0.37 },
+      { "threshold": 190000, "rate": 0.45 }
     ],
-    "tax_free_threshold": true,
-    "rounding": "HALF_UP"
+    "no_tax_free_threshold": [
+      { "threshold": 0, "limit": 45000, "rate": 0.16 },
+      { "threshold": 45000, "limit": 135000, "rate": 0.30 },
+      { "threshold": 135000, "limit": 190000, "rate": 0.37 },
+      { "threshold": 190000, "rate": 0.45 }
+    ]
+  },
+  "stsl": {
+    "description": "2024-25 HELP/TSL compulsory repayment thresholds",
+    "rates": [
+      { "threshold": 0, "rate": 0.0 },
+      { "threshold": 51550, "rate": 0.01 },
+      { "threshold": 59518, "rate": 0.02 },
+      { "threshold": 63089, "rate": 0.025 },
+      { "threshold": 66875, "rate": 0.03 },
+      { "threshold": 70888, "rate": 0.035 },
+      { "threshold": 75140, "rate": 0.04 },
+      { "threshold": 79649, "rate": 0.045 },
+      { "threshold": 84429, "rate": 0.05 },
+      { "threshold": 89494, "rate": 0.055 },
+      { "threshold": 94865, "rate": 0.06 },
+      { "threshold": 100557, "rate": 0.065 },
+      { "threshold": 106590, "rate": 0.07 },
+      { "threshold": 112985, "rate": 0.075 },
+      { "threshold": 119764, "rate": 0.08 },
+      { "threshold": 126950, "rate": 0.085 },
+      { "threshold": 134568, "rate": 0.09 },
+      { "threshold": 142642, "rate": 0.095 },
+      { "threshold": 151201, "rate": 0.10 }
+    ],
+    "cap_rate": 0.10
   }
 }
