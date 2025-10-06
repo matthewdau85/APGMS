@@ -6,8 +6,10 @@ import { idempotency } from "./middleware/idempotency";
 import { closeAndIssue, payAto, paytoSweep, settlementWebhook, evidence } from "./routes/reconcile";
 import { paymentsApi } from "./api/payments"; // ✅ mount this BEFORE `api`
 import { api } from "./api";                  // your existing API router(s)
+import { assertSafeCombo } from "./config/features";
 
 dotenv.config();
+assertSafeCombo();
 
 const app = express();
 app.use(express.json({ limit: "2mb" }));
